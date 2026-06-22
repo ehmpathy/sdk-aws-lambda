@@ -1,0 +1,23 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`genLambdaEndpoint.forApiGateway given: [case3] CORS configured when: [t0] handler invoked then: it should include CORS headers 1`] = `
+{
+  "body": {
+    "result": "ok",
+  },
+  "corsHeaders": {
+    "Access-Control-Allow-Credentials": "true",
+    "Access-Control-Allow-Origin": "https://example.com",
+  },
+  "statusCode": 200,
+}
+`;
+
+exports[`genLambdaEndpoint.forApiGateway given: [case4] handler error when: [t0] handler throws then: it should return 500 with generic error body 1`] = `
+{
+  "errorMessage": "internal server error",
+  "errorType": "InternalServiceError",
+  "hasCorrelationId": true,
+  "statusCode": 500,
+}
+`;

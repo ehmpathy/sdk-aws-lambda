@@ -1,0 +1,259 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`getIsWrappedPayload given: [case1] valid wrapped payload with exid when: [t0] checked then: result matches snapshot 1`] = `
+{
+  "input": {
+    "event": {
+      "message": "hello",
+    },
+    "trail": {
+      "exid": "exid:from-caller",
+    },
+  },
+  "result": true,
+}
+`;
+
+exports[`getIsWrappedPayload given: [case2] valid wrapped payload without exid when: [t0] checked then: result matches snapshot 1`] = `
+{
+  "input": {
+    "event": {
+      "message": "hello",
+    },
+    "trail": {},
+  },
+  "result": true,
+}
+`;
+
+exports[`getIsWrappedPayload given: [case3] raw payload (no trail property) when: [t0] checked then: result matches snapshot 1`] = `
+{
+  "input": {
+    "message": "hello",
+  },
+  "result": false,
+}
+`;
+
+exports[`getIsWrappedPayload given: [case4] payload with trail = null when: [t0] checked then: result matches snapshot 1`] = `
+{
+  "input": {
+    "event": {
+      "message": "hello",
+    },
+    "trail": null,
+  },
+  "result": false,
+}
+`;
+
+exports[`getIsWrappedPayload given: [case5] payload with trail = string (user data collision) when: [t0] checked then: result matches snapshot 1`] = `
+{
+  "input": {
+    "location": "alps",
+    "trail": "mountain path",
+  },
+  "result": false,
+}
+`;
+
+exports[`getIsWrappedPayload given: [case6] payload with more than 2 keys when: [t0] checked then: result matches snapshot 1`] = `
+{
+  "input": {
+    "event": {
+      "message": "hello",
+    },
+    "extra": "field",
+    "trail": {
+      "exid": "exid:abc",
+    },
+  },
+  "result": false,
+}
+`;
+
+exports[`getIsWrappedPayload given: [case7] payload with only trail key (no event) when: [t0] checked then: result matches snapshot 1`] = `
+{
+  "input": {
+    "trail": {
+      "exid": "exid:abc",
+    },
+  },
+  "result": false,
+}
+`;
+
+exports[`getIsWrappedPayload given: [case8] payload with only event key (no trail) when: [t0] checked then: result matches snapshot 1`] = `
+{
+  "input": {
+    "event": {
+      "message": "hello",
+    },
+  },
+  "result": false,
+}
+`;
+
+exports[`getIsWrappedPayload given: [case9] payload with trail.exid = number (invalid type) when: [t0] checked then: result matches snapshot 1`] = `
+{
+  "input": {
+    "event": {
+      "message": "hello",
+    },
+    "trail": {
+      "exid": 12345,
+    },
+  },
+  "result": false,
+}
+`;
+
+exports[`getIsWrappedPayload given: [case10] SQS event (Records array) when: [t0] checked then: result matches snapshot 1`] = `
+{
+  "input": {
+    "Records": [
+      {
+        "body": "{"data": "test"}",
+        "eventSource": "aws:sqs",
+        "messageId": "msg-123",
+      },
+    ],
+  },
+  "result": false,
+}
+`;
+
+exports[`getIsWrappedPayload given: [case11] API Gateway v1 event when: [t0] checked then: result matches snapshot 1`] = `
+{
+  "input": {
+    "body": "{"message": "hello"}",
+    "headers": {
+      "content-type": "application/json",
+    },
+    "httpMethod": "POST",
+    "path": "/api/test",
+  },
+  "result": false,
+}
+`;
+
+exports[`getIsWrappedPayload given: [case12] API Gateway v2 event when: [t0] checked then: result matches snapshot 1`] = `
+{
+  "input": {
+    "body": "{"message": "hello"}",
+    "headers": {
+      "content-type": "application/json",
+    },
+    "requestContext": {
+      "http": {
+        "method": "POST",
+        "path": "/api/test",
+      },
+    },
+  },
+  "result": false,
+}
+`;
+
+exports[`getIsWrappedPayload given: [case13] null payload when: [t0] checked then: result matches snapshot 1`] = `
+{
+  "input": null,
+  "result": false,
+}
+`;
+
+exports[`getIsWrappedPayload given: [case14] undefined payload when: [t0] checked then: result matches snapshot 1`] = `
+{
+  "input": undefined,
+  "result": false,
+}
+`;
+
+exports[`getIsWrappedPayload given: [case15] array payload when: [t0] checked then: result matches snapshot 1`] = `
+{
+  "input": [
+    {
+      "event": {},
+      "trail": {},
+    },
+  ],
+  "result": false,
+}
+`;
+
+exports[`getIsWrappedPayload given: [case16] string payload when: [t0] checked then: result matches snapshot 1`] = `
+{
+  "input": "{"event": {}, "trail": {}}",
+  "result": false,
+}
+`;
+
+exports[`getIsWrappedPayload given: [case17] empty object payload when: [t0] checked then: result matches snapshot 1`] = `
+{
+  "input": {},
+  "result": false,
+}
+`;
+
+exports[`getIsWrappedPayload given: [case18] trail with extra properties when: [t0] checked then: result matches snapshot 1`] = `
+{
+  "input": {
+    "event": {
+      "message": "hello",
+    },
+    "trail": {
+      "exid": "exid:abc",
+      "extra": "data",
+    },
+  },
+  "result": true,
+}
+`;
+
+exports[`getIsWrappedPayload given: [case19] event is null (valid wrapped) when: [t0] checked then: result matches snapshot 1`] = `
+{
+  "input": {
+    "event": null,
+    "trail": {
+      "exid": "exid:abc",
+    },
+  },
+  "result": true,
+}
+`;
+
+exports[`getIsWrappedPayload given: [case20] event is array (valid wrapped) when: [t0] checked then: result matches snapshot 1`] = `
+{
+  "input": {
+    "event": [
+      1,
+      2,
+      3,
+    ],
+    "trail": {},
+  },
+  "result": true,
+}
+`;
+
+exports[`getIsWrappedPayload given: [case21] trail is array (invalid) when: [t0] checked then: result matches snapshot 1`] = `
+{
+  "input": {
+    "event": {
+      "message": "hello",
+    },
+    "trail": [],
+  },
+  "result": false,
+}
+`;
+
+exports[`getIsWrappedPayload given: [case22] legacy client payload (uuid action pattern) when: [t0] checked then: result matches snapshot 1`] = `
+{
+  "input": {
+    "action": "get",
+    "uuid": "123e4567-e89b-12d3-a456-426614174000",
+  },
+  "result": false,
+}
+`;

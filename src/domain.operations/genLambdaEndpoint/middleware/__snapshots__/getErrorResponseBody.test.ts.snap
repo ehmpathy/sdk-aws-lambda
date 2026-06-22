@@ -1,0 +1,56 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`getErrorResponseBodyAncient given: [case1] error with metadata and cause when: [t0] body is constructed then: snapshot for contract visibility 1`] = `
+{
+  "causeMessage": "original error",
+  "details": {
+    "metadata": {
+      "field": "email",
+      "issue": "invalid",
+    },
+  },
+  "errorMessage": "BadRequestError: validation failed
+
+{
+  "metadata": {
+    "field": "email",
+    "issue": "invalid"
+  }
+}",
+  "errorType": "BadRequestError",
+}
+`;
+
+exports[`getErrorResponseBodyContemp given: [case1] error with metadata and cause when: [t0] body is constructed then: snapshot for contract visibility 1`] = `
+{
+  "error": {
+    "_serde": "LambdaEndpointError::contemp",
+    "cause": "original error",
+    "class": "ConstraintError",
+    "details": {
+      "metadata": {
+        "field": "email",
+        "issue": "invalid",
+      },
+    },
+    "message": "BadRequestError: validation failed
+
+{
+  "metadata": {
+    "field": "email",
+    "issue": "invalid"
+  }
+}",
+  },
+}
+`;
+
+exports[`getErrorResponseBodyContemp given: [case4] plain error when: [t0] body is constructed then: snapshot for contract visibility 1`] = `
+{
+  "error": {
+    "_serde": "LambdaEndpointError::contemp",
+    "class": "Error",
+    "message": "simple error",
+  },
+}
+`;

@@ -3,8 +3,10 @@ import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import util from 'util';
 
+import { keyrack } from 'rhachet/keyrack';
+
 // eslint-disable-next-line no-undef
-jest.setTimeout(90000); // since we're calling downstream apis
+jest.setTimeout(90000); // since we are invoking downstream apis
 
 // set console.log to not truncate nested objects
 util.inspect.defaultOptions.depth = 5;
@@ -29,6 +31,14 @@ if (
   process.env.I_KNOW_WHAT_IM_DOING !== 'true'
 )
   throw new Error(`integration.test is not targeting stage 'test'`);
+
+/**
+ * .what = source aws profile from keyrack if available
+ * .why = keyrack manages which profile to use per environment
+ */
+const keyrackYmlPath = join(process.cwd(), '.agent/keyrack.yml');
+if (existsSync(keyrackYmlPath) && !process.env.CI)
+  keyrack.source({ env: 'test', owner: 'ehmpath', mode: 'lenient' });
 
 /**
  * .what = verify that the env has sufficient auth to run the tests if aws is used; otherwise, fail fast

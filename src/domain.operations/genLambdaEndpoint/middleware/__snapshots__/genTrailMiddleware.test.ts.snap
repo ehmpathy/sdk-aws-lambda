@@ -1,0 +1,252 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`genTrailMiddleware given: [case1] wrapped format { event, trail } with exid when: [t0] middleware invoked then: result matches snapshot 1`] = `
+{
+  "input": {
+    "event": {
+      "message": "hello",
+    },
+    "trail": {
+      "exid": "exid:from-caller",
+    },
+  },
+  "outputEvent": {
+    "message": "hello",
+  },
+  "outputExid": "exid:from-caller",
+}
+`;
+
+exports[`genTrailMiddleware given: [case2] wrapped format { event, trail } without exid when: [t0] middleware invoked then: result structure matches snapshot 1`] = `
+{
+  "exidGenerated": true,
+  "input": {
+    "event": {
+      "message": "hello",
+    },
+    "trail": {},
+  },
+  "outputEvent": {
+    "message": "hello",
+  },
+}
+`;
+
+exports[`genTrailMiddleware given: [case3] raw format (legacy caller) when: [t0] middleware invoked then: result structure matches snapshot 1`] = `
+{
+  "exidGenerated": true,
+  "input": {
+    "message": "hello",
+  },
+  "outputEvent": {
+    "message": "hello",
+  },
+}
+`;
+
+exports[`genTrailMiddleware given: [case4] context log has methods when: [t0] middleware invoked then: log methods snapshot 1`] = `
+{
+  "hasDebug": true,
+  "hasError": true,
+  "hasInfo": true,
+  "hasWarn": true,
+}
+`;
+
+exports[`genTrailMiddleware given: [case5] trail has empty stack initially when: [t0] middleware invoked then: trail structure matches snapshot 1`] = `
+{
+  "hasExid": true,
+  "stack": [],
+}
+`;
+
+exports[`genTrailMiddleware given: [case6] event has trail = null (explicit null) when: [t0] middleware invoked then: result structure matches snapshot 1`] = `
+{
+  "exidGenerated": true,
+  "input": {
+    "trail": null,
+  },
+  "outputEvent": {
+    "trail": null,
+  },
+}
+`;
+
+exports[`genTrailMiddleware given: [case7] SQS-style event (Records array, no trail) when: [t0] middleware invoked with SQS event then: result structure matches snapshot 1`] = `
+{
+  "exidGenerated": true,
+  "input": {
+    "Records": [
+      {
+        "body": "{"data": "test"}",
+        "eventSource": "aws:sqs",
+        "messageId": "msg-123",
+      },
+    ],
+  },
+  "outputEvent": {
+    "Records": [
+      {
+        "body": "{"data": "test"}",
+        "eventSource": "aws:sqs",
+        "messageId": "msg-123",
+      },
+    ],
+  },
+}
+`;
+
+exports[`genTrailMiddleware given: [case8] legacy client payload (raw event, no trail wrapper) when: [t0] middleware invoked with legacy payload then: result structure matches snapshot 1`] = `
+{
+  "exidGenerated": true,
+  "input": {
+    "action": "get",
+    "uuid": "123e4567-e89b-12d3-a456-426614174000",
+  },
+  "outputEvent": {
+    "action": "get",
+    "uuid": "123e4567-e89b-12d3-a456-426614174000",
+  },
+}
+`;
+
+exports[`genTrailMiddleware given: [case9] user payload with trail string (collision case) when: [t0] middleware invoked then: result structure matches snapshot 1`] = `
+{
+  "exidGenerated": true,
+  "input": {
+    "destination": "summit",
+    "trail": "mountain path",
+  },
+  "outputEvent": {
+    "destination": "summit",
+    "trail": "mountain path",
+  },
+}
+`;
+
+exports[`genTrailMiddleware given: [case10] API Gateway v1 event when: [t0] middleware invoked then: result structure matches snapshot 1`] = `
+{
+  "exidGenerated": true,
+  "input": {
+    "body": "{"message": "hello"}",
+    "headers": {
+      "content-type": "application/json",
+    },
+    "httpMethod": "POST",
+    "path": "/api/test",
+  },
+  "outputEvent": {
+    "body": "{"message": "hello"}",
+    "headers": {
+      "content-type": "application/json",
+    },
+    "httpMethod": "POST",
+    "path": "/api/test",
+  },
+}
+`;
+
+exports[`genTrailMiddleware given: [case11] wrapped event with nested complex data when: [t0] middleware invoked then: result matches snapshot 1`] = `
+{
+  "input": {
+    "event": {
+      "metadata": {
+        "timestamp": "2026-01-01T00:00:00Z",
+        "version": "1.0",
+      },
+      "users": [
+        {
+          "id": 1,
+          "name": "alice",
+        },
+        {
+          "id": 2,
+          "name": "bob",
+        },
+      ],
+    },
+    "trail": {
+      "exid": "exid:complex-data",
+    },
+  },
+  "outputEvent": {
+    "metadata": {
+      "timestamp": "2026-01-01T00:00:00Z",
+      "version": "1.0",
+    },
+    "users": [
+      {
+        "id": 1,
+        "name": "alice",
+      },
+      {
+        "id": 2,
+        "name": "bob",
+      },
+    ],
+  },
+  "outputExid": "exid:complex-data",
+}
+`;
+
+exports[`genTrailMiddleware given: [case12] payload with extra keys beyond event and trail when: [t0] middleware invoked then: result structure matches snapshot 1`] = `
+{
+  "exidGenerated": true,
+  "input": {
+    "event": {
+      "message": "hello",
+    },
+    "extra": "field",
+    "trail": {
+      "exid": "exid:test",
+    },
+  },
+  "outputEvent": {
+    "event": {
+      "message": "hello",
+    },
+    "extra": "field",
+    "trail": {
+      "exid": "exid:test",
+    },
+  },
+}
+`;
+
+exports[`genTrailMiddleware given: [case13] wrapped event where event is null when: [t0] middleware invoked then: result matches snapshot 1`] = `
+{
+  "input": {
+    "event": null,
+    "trail": {
+      "exid": "exid:null-event",
+    },
+  },
+  "outputEvent": null,
+  "outputExid": "exid:null-event",
+}
+`;
+
+exports[`genTrailMiddleware given: [case14] wrapped event where event is an array when: [t0] middleware invoked then: result matches snapshot 1`] = `
+{
+  "input": {
+    "event": [
+      1,
+      2,
+      3,
+      "batch",
+      "items",
+    ],
+    "trail": {
+      "exid": "exid:array-event",
+    },
+  },
+  "outputEvent": [
+    1,
+    2,
+    3,
+    "batch",
+    "items",
+  ],
+  "outputExid": "exid:array-event",
+}
+`;

@@ -1,0 +1,57 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`e2e: deployed goSurf lambda with trail propagation given: [case1] deployed goSurf lambda via declastruct when: [t0] invoked via askLambdaEndpoint with trail context then: response matches snapshot 1`] = `
+{
+  "comment": "caught a longboard wave in the pacific",
+  "success": true,
+  "trailExid": "exid:cowabunga-turtle-ride",
+}
+`;
+
+exports[`e2e: deployed goSurf lambda with trail propagation given: [case1] deployed goSurf lambda via declastruct when: [t2] invoked with invalid input then: handler returns validation error 1`] = `
+{
+  "message": "BadRequestError: BadRequestError5: validation failed
+
+{
+  "issues": [
+    {
+      "path": "style",
+      "message": "Invalid option: expected one of \\"longboard\\"|\\"shortboard\\"|\\"bodyboard\\"",
+      "code": "invalid_value"
+    }
+  ]
+}
+
+{
+  "service": "svc-seaturtle",
+  "function": "goSurf",
+  "exid": "exid:a1af49d0-b1da-4072-ae65-e82179e95e35",
+  "details": {
+    "issues": [
+      {
+        "path": "style",
+        "message": "Invalid option: expected one of \\"longboard\\"|\\"shortboard\\"|\\"bodyboard\\"",
+        "code": "invalid_value"
+      }
+    ]
+  }
+}",
+  "messageContainsValidation": true,
+  "metadata": {
+    "details": {
+      "issues": [
+        {
+          "code": "invalid_value",
+          "message": "Invalid option: expected one of "longboard"|"shortboard"|"bodyboard"",
+          "path": "style",
+        },
+      ],
+    },
+    "exid": "exid:a1af49d0-b1da-4072-ae65-e82179e95e35",
+    "function": "goSurf",
+    "service": "svc-seaturtle",
+    "stackTrace": undefined,
+  },
+  "name": "Error",
+}
+`;
