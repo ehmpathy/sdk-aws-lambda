@@ -1,0 +1,86 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`user journey: api gateway handler given: [case1] developer creates api gateway handler when: [t0] receives valid POST request then: it returns 200 with json body 1`] = `
+{
+  "body": "{"orderId":"[dynamic]","total":29.97}",
+  "headers": {
+    "Content-Type": "application/json",
+    "Origin-Agent-Cluster": "?1",
+    "Referrer-Policy": "no-referrer",
+    "Strict-Transport-Security": "max-age=15552000; includeSubDomains; preload",
+    "X-Content-Type-Options": "nosniff",
+    "X-DNS-Prefetch-Control": "off",
+    "X-Download-Options": "noopen",
+    "X-Permitted-Cross-Domain-Policies": "none",
+  },
+  "statusCode": 200,
+}
+`;
+
+exports[`user journey: api gateway handler given: [case1] developer creates api gateway handler when: [t1] receives invalid request then: it returns 400 with error response 1`] = `
+{
+  "body": "{"errorMessage":"BadRequestError: validation failed\\n\\n{\\n  \\"issues\\": [\\n    {\\n      \\"path\\": \\"quantity\\",\\n      \\"message\\": \\"Too small: expected number to be >0\\",\\n      \\"code\\": \\"too_small\\"\\n    }\\n  ]\\n}","errorType":"BadRequestError","details":{"issues":[{"path":"quantity","message":"Too small: expected number to be >0","code":"too_small"}]}}",
+  "headers": {
+    "Content-Type": "application/json",
+  },
+  "statusCode": 400,
+}
+`;
+
+exports[`user journey: basic lambda endpoint given: [case1] developer creates a simple handler when: [t0] handler receives valid request then: it returns success response 1`] = `
+{
+  "action": "read",
+  "success": true,
+  "timestamp": "[masked]",
+  "userId": "550e8400-e29b-41d4-a716-446655440000",
+}
+`;
+
+exports[`user journey: basic lambda endpoint given: [case1] developer creates a simple handler when: [t1] handler receives invalid request then: response matches snapshot 1`] = `
+{
+  "details": {
+    "issues": [
+      {
+        "code": "invalid_format",
+        "message": "Invalid UUID",
+        "path": "userId",
+      },
+      {
+        "code": "invalid_value",
+        "message": "Invalid option: expected one of "read"|"write"|"delete"",
+        "path": "action",
+      },
+    ],
+  },
+  "errorMessage": "BadRequestError: validation failed
+
+{
+  "issues": [
+    {
+      "path": "userId",
+      "message": "Invalid UUID",
+      "code": "invalid_format"
+    },
+    {
+      "path": "action",
+      "message": "Invalid option: expected one of \\"read\\"|\\"write\\"|\\"delete\\"",
+      "code": "invalid_value"
+    }
+  ]
+}",
+  "errorType": "BadRequestError",
+}
+`;
+
+exports[`user journey: trail context propagation given: [case1] handler chain with trail context when: [t0] handlers are chained then: they execute in sequence with trail context 1`] = `
+{
+  "firstResult": {
+    "receivedExid": "exid:journey",
+    "stage": "first",
+  },
+  "secondResult": {
+    "receivedExid": "exid:journey",
+    "stage": "second",
+  },
+}
+`;

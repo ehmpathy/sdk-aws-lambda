@@ -15,6 +15,7 @@ const config: Config = {
   reporters: [['default', { summaryThreshold: 0 }]], // ensure we always get a failure summary at the bottom, to avoid the hunt
   testEnvironment: 'node',
   moduleFileExtensions: ['js', 'ts'],
+  moduleDirectories: ['node_modules', 'node_modules/.pnpm/node_modules'],
   moduleNameMapper: {
     '^@src/(.*)$': '<rootDir>/src/$1',
   },
@@ -22,9 +23,10 @@ const config: Config = {
     '^.+\\.(t|j)sx?$': '@swc/jest',
   },
   transformIgnorePatterns: [
-    // here's an example of how to ignore esm module transformation, when needed
-    // 'node_modules/(?!(@octokit|universal-user-agent|before-after-hook)/)',
+    // transform esm-only modules (@middy is esm-only in v7+)
+    'node_modules/(?!(@middy|@middy/core|@middy/util|@middy/http-cors|@middy/http-json-body-parser|@middy/http-response-serializer|@middy/http-security-headers)/)',
   ],
+  extensionsToTreatAsEsm: ['.ts'],
   testMatch: [
     // note: order matters
     '**/*.test.ts',

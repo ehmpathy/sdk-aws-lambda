@@ -1,3 +1,5 @@
+ignorePatterns:
+  - ".build"
 ignores:
   - depcheck
   - declapract
@@ -25,3 +27,5 @@ ignores:
   - rhachet-roles-rhachet
   - tsc-alias
   - yalc
+  - simple-in-memory-cache # type-only import in askLambdaEndpoint context, depcheck can't detect
+  - "@middy/http-json-body-parser" # body parse done in genApiGatewayEventNormalizationMiddleware; dep kept for future alignment

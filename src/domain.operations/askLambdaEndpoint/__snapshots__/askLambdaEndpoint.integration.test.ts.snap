@@ -1,0 +1,24 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`askLambdaEndpoint given: [case1] svc-demo-getEventEcho lambda exists when: [t0] invoked with message and trail then: response matches snapshot 1`] = `
+{
+  "echo": {
+    "message": "hello",
+    "trail": {
+      "exid": "exid:integration-test",
+    },
+  },
+  "meta": {
+    "functionName": "svc-demo-getEventEcho",
+    "invokedAtPresent": true,
+  },
+}
+`;
+
+exports[`askLambdaEndpoint given: [case2] lambda does not exist when: [t0] invoked then: error matches snapshot 1`] = `
+{
+  "hasMetadata": true,
+  "messageContains": "not found",
+  "name": "LambdaEndpointError",
+}
+`;

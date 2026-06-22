@@ -1,0 +1,39 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`getParsedResponse given: [case6] BadRequestError response with validation details when: [t0] parsed with errorType BadRequestError then: it should match snapshot 1`] = `
+[Error: ✋ ConstraintError: validation failed
+
+{
+  "service": "svc-users",
+  "function": "createUser",
+  "exid": "exid:abc123",
+  "stackTrace": "at handler",
+  "details": {
+    "issues": [
+      {
+        "path": "email",
+        "message": "invalid email",
+        "code": "invalid_string"
+      }
+    ]
+  },
+  "causeMessage": "zod validation failed"
+}]
+`;
+
+exports[`getParsedResponse given: [case7] LambdaEndpointError with details when: [t0] parsed with error details then: it should match snapshot 1`] = `
+[LambdaEndpointError: LambdaEndpointError: internal error
+
+{
+  "service": "svc-users",
+  "function": "createUser",
+  "exid": "exid:xyz789",
+  "errorType": "DatabaseError",
+  "stackTrace": "at query",
+  "details": {
+    "table": "users",
+    "operation": "insert"
+  },
+  "causeMessage": "connection timeout"
+}]
+`;

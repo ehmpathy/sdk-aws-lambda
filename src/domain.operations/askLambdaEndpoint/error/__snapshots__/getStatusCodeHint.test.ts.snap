@@ -1,0 +1,50 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`getStatusCodeHint given: [case2] snapshot all hints when: [t0] hints are generated then: all hints match snapshot 1`] = `
+[
+  {
+    "hint": "bad request — check payload format and size",
+    "statusCode": 400,
+  },
+  {
+    "hint": "access denied — check IAM permissions for lambda:InvokeFunction",
+    "statusCode": 403,
+  },
+  {
+    "hint": "function not found — verify service name, access level, and function name are correct",
+    "statusCode": 404,
+  },
+  {
+    "hint": "request timeout — consider increasing client timeout",
+    "statusCode": 408,
+  },
+  {
+    "hint": "payload too large — reduce request size (max 6MB sync, 256KB async)",
+    "statusCode": 413,
+  },
+  {
+    "hint": "rate limit exceeded — implement backoff or request quota increase",
+    "statusCode": 429,
+  },
+  {
+    "hint": "internal error — check lambda function logs in cloudwatch",
+    "statusCode": 500,
+  },
+  {
+    "hint": "service error — lambda service unavailable, retry with backoff",
+    "statusCode": 502,
+  },
+  {
+    "hint": "service unavailable — lambda service temporarily unavailable",
+    "statusCode": 503,
+  },
+  {
+    "hint": "gateway timeout — lambda execution exceeded timeout",
+    "statusCode": 504,
+  },
+  {
+    "hint": "status 418 — check aws lambda documentation for this status code",
+    "statusCode": 418,
+  },
+]
+`;

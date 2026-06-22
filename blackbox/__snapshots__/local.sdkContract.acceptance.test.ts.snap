@@ -1,0 +1,177 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`sdk-aws-lambda given: [case3] genLambdaEndpoint handler when: [t0] invoked with valid input then: it should return result 1`] = `
+{
+  "message": "Hello, World!",
+}
+`;
+
+exports[`sdk-aws-lambda given: [case3] genLambdaEndpoint handler when: [t1] invoked with invalid input then: it returns error response (not throw) 1`] = `
+{
+  "details": {
+    "issues": [
+      {
+        "code": "invalid_type",
+        "message": "Invalid input: expected string, received number",
+        "path": "name",
+      },
+    ],
+  },
+  "errorMessage": "BadRequestError: validation failed
+
+{
+  "issues": [
+    {
+      "path": "name",
+      "message": "Invalid input: expected string, received number",
+      "code": "invalid_type"
+    }
+  ]
+}",
+  "errorType": "BadRequestError",
+}
+`;
+
+exports[`sdk-aws-lambda given: [case3] genLambdaEndpoint handler when: [t2] invoked with null input then: it returns error response for null 1`] = `
+{
+  "details": {
+    "issues": [
+      {
+        "code": "invalid_type",
+        "message": "Invalid input: expected object, received null",
+        "path": "",
+      },
+    ],
+  },
+  "errorMessage": "BadRequestError: validation failed
+
+{
+  "issues": [
+    {
+      "path": "",
+      "message": "Invalid input: expected object, received null",
+      "code": "invalid_type"
+    }
+  ]
+}",
+  "errorType": "BadRequestError",
+}
+`;
+
+exports[`sdk-aws-lambda given: [case3] genLambdaEndpoint handler when: [t3] output validation fails then: it throws UnexpectedCodePathError with validation details 1`] = `
+"UnexpectedCodePathError: output validation failed
+
+{
+  "issues": [
+    {
+      "path": "count",
+      "message": "Invalid input: expected number, received undefined",
+      "code": "invalid_type"
+    }
+  ]
+}"
+`;
+
+exports[`sdk-aws-lambda given: [case4] forApiGateway handler when: [t0] invoked with valid request then: it should return 200 with correct body and headers 1`] = `
+{
+  "body": "{"success":true}",
+  "headers": {
+    "Content-Type": "application/json",
+    "Origin-Agent-Cluster": "?1",
+    "Referrer-Policy": "no-referrer",
+    "Strict-Transport-Security": "max-age=15552000; includeSubDomains; preload",
+    "X-Content-Type-Options": "nosniff",
+    "X-DNS-Prefetch-Control": "off",
+    "X-Download-Options": "noopen",
+    "X-Permitted-Cross-Domain-Policies": "none",
+  },
+  "statusCode": 200,
+}
+`;
+
+exports[`sdk-aws-lambda given: [case4] forApiGateway handler when: [t1] invoked with invalid request body then: it should return 400 with error details 1`] = `
+{
+  "body": "{"errorMessage":"BadRequestError: validation failed\\n\\n{\\n  \\"issues\\": [\\n    {\\n      \\"path\\": \\"data\\",\\n      \\"message\\": \\"Invalid input: expected string, received number\\",\\n      \\"code\\": \\"invalid_type\\"\\n    }\\n  ]\\n}","errorType":"BadRequestError","details":{"issues":[{"path":"data","message":"Invalid input: expected string, received number","code":"invalid_type"}]}}",
+  "headers": {
+    "Content-Type": "application/json",
+  },
+  "statusCode": 400,
+}
+`;
+
+exports[`sdk-aws-lambda given: [case4] forApiGateway handler when: [t2] invoked with malformed JSON body then: it should return 400 with parse error 1`] = `
+{
+  "body": "{"errorMessage":"BadRequestError: validation failed\\n\\n{\\n  \\"issues\\": [\\n    {\\n      \\"path\\": \\"\\",\\n      \\"message\\": \\"Invalid input: expected object, received string\\",\\n      \\"code\\": \\"invalid_type\\"\\n    }\\n  ]\\n}","errorType":"BadRequestError","details":{"issues":[{"path":"","message":"Invalid input: expected object, received string","code":"invalid_type"}]}}",
+  "headers": {
+    "Content-Type": "application/json",
+  },
+  "statusCode": 400,
+}
+`;
+
+exports[`sdk-aws-lambda given: [case4] forApiGateway handler when: [t3] invoked with null body then: it should return 400 for null body 1`] = `
+{
+  "body": "{"errorMessage":"BadRequestError: validation failed\\n\\n{\\n  \\"issues\\": [\\n    {\\n      \\"path\\": \\"\\",\\n      \\"message\\": \\"Invalid input: expected object, received null\\",\\n      \\"code\\": \\"invalid_type\\"\\n    }\\n  ]\\n}","errorType":"BadRequestError","details":{"issues":[{"path":"","message":"Invalid input: expected object, received null","code":"invalid_type"}]}}",
+  "headers": {
+    "Content-Type": "application/json",
+  },
+  "statusCode": 400,
+}
+`;
+
+exports[`sdk-aws-lambda given: [case4] forApiGateway handler when: [t4] invoked with empty object body then: it should return 400 for empty body 1`] = `
+{
+  "body": "{"errorMessage":"BadRequestError: validation failed\\n\\n{\\n  \\"issues\\": [\\n    {\\n      \\"path\\": \\"data\\",\\n      \\"message\\": \\"Invalid input: expected string, received undefined\\",\\n      \\"code\\": \\"invalid_type\\"\\n    }\\n  ]\\n}","errorType":"BadRequestError","details":{"issues":[{"path":"data","message":"Invalid input: expected string, received undefined","code":"invalid_type"}]}}",
+  "headers": {
+    "Content-Type": "application/json",
+  },
+  "statusCode": 400,
+}
+`;
+
+exports[`sdk-aws-lambda given: [case5] payload format compatibility - wrapped format when: [t0] invoked with wrapped format { event, trail } then: result matches snapshot 1`] = `
+{
+  "echo": "hello from wrapped",
+  "exid": "exid:test-wrapped-123",
+}
+`;
+
+exports[`sdk-aws-lambda given: [case5] payload format compatibility - wrapped format when: [t1] invoked with wrapped format without exid then: result structure matches snapshot 1`] = `
+{
+  "echo": "hello no exid",
+  "exid": StringMatching /\\^exid:/,
+}
+`;
+
+exports[`sdk-aws-lambda given: [case6] payload format compatibility - raw format (legacy) when: [t0] invoked with raw payload (legacy client) then: result structure matches snapshot 1`] = `
+{
+  "echo": "hello from legacy",
+  "exid": StringMatching /\\^exid:/,
+}
+`;
+
+exports[`sdk-aws-lambda given: [case7] payload format compatibility - user data collision when: [t0] user event has trail as string (not our trail object) then: result matches snapshot 1`] = `
+{
+  "exidGenerated": true,
+  "receivedDestination": "summit",
+  "receivedTrail": "mountain path",
+}
+`;
+
+exports[`sdk-aws-lambda given: [case8] payload format compatibility - SQS-style events when: [t0] invoked with SQS event structure then: result matches snapshot 1`] = `
+{
+  "exidGenerated": true,
+  "processedCount": 2,
+}
+`;
+
+exports[`sdk-aws-lambda given: [case9] payload format - extra keys beyond event and trail when: [t0] payload has event, trail, and extra keys then: result matches snapshot 1`] = `
+{
+  "exidGenerated": true,
+  "receivedKeys": [
+    "event",
+    "trail",
+    "extra",
+  ],
+}
+`;

@@ -2,8 +2,10 @@ import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import util from 'util';
 
+import { keyrack } from 'rhachet/keyrack';
+
 // eslint-disable-next-line no-undef
-jest.setTimeout(90000); // we're calling downstream apis
+jest.setTimeout(90000); // tests call downstream apis
 
 // set console.log to not truncate nested objects
 util.inspect.defaultOptions.depth = 5;
@@ -14,6 +16,16 @@ util.inspect.defaultOptions.depth = 5;
  */
 if (!existsSync(join(process.cwd(), 'package.json')))
   throw new Error('no package.json found in cwd. are you @gitroot?');
+
+/**
+ * .what = source credentials from keyrack for test env
+ * .why =
+ *   - keyrack manages which profile to use per environment
+ *   - fail fast with helpful error if keyrack locked or keys absent
+ */
+const keyrackYmlPath = join(process.cwd(), '.agent/keyrack.yml');
+if (existsSync(keyrackYmlPath))
+  keyrack.source({ env: 'test', owner: 'ehmpath', mode: 'strict' });
 
 /**
  * .what = verify that the env has sufficient auth to run the tests if aws is used; otherwise, fail fast
