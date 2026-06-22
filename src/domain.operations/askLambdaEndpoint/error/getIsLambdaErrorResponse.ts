@@ -44,7 +44,12 @@ export const getIsContempErrorResponse = (
   'error' in parsed &&
   typeof (parsed as Record<string, unknown>).error === 'object' &&
   (parsed as Record<string, unknown>).error !== null &&
-  ((parsed as Record<string, Record<string, unknown>>).error as Record<string, unknown>)._serde === 'LambdaEndpointError::contemp';
+  (
+    (parsed as Record<string, Record<string, unknown>>).error as Record<
+      string,
+      unknown
+    >
+  )._serde === 'LambdaEndpointError::contemp';
 
 /**
  * .what = checks if parsed response is an ancient lambda error response
@@ -54,4 +59,3 @@ export const getIsAncientErrorResponse = (
   parsed: unknown,
 ): parsed is LambdaErrorResponseAncient =>
   typeof parsed === 'object' && parsed !== null && 'errorMessage' in parsed;
-

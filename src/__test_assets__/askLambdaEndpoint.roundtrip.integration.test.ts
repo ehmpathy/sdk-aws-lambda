@@ -83,7 +83,9 @@ describe('askLambdaEndpoint round-trip', () => {
             name: caught instanceof Error ? caught.name : undefined,
             message: caught instanceof Error ? caught.message : undefined,
             metadata:
-              caught instanceof LambdaEndpointError ? caught.metadata : undefined,
+              caught instanceof LambdaEndpointError
+                ? caught.metadata
+                : undefined,
           };
         });
 

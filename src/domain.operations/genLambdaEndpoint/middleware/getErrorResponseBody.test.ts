@@ -163,7 +163,9 @@ describe('getErrorResponseBodyContemp', () => {
         expect(result.error.class).toEqual('ConstraintError');
         expect(result.error.cause).toBeUndefined();
         expect(result.error.message).toContain('validation failed');
-        expect(result.error.details).toEqual({ metadata: { issues: ['a', 'b'] } });
+        expect(result.error.details).toEqual({
+          metadata: { issues: ['a', 'b'] },
+        });
       });
     });
   });

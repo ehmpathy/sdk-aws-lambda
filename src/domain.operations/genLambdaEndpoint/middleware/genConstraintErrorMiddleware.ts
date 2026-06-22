@@ -45,10 +45,11 @@ export const genConstraintErrorMiddleware = (opts?: {
     const isContempCaller = context.isContempCaller ?? false;
 
     // build error response body via transformer based on caller type
-    const body: LambdaEndpointErrorResponseBodyContemp | LambdaEndpointErrorResponseBodyAncient =
-      isContempCaller
-        ? getErrorResponseBodyContemp({ error, errorClass: 'ConstraintError' })
-        : getErrorResponseBodyAncient({ error, errorType: 'BadRequestError' });
+    const body:
+      | LambdaEndpointErrorResponseBodyContemp
+      | LambdaEndpointErrorResponseBodyAncient = isContempCaller
+      ? getErrorResponseBodyContemp({ error, errorClass: 'ConstraintError' })
+      : getErrorResponseBodyAncient({ error, errorType: 'BadRequestError' });
 
     // for API Gateway: return HTTP response
     if (opts?.apiGateway) {

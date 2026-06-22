@@ -7,18 +7,21 @@ import {
 
 describe('getIsContempErrorResponse', () => {
   given('[case1] contemp error with _serde discriminator', () => {
-    when('[t0] parsed has { error: { _serde: "LambdaEndpointError::contemp" } }', () => {
-      then('returns true', () => {
-        const result = getIsContempErrorResponse({
-          error: {
-            _serde: 'LambdaEndpointError::contemp',
-            class: 'ConstraintError',
-            message: 'validation failed',
-          },
+    when(
+      '[t0] parsed has { error: { _serde: "LambdaEndpointError::contemp" } }',
+      () => {
+        then('returns true', () => {
+          const result = getIsContempErrorResponse({
+            error: {
+              _serde: 'LambdaEndpointError::contemp',
+              class: 'ConstraintError',
+              message: 'validation failed',
+            },
+          });
+          expect(result).toBe(true);
         });
-        expect(result).toBe(true);
-      });
-    });
+      },
+    );
   });
 
   given('[case2] contemp error with optional fields', () => {

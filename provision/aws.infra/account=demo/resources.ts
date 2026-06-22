@@ -70,7 +70,8 @@ export const getResources = async (): Promise<DomainEntity<any>[]> => {
     role: RefByUnique.as<typeof DeclaredAwsIamRole>(lambdaRole),
     envars: { NODE_ENV: 'test' },
     code: genDeclaredAwsLambdaCode({
-      zipUri: 'provision/aws.infra/account=demo/.assets/lambda.echoAncient.handler.zip',
+      zipUri:
+        'provision/aws.infra/account=demo/.assets/lambda.echoAncient.handler.zip',
     }),
     tags: { managedBy: 'declastruct', purpose: 'round-trip-test' },
   });
@@ -85,7 +86,8 @@ export const getResources = async (): Promise<DomainEntity<any>[]> => {
     role: RefByUnique.as<typeof DeclaredAwsIamRole>(lambdaRole),
     envars: { NODE_ENV: 'test' },
     code: genDeclaredAwsLambdaCode({
-      zipUri: 'provision/aws.infra/account=demo/.assets/lambda.echoContemp.handler.zip',
+      zipUri:
+        'provision/aws.infra/account=demo/.assets/lambda.echoContemp.handler.zip',
     }),
     tags: { managedBy: 'declastruct', purpose: 'round-trip-test' },
   });

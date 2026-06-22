@@ -1,7 +1,7 @@
 import {
   InvokeCommand,
-  LambdaClient,
   type InvokeCommandOutput,
+  LambdaClient,
 } from '@aws-sdk/client-lambda';
 
 import { LambdaEndpointError } from '../domain.objects/LambdaEndpointError';
