@@ -1,0 +1,33 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`genLambdaEndpoint given: [case2] invalid input when: [t0] handler invoked then: it should return error response (not throw) 1`] = `
+{
+  "errorMessageContains": "validation failed",
+  "errorType": "BadRequestError",
+}
+`;
+
+exports[`genLambdaEndpoint given: [case3] invalid output when: [t0] handler returns wrong shape then: it should throw MalfunctionError 1`] = `
+{
+  "message": "💥 MalfunctionError: output validation failed
+
+{
+  "issues": [
+    {
+      "path": "data",
+      "message": "Invalid input: expected string, received number",
+      "code": "invalid_type"
+    }
+  ]
+}",
+  "metadata": {
+    "issues": [
+      {
+        "code": "invalid_type",
+        "message": "Invalid input: expected string, received number",
+        "path": "data",
+      },
+    ],
+  },
+}
+`;

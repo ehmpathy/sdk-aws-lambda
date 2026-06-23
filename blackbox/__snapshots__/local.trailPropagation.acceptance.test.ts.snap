@@ -1,0 +1,29 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`trail threading given: [case1] client invokes with exid when: [t0] invoked with trail.exid then: handler receives client exid via trail context 1`] = `
+{
+  "receivedExid": "exid:client-provided",
+}
+`;
+
+exports[`trail threading given: [case2] client invokes without context when: [t0] invoked without trail then: handler auto-generates exid 1`] = `
+{
+  "hasExid": true,
+}
+`;
+
+exports[`trail threading given: [case3] trail passes through handler chain when: [t0] outer handler invokes inner then: exid propagates through chain 1`] = `
+{
+  "innerExid": "exid:chain-root",
+  "outerExid": "exid:chain-root",
+}
+`;
+
+exports[`trail threading given: [case4] trail context has log methods when: [t0] handler receives log context then: log has all standard methods 1`] = `
+{
+  "hasDebug": true,
+  "hasError": true,
+  "hasInfo": true,
+  "hasWarn": true,
+}
+`;

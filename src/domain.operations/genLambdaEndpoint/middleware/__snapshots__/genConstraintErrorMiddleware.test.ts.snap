@@ -1,0 +1,65 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`genConstraintErrorMiddleware given: [case1] BadRequestError thrown (standard handler) when: [t0] middleware handles error then: it should return error response object 1`] = `
+{
+  "errorMessage": "BadRequestError: Invalid input",
+  "errorType": "BadRequestError",
+}
+`;
+
+exports[`genConstraintErrorMiddleware given: [case2] BadRequestError thrown (apiGateway mode) when: [t0] middleware handles error then: it should return 400 with JSON body 1`] = `
+{
+  "body": "{"errorMessage":"BadRequestError: Invalid input","errorType":"BadRequestError"}",
+  "headers": {
+    "Content-Type": "application/json",
+  },
+  "statusCode": 400,
+}
+`;
+
+exports[`genConstraintErrorMiddleware given: [case8] ConstraintError thrown (standard handler) when: [t0] middleware handles error then: it should return error response object 1`] = `
+{
+  "errorMessage": "✋ ConstraintError: Invalid input",
+  "errorType": "BadRequestError",
+}
+`;
+
+exports[`genConstraintErrorMiddleware given: [case9] ConstraintError thrown (apiGateway mode) when: [t0] middleware handles error then: it should return 400 with JSON body 1`] = `
+{
+  "body": "{"errorMessage":"✋ ConstraintError: Invalid input","errorType":"BadRequestError"}",
+  "headers": {
+    "Content-Type": "application/json",
+  },
+  "statusCode": 400,
+}
+`;
+
+exports[`genConstraintErrorMiddleware given: [case11] contemp caller (isContempCaller: true) when: [t0] ConstraintError thrown then: it should return errorType: ConstraintError (modern semantics) 1`] = `
+{
+  "error": {
+    "_serde": "LambdaEndpointError::contemp",
+    "class": "ConstraintError",
+    "message": "✋ ConstraintError: Invalid input",
+  },
+}
+`;
+
+exports[`genConstraintErrorMiddleware given: [case11] contemp caller (isContempCaller: true) when: [t1] BadRequestError thrown (legacy error) then: it should still return errorType: ConstraintError (modern semantics) 1`] = `
+{
+  "error": {
+    "_serde": "LambdaEndpointError::contemp",
+    "class": "ConstraintError",
+    "message": "BadRequestError: Invalid input",
+  },
+}
+`;
+
+exports[`genConstraintErrorMiddleware given: [case11] contemp caller (isContempCaller: true) when: [t2] apiGateway mode then: it should return 400 with errorType: ConstraintError 1`] = `
+{
+  "body": "{"error":{"_serde":"LambdaEndpointError::contemp","class":"ConstraintError","message":"✋ ConstraintError: Invalid input"}}",
+  "headers": {
+    "Content-Type": "application/json",
+  },
+  "statusCode": 400,
+}
+`;

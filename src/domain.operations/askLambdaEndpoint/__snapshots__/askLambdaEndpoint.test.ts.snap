@@ -1,0 +1,135 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`askLambdaEndpoint given: [case1] successful invocation when: [t0] lambda returns valid response then: it should return parsed response 1`] = `
+{
+  "id": "user-123",
+  "name": "Alice",
+}
+`;
+
+exports[`askLambdaEndpoint given: [case2] lambda returns function error when: [t0] lambda response has FunctionError then: it should throw with error details 1`] = `
+{
+  "message": "LambdaEndpointError: User not found
+
+{
+  "service": "svc-user",
+  "function": "getUser",
+  "exid": "exid:[masked]",
+  "errorType": "NotFoundError"
+}",
+  "metadata": {
+    "errorType": "NotFoundError",
+    "exid": "[masked]",
+    "function": "getUser",
+    "service": "svc-user",
+    "stackTrace": undefined,
+  },
+}
+`;
+
+exports[`askLambdaEndpoint given: [case4] custom lambda client when: [t0] context provides lambda client then: it should use provided client 1`] = `
+{
+  "custom": true,
+}
+`;
+
+exports[`askLambdaEndpoint given: [case5] function name generation when: [t0] service and function provided then: it should generate correct function name 1`] = `
+{
+  "functionName": "svc-invoice-prod-createInvoice",
+}
+`;
+
+exports[`askLambdaEndpoint given: [case6] lambda invocation failure paths when: [t0] lambda returns 404 (function not found) then: it should throw with actionable hint 1`] = `
+{
+  "message": "LambdaEndpointError: lambda invocation failed: function not found — verify service name, access level, and function name are correct
+
+{
+  "service": "svc-absent",
+  "function": "absentFn",
+  "exid": "exid:[masked]",
+  "statusCode": 404
+}",
+  "metadata": {
+    "exid": "[masked]",
+    "function": "absentFn",
+    "service": "svc-absent",
+    "statusCode": 404,
+  },
+}
+`;
+
+exports[`askLambdaEndpoint given: [case6] lambda invocation failure paths when: [t1] lambda returns 403 (access denied) then: it should throw with IAM permission hint 1`] = `
+{
+  "message": "LambdaEndpointError: lambda invocation failed: access denied — check IAM permissions for lambda:InvokeFunction
+
+{
+  "service": "svc-denied",
+  "function": "deniedFn",
+  "exid": "exid:[masked]",
+  "statusCode": 403
+}",
+  "metadata": {
+    "exid": "[masked]",
+    "function": "deniedFn",
+    "service": "svc-denied",
+    "statusCode": 403,
+  },
+}
+`;
+
+exports[`askLambdaEndpoint given: [case6] lambda invocation failure paths when: [t2] lambda returns 429 (rate limited) then: it should throw with backoff hint 1`] = `
+{
+  "message": "LambdaEndpointError: lambda invocation failed: rate limit exceeded — implement backoff or request quota increase
+
+{
+  "service": "svc-throttle",
+  "function": "throttleFn",
+  "exid": "exid:[masked]",
+  "statusCode": 429
+}",
+  "metadata": {
+    "exid": "[masked]",
+    "function": "throttleFn",
+    "service": "svc-throttle",
+    "statusCode": 429,
+  },
+}
+`;
+
+exports[`askLambdaEndpoint given: [case6] lambda invocation failure paths when: [t3] lambda returns 500 (internal error) then: it should throw with cloudwatch hint 1`] = `
+{
+  "message": "LambdaEndpointError: lambda invocation failed: internal error — check lambda function logs in cloudwatch
+
+{
+  "service": "svc-error",
+  "function": "errorFn",
+  "exid": "exid:[masked]",
+  "statusCode": 500
+}",
+  "metadata": {
+    "exid": "[masked]",
+    "function": "errorFn",
+    "service": "svc-error",
+    "statusCode": 500,
+  },
+}
+`;
+
+exports[`askLambdaEndpoint given: [case6] lambda invocation failure paths when: [t4] lambda returns 504 (gateway timeout) then: it should throw with timeout hint 1`] = `
+{
+  "message": "LambdaEndpointError: lambda invocation failed: gateway timeout — lambda execution exceeded timeout
+
+{
+  "service": "svc-timeout",
+  "function": "timeoutFn",
+  "exid": "exid:[masked]",
+  "statusCode": 504
+}",
+  "metadata": {
+    "exid": "[masked]",
+    "function": "timeoutFn",
+    "service": "svc-timeout",
+    "statusCode": 504,
+  },
+}
+`;
