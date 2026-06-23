@@ -2,7 +2,7 @@
   "name": "sdk-aws-lambda",
   "author": "ehmpathy",
   "description": "a simple and opinionated sdk for aws lambda. define endpoints, ask endpoints, auto-propagate trace-ids.",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "repository": "ehmpathy/sdk-aws-lambda",
   "homepage": "https://github.com/ehmpathy/sdk-aws-lambda",
   "keywords": [
