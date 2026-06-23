@@ -20,12 +20,22 @@ if (!existsSync(join(process.cwd(), 'package.json')))
 /**
  * .what = source credentials from keyrack for test env
  * .why =
- *   - keyrack manages which profile to use per environment
+ *   - auto-inject keys into process.env
  *   - fail fast with helpful error if keyrack locked or keys absent
+ * .note
+ *   - use lenient mode if aws credentials already present (e.g., ci oidc)
+ *   - keyrack lists AWS_PROFILE but ci uses oidc which sets ACCESS_KEY_ID
  */
 const keyrackYmlPath = join(process.cwd(), '.agent/keyrack.yml');
+const hasAwsCredentials = !!(
+  process.env.AWS_ACCESS_KEY_ID || process.env.AWS_PROFILE
+);
 if (existsSync(keyrackYmlPath))
-  keyrack.source({ env: 'test', owner: 'ehmpath', mode: 'strict' });
+  keyrack.source({
+    env: 'test',
+    owner: 'ehmpath',
+    mode: hasAwsCredentials ? 'lenient' : 'strict',
+  });
 
 /**
  * .what = verify that the env has sufficient auth to run the tests if aws is used; otherwise, fail fast
