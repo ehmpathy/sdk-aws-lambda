@@ -1,6 +1,6 @@
 /**
  * .what = test lambda handler for sdk-aws-lambda integration tests
- * .why = enables real invocation tests without mock aws lambda client
+ * .why = enables real invocation tests without mock aws lambda sdk
  *
  * .note = payload format matches askLambdaEndpoint: { event: TRequest, trail: { exid } }
  */

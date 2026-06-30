@@ -35,6 +35,9 @@ importers:
       helpful-errors:
         specifier: 1.7.3
         version: 1.7.3
+      sdk-environment:
+        specifier: 0.1.5
+        version: 0.1.5(@aws-sdk/client-account@3.1042.0)(@aws-sdk/client-iam@3.1042.0)
       sdk-logs:
         specifier: 0.9.0
         version: 0.9.0
@@ -91,8 +94,8 @@ importers:
         specifier: ^0.13.18
         version: 0.13.18
       declapract-typescript-ehmpathy:
-        specifier: ^0.47.14
-        version: 0.47.14(@huggingface/transformers@4.0.0)(@tensorflow/tfjs@4.22.0(seedrandom@3.0.5))(@types/node@22.15.21)(declapract@0.13.18)(esbuild@0.28.1)(rhachet@1.41.22(@huggingface/transformers@4.0.0)(@tensorflow/tfjs@4.22.0(seedrandom@3.0.5))(@types/node@22.15.21)(zod@4.4.3))
+        specifier: ^0.49.4
+        version: 0.49.4(declapract@0.13.18)
       declastruct:
         specifier: 1.7.3
         version: 1.7.3(domain-objects@0.31.10)
@@ -3392,10 +3395,10 @@ packages:
       supports-color:
         optional: true
 
-  declapract-typescript-ehmpathy@0.47.14:
-    resolution: {integrity: sha512-upwFom1n6eufD4pJdoYruXxfnTQI2lHAkGKCXerTo0KRWbCWTRMlL2o1kmjUKb7ha09yIyPxuZXGWQq+AON3JQ==}
+  declapract-typescript-ehmpathy@0.49.4:
+    resolution: {integrity: sha512-DS3n3K++UdUxEBj1e15NTlm2bPWAHO/eLBGF52Q72Cd3mMWJxCPfp4tS7sBFRynnHzqK/NsT82vUxMgJiTyVgQ==}
     peerDependencies:
-      declapract: '>=0.13.3'
+      declapract: '>=0.13.26'
 
   declapract@0.13.18:
     resolution: {integrity: sha512-BmLVOeZ22KPvTphIDxcvo7srJED6WcEuUl0Fv42MXMJLa2gZltl9xZ3T9VU7CzFI/BdALknyv04E1R5JSGUXRg==}
@@ -3513,6 +3516,14 @@ packages:
 
   domain-objects@0.31.10:
     resolution: {integrity: sha512-5Bk53LAVvcLBPeTGaBKBdvXwSzpfKk2t9BDnPP4eSuENl7qdXf+eVk3zeSfxPUygKSgZPN1z1o4QQZIcw85vKw==}
+    engines: {node: '>=8.0.0'}
+
+  domain-objects@0.31.11:
+    resolution: {integrity: sha512-jRHVFk8ZM1ObkSBtSM5QrygqWOBh66dBZm4iuFGdTGv3gotPvBZKASe3eXSBdBWXsL+ahdF2h+OdqD0IAnJVcg==}
+    engines: {node: '>=8.0.0'}
+
+  domain-objects@0.31.13:
+    resolution: {integrity: sha512-6i4w5gIV6lgOw9uEzETYW9Ejbm7H1OyQAwjE5zX6yPxUyTXT9CYAmrRuAIEmX83hy+YfK7gsh+6+6Ew7vKOCDA==}
     engines: {node: '>=8.0.0'}
 
   domain-objects@0.31.3:
@@ -4123,6 +4134,10 @@ packages:
 
   iso-time@1.11.5:
     resolution: {integrity: sha512-x+Y+d1taKj9d1+OnEHrSY2NUWFdtehA5GB/Zz05Qkza4YgW4H2AWPa5/zbKtVLPqdtmoFKYFc7f3c/rmEHq+dg==}
+    engines: {node: '>=8.0.0'}
+
+  iso-time@1.11.7:
+    resolution: {integrity: sha512-61n196r6r/Zl9wg6S/GIz6f0VHXikh/9Fq8UikspUzakhjpIxsObnNkkv3WfPcfFpl3RjocyNHwt2qK7xhZC4Q==}
     engines: {node: '>=8.0.0'}
 
   istanbul-lib-coverage@3.2.2:
@@ -5082,6 +5097,19 @@ packages:
     resolution: {integrity: sha512-MSDFIxWcJFP9dVWkniTmBUwpv9Y8/zU+abid2qscffHkSUgO1pbf2o+sxWaCEDd73pXvBFDyYtez+tvU+xso/g==}
     engines: {node: '>=8.0.0'}
 
+  sdk-environment@0.1.5:
+    resolution: {integrity: sha512-nl5Ts94A5WL0mrTvrRmPH7PTvfaympt4aOCCm8fVJ5oIurpsb7AxnFqv+OgDVbpmM5p2uT0KR431Re/h4LsHCg==}
+    engines: {node: '>=8.0.0'}
+    hasBin: true
+    peerDependencies:
+      '@aws-sdk/client-account': '>=3'
+      '@aws-sdk/client-iam': '>=3'
+    peerDependenciesMeta:
+      '@aws-sdk/client-account':
+        optional: true
+      '@aws-sdk/client-iam':
+        optional: true
+
   sdk-logs@0.9.0:
     resolution: {integrity: sha512-/17ra5Rkmm2Amcwy1548EspcqkTC+aXND06CmwG0jp7L41DxsJQ27wXDDhwxZGpKxMuXGsHwVWokF8a8vEiKBg==}
     engines: {node: '>=8.0.0'}
@@ -5157,6 +5185,14 @@ packages:
     resolution: {integrity: sha512-FizjX3DqiWquodrMGgdpo7GBk9x745e/haifLJper3k1sC4Y9pibn8ysKgcfCtQNtga7V/HDsKNYnP6qyFW8rw==}
     engines: {node: '>=8.0.0'}
 
+  simple-in-memory-cache@0.4.2:
+    resolution: {integrity: sha512-NJw/bOHh1LtD7z4eSR4DIepppfMe5GizfVGrxuHaCa+sR/pDtGT28dsvX7KpH2dCMl29HCgYK1ITr8BAGFUXEA==}
+    engines: {node: '>=8.0.0'}
+
+  simple-in-memory-cache@0.4.3:
+    resolution: {integrity: sha512-NiR2Mnq/YPhMHQ6gxmr7ef+xJArMOJJPCbg8Dy1x18JWZ40Neravr+SBXv3TiDD6onolDInCQao9aaNbmq3MGA==}
+    engines: {node: '>=8.0.0'}
+
   simple-log-methods@0.6.1:
     resolution: {integrity: sha512-POHiGnZqnQSivzgSDJfVE3/GAVPUEG0zc5vRLKIPpTnIQ6IY0QhOJOO3Ur0rKgXzwU/hlYpqabkELR62CauMhA==}
     engines: {node: '>=8.0.0'}
@@ -5165,12 +5201,20 @@ packages:
     resolution: {integrity: sha512-XPJdeSlIPk4q52zTT9j1nNtZh9g6GQprABrzGEVqui7BmoQ5WcXa9VFg2ZKRg+yYAs4wH5sGcFJNAdNGznp1cQ==}
     engines: {node: '>=8.0.0'}
 
+  simple-log-methods@0.6.12:
+    resolution: {integrity: sha512-aRkzbdFaOe2KdLyFq6H6aaNsAOoNO56krtBTpB4Lbw8GXX950Vt/hlZ7rCdcBRDxMW84xQOl1ozaYO2eqKERgg==}
+    engines: {node: '>=8.0.0'}
+
   simple-log-methods@0.6.2:
     resolution: {integrity: sha512-wzlQbbT7Emv3N3+iCeukKtQHMM6mPndg9CqzOppQnm4jEPNiaSJUkYz2wM3oOu7Q1RlLwt3qO02oPGBrZ4JLnw==}
     engines: {node: '>=8.0.0'}
 
   simple-log-methods@0.6.9:
     resolution: {integrity: sha512-VeI9erbjgKtZ8bwdpHqkqgZomVqchZHFWidN3/5Jmb6UcKHKdduiADPAVqIwvFmobFOEtIyybyVw5bEaZpKODw==}
+    engines: {node: '>=8.0.0'}
+
+  simple-on-disk-cache@1.7.10:
+    resolution: {integrity: sha512-z/uFEnbxblAa0j3PmEwEZyKV73YwEG0vEgcFkjy4ppjlPhaL5oi6G5DvoBua5aFYEp8kjDOy4OpLPux4J6PWqA==}
     engines: {node: '>=8.0.0'}
 
   simple-on-disk-cache@1.7.3:
@@ -5288,6 +5332,10 @@ packages:
 
   test-fns@1.15.0:
     resolution: {integrity: sha512-zC/qUA2lwfiXoQ00Ws8yD8LPA7p3n2a+Dl7wmI4iTXz4HbrU52riPY+AceGWgCAINs/cJ7cs9jnnASSPBwyGpg==}
+    engines: {node: '>=8.0.0'}
+
+  test-fns@1.15.7:
+    resolution: {integrity: sha512-wfILa+sblkaG3QQS9MEX+ZPxKrAOAoNVqSxi2OdIdHMQ1hFyKSSHRxfgCwoRujgcH1D6H1liHE+WO8+yJuQkbg==}
     engines: {node: '>=8.0.0'}
 
   test-fns@1.15.8:
@@ -5410,6 +5458,10 @@ packages:
     resolution: {integrity: sha512-9/E7WpYVjJxIisH2lSpHnqwetk6SxVx2M+EI1dv0SMp3ztB6Qg4zrYwURepJHyt/zNRTb7XoGoo1H5Bxq9wI5Q==}
     engines: {node: '>=8.0.0'}
 
+  type-fns@1.21.3:
+    resolution: {integrity: sha512-aB66HI+uWPsU/XuCHUY2ShCdnNVyDQT2F3OSc2AyezMqQSIC9ww8UsnGFxvfAh54ku5PL4gHtBMueGWanbkSAA==}
+    engines: {node: '>=8.0.0'}
+
   typescript@5.4.5:
     resolution: {integrity: sha512-vcI4UpRgg81oIRUFwR0WSIHKt11nJ7SAVlYNIu+QpqeyXP+gpQJy/Z4+F0aGxSE4MqwjyXvW/TzgkLAx2AGHwQ==}
     engines: {node: '>=14.17'}
@@ -5515,12 +5567,20 @@ packages:
     engines: {node: '>= 8'}
     hasBin: true
 
+  with-bottleneck@0.1.1:
+    resolution: {integrity: sha512-5XFMYd79rB1cNJ6uY+VI9whoAZJ/0TkICqvV/xFcU8izR4/AM0bTRgARR4X/1uEEgnBDgfxjFPLB4A4qiMJ90g==}
+    engines: {node: '>=8.0.0'}
+
   with-simple-cache@0.15.1:
     resolution: {integrity: sha512-vaGOS8GikOyCEnmseWcX0xG/rcagv7gj/2PyFV1w2H3qnPZ3cfqt98GBWr/QCam+zHDglvUZ9hLyfYYZrMw7tg==}
     engines: {node: '>=8.0.0'}
 
   with-simple-cache@0.15.3:
     resolution: {integrity: sha512-qOVl6RKcp8juicmaaW9H06+OnQtkK8dhl3EHWupNjp5BPuyhMXDIZjWNozoyn/Xq3yu+QhOWvik7HTr2A+XW3Q==}
+    engines: {node: '>=8.0.0'}
+
+  with-simple-cache@0.16.2:
+    resolution: {integrity: sha512-JuNpP+gLUeZ7XWWmHYD3fSnoHdcL7ttDomEYUgA7Rfz40hG+IuaxX5SQcHUFYN+HfVFf1Rewb/KWCM+FvkONIA==}
     engines: {node: '>=8.0.0'}
 
   with-simple-caching@0.14.2:
@@ -10828,24 +10888,15 @@ snapshots:
     dependencies:
       ms: 2.1.3
 
-  declapract-typescript-ehmpathy@0.47.14(@huggingface/transformers@4.0.0)(@tensorflow/tfjs@4.22.0(seedrandom@3.0.5))(@types/node@22.15.21)(declapract@0.13.18)(esbuild@0.28.1)(rhachet@1.41.22(@huggingface/transformers@4.0.0)(@tensorflow/tfjs@4.22.0(seedrandom@3.0.5))(@types/node@22.15.21)(zod@4.4.3)):
+  declapract-typescript-ehmpathy@0.49.4(declapract@0.13.18):
     dependencies:
       declapract: 0.13.18
-      domain-objects: 0.31.7(@huggingface/transformers@4.0.0)(@tensorflow/tfjs@4.22.0(seedrandom@3.0.5))(@types/node@22.15.21)(rhachet@1.41.22(@huggingface/transformers@4.0.0)(@tensorflow/tfjs@4.22.0(seedrandom@3.0.5))(@types/node@22.15.21)(zod@4.4.3))
-      esbuild-register: 3.6.0(esbuild@0.28.1)
+      domain-objects: 0.31.13
       expect: 29.4.2
       flat: 5.0.2
-      helpful-errors: 1.5.3
+      helpful-errors: 1.7.3
+      test-fns: 1.15.7
       yaml: 2.8.2
-    transitivePeerDependencies:
-      - '@huggingface/transformers'
-      - '@tensorflow/tfjs'
-      - '@types/node'
-      - aws-crt
-      - esbuild
-      - rhachet
-      - supports-color
-      - ws
 
   declapract@0.13.18:
     dependencies:
@@ -11035,7 +11086,7 @@ snapshots:
       '@types/yup': 0.29.14
       change-case: 4.1.2
       cross-sha256: 1.2.0
-      type-fns: 1.21.2
+      type-fns: 1.21.3
 
   domain-objects@0.31.0:
     dependencies:
@@ -11044,13 +11095,27 @@ snapshots:
       change-case: 4.1.2
       cross-sha256: 1.2.0
       helpful-errors: 1.7.3
-      type-fns: 1.21.2
+      type-fns: 1.21.3
 
   domain-objects@0.31.10:
     dependencies:
       change-case: 4.1.2
       helpful-errors: 1.7.2
       type-fns: 1.21.0
+      uuid-fns: 1.1.3
+
+  domain-objects@0.31.11:
+    dependencies:
+      change-case: 4.1.2
+      helpful-errors: 1.7.3
+      type-fns: 1.21.2
+      uuid-fns: 1.1.3
+
+  domain-objects@0.31.13:
+    dependencies:
+      change-case: 4.1.2
+      helpful-errors: 1.7.3
+      type-fns: 1.21.2
       uuid-fns: 1.1.3
 
   domain-objects@0.31.3:
@@ -11797,6 +11862,15 @@ snapshots:
       helpful-errors: 1.7.2
       simple-log-methods: 0.6.10
       type-fns: 1.21.0
+
+  iso-time@1.11.7:
+    dependencies:
+      date-fns: 3.6.0
+      domain-glossaries: 1.0.0
+      domain-objects: 0.31.11
+      helpful-errors: 1.7.3
+      simple-log-methods: 0.6.12
+      type-fns: 1.21.2
 
   istanbul-lib-coverage@3.2.2: {}
 
@@ -13025,6 +13099,16 @@ snapshots:
     transitivePeerDependencies:
       - aws-crt
 
+  sdk-environment@0.1.5(@aws-sdk/client-account@3.1042.0)(@aws-sdk/client-iam@3.1042.0):
+    dependencies:
+      domain-objects: 0.31.13
+      helpful-errors: 1.7.3
+      simple-in-memory-cache: 0.4.3
+      with-simple-cache: 0.16.2
+    optionalDependencies:
+      '@aws-sdk/client-account': 3.1042.0
+      '@aws-sdk/client-iam': 3.1042.0
+
   sdk-logs@0.9.0:
     dependencies:
       '@aws-sdk/client-cloudwatch-logs': 3.1040.0
@@ -13125,12 +13209,26 @@ snapshots:
     dependencies:
       '@ehmpathy/uni-time': 1.9.6
 
+  simple-in-memory-cache@0.4.2:
+    dependencies:
+      domain-objects: 0.31.9
+      helpful-errors: 1.7.3
+      iso-time: 1.11.7
+      type-fns: 1.21.2
+
+  simple-in-memory-cache@0.4.3:
+    dependencies:
+      domain-objects: 0.31.9
+      helpful-errors: 1.7.3
+      iso-time: 1.11.7
+      type-fns: 1.21.2
+
   simple-log-methods@0.6.1:
     dependencies:
       '@ehmpathy/error-fns': 1.3.7
       '@ehmpathy/uni-time': 1.9.6
       domain-glossary-procedure: 1.0.0
-      type-fns: 1.21.2
+      type-fns: 1.21.3
 
   simple-log-methods@0.6.10:
     dependencies:
@@ -13140,6 +13238,15 @@ snapshots:
       helpful-errors: 1.7.2
       iso-time: 1.11.5
       type-fns: 1.21.0
+
+  simple-log-methods@0.6.12:
+    dependencies:
+      '@ehmpathy/error-fns': 1.3.7
+      domain-glossary-procedure: 1.0.0
+      domain-objects: 0.31.10
+      helpful-errors: 1.7.3
+      iso-time: 1.11.7
+      type-fns: 1.21.2
 
   simple-log-methods@0.6.2:
     dependencies:
@@ -13154,8 +13261,19 @@ snapshots:
       domain-glossary-procedure: 1.0.0
       domain-objects: 0.31.9
       helpful-errors: 1.5.3
-      iso-time: 1.11.5
+      iso-time: 1.11.7
       type-fns: 1.21.0
+
+  simple-on-disk-cache@1.7.10:
+    dependencies:
+      domain-objects: 0.31.13
+      hash-fns: 1.1.0
+      helpful-errors: 1.7.3
+      iso-time: 1.11.7
+      serde-fns: 1.3.1
+      simple-in-memory-cache: 0.4.2
+      type-fns: 1.21.2
+      with-bottleneck: 0.1.1
 
   simple-on-disk-cache@1.7.3:
     dependencies:
@@ -13305,6 +13423,13 @@ snapshots:
       - rhachet
       - ws
 
+  test-fns@1.15.7:
+    dependencies:
+      domain-objects: 0.31.9
+      helpful-errors: 1.5.3
+      iso-time: 1.11.3
+      uuid: 10.0.0
+
   test-fns@1.15.8:
     dependencies:
       domain-objects: 0.31.9
@@ -13431,6 +13556,11 @@ snapshots:
       domain-objects: 0.31.10
       helpful-errors: 1.7.3
 
+  type-fns@1.21.3:
+    dependencies:
+      domain-objects: 0.31.10
+      helpful-errors: 1.7.3
+
   typescript@5.4.5: {}
 
   undici-types@6.21.0: {}
@@ -13551,6 +13681,12 @@ snapshots:
     dependencies:
       isexe: 2.0.0
 
+  with-bottleneck@0.1.1:
+    dependencies:
+      domain-objects: 0.31.9
+      helpful-errors: 1.7.3
+      iso-time: 1.11.7
+
   with-simple-cache@0.15.1:
     dependencies:
       '@ehmpathy/uni-time': 1.9.6
@@ -13558,7 +13694,7 @@ snapshots:
       serde-fns: 1.3.1
       simple-in-memory-cache: 0.4.0
       simple-on-disk-cache: 1.7.3
-      type-fns: 1.21.2
+      type-fns: 1.21.3
     transitivePeerDependencies:
       - aws-crt
 
@@ -13593,13 +13729,24 @@ snapshots:
       - ws
       - zod
 
+  with-simple-cache@0.16.2:
+    dependencies:
+      domain-objects: 0.31.13
+      helpful-errors: 1.7.3
+      iso-time: 1.11.7
+      procedure-fns: 1.0.1
+      serde-fns: 1.3.1
+      simple-in-memory-cache: 0.4.2
+      simple-on-disk-cache: 1.7.10
+      type-fns: 1.21.3
+
   with-simple-caching@0.14.2:
     dependencies:
       '@ehmpathy/uni-time': 1.9.6
       serde-fns: 1.3.1
       simple-in-memory-cache: 0.4.0
       simple-on-disk-cache: 1.7.3
-      type-fns: 1.21.2
+      type-fns: 1.21.3
       visualogic: 1.3.3
     transitivePeerDependencies:
       - aws-crt
@@ -13611,7 +13758,7 @@ snapshots:
       serde-fns: 1.3.1
       simple-in-memory-cache: 0.4.0
       simple-on-disk-cache: 1.7.3
-      type-fns: 1.21.2
+      type-fns: 1.21.3
     transitivePeerDependencies:
       - aws-crt
 

@@ -1,0 +1,77 @@
+{"stone":"1.vision","status":"blocked","blocker":"review.self","reason":"review.self required: has-grounded-in-reality"}
+{"stone":"1.vision","status":"blocked","blocker":"review.self","reason":"review.self required: has-questioned-questions"}
+{"stone":"1.vision","status":"blocked","blocker":"approval","reason":"wait for human approval"}
+{"stone":"1.vision","status":"approved"}
+{"stone":"1.vision","status":"passed"}
+{"stone":"2.1.criteria.blackbox","status":"passed"}
+{"stone":"2.2.criteria.blackbox.matrix","status":"passed"}
+{"stone":"3.1.1.research.external.product.flagged._","status":"passed"}
+{"stone":"3.1.3.research.internal.product.code.prod._","status":"passed"}
+{"stone":"3.1.3.research.internal.product.code.test._","status":"passed"}
+{"stone":"3.3.1.blueprint.product","status":"blocked","blocker":"review.self","reason":"review.self required: has-research-citations"}
+{"stone":"3.3.1.blueprint.product","status":"blocked","blocker":"review.self","reason":"review.self required: has-questioned-deletables"}
+{"stone":"3.3.1.blueprint.product","status":"blocked","blocker":"review.self","reason":"review.self required: has-consistent-conventions"}
+{"stone":"3.3.1.blueprint.product","status":"malfunction"}
+{"stone":"3.3.1.blueprint.product","status":"blocked","blocker":"review.peer","reason":"blockers exceed threshold (7 > 0); wait for human approval"}
+{"stone":"3.3.1.blueprint.product","status":"malfunction"}
+{"stone":"3.3.1.blueprint.product","status":"blocked"}
+{"stone":"3.3.1.blueprint.product","status":"approved"}
+{"stone":"3.3.1.blueprint.product","status":"malfunction"}
+{"stone":"3.3.1.blueprint.product","status":"malfunction"}
+{"stone":"3.3.1.blueprint.product","status":"blocked","blocker":"review.peer","reason":"no review files found for hash 923dbef6"}
+{"stone":"3.3.1.blueprint.product","status":"blocked","blocker":"review.peer","reason":"blockers exceed threshold (4 > 0)"}
+{"stone":"3.3.1.blueprint.product","status":"blocked","blocker":"review.peer","reason":"blockers exceed threshold (11 > 0)"}
+{"stone":"3.3.1.blueprint.product","status":"blocked"}
+{"stone":"3.3.1.blueprint.product","status":"blocked","blocker":"review.peer","reason":"blockers exceed threshold (2 > 0)"}
+{"stone":"3.3.1.blueprint.product","status":"blocked"}
+{"stone":"3.3.1.blueprint.product","status":"overruled"}
+{"stone":"3.3.1.blueprint.product","status":"passed"}
+{"stone":"3.3.1.blueprint.product","status":"passed"}
+{"stone":"4.1.roadmap","status":"passed"}
+{"stone":"5.1.execution.phase0_to_phaseN","status":"blocked","blocker":"review.self","reason":"review.self required: has-pruned-yagni"}
+{"stone":"5.1.execution.phase0_to_phaseN","status":"blocked","blocker":"review.self","reason":"review.self required: has-consistent-conventions"}
+{"stone":"5.1.execution.phase0_to_phaseN","status":"blocked","blocker":"review.peer","reason":"no review files found for hash f2ad4e36"}
+{"stone":"5.1.execution.phase0_to_phaseN","status":"blocked","blocker":"review.peer","reason":"no review files found for hash 661fd56d"}
+{"stone":"5.1.execution.phase0_to_phaseN","status":"blocked","blocker":"review.peer","reason":"no review files found for hash 246ebfbc"}
+{"stone":"5.1.execution.phase0_to_phaseN","status":"blocked","blocker":"review.peer","reason":"blockers exceed threshold (4 > 0)"}
+{"stone":"5.1.execution.phase0_to_phaseN","status":"blocked","blocker":"review.peer","reason":"blockers exceed threshold (14 > 0)"}
+{"stone":"5.1.execution.phase0_to_phaseN","status":"blocked","blocker":"review.peer","reason":"no review files found for hash 1b14c772"}
+{"stone":"5.1.execution.phase0_to_phaseN","status":"blocked","blocker":"review.peer","reason":"blockers exceed threshold (5 > 0)"}
+{"stone":"5.1.execution.phase0_to_phaseN","status":"blocked","blocker":"review.peer","reason":"blockers exceed threshold (5 > 0)"}
+{"stone":"5.1.execution.phase0_to_phaseN","status":"blocked","blocker":"review.peer.exhausted","reason":"peer reviewer budget exhausted: mech-failhides, mech-decode-friction, arch-hazards-maintenance, arch-hazards-behavior, ergo-friction-hazards"}
+{"stone":"5.1.execution.phase0_to_phaseN","status":"blocked","blocker":"review.peer.exhausted","reason":"peer reviewer budget exhausted: mech-failhides, mech-decode-friction, arch-hazards-maintenance, arch-hazards-behavior, ergo-friction-hazards"}
+{"stone":"5.1.execution.phase0_to_phaseN","status":"blocked","blocker":"review.peer","reason":"blockers exceed threshold (6 > 0)"}
+{"stone":"5.1.execution.phase0_to_phaseN","status":"blocked","blocker":"review.peer","reason":"blockers exceed threshold (3 > 0)"}
+{"stone":"5.1.execution.phase0_to_phaseN","status":"blocked","blocker":"review.peer","reason":"blockers exceed threshold (1 > 0)"}
+{"stone":"5.1.execution.phase0_to_phaseN","status":"blocked","blocker":"review.peer","reason":"no review files found for hash 7e7f5106"}
+{"stone":"5.1.execution.phase0_to_phaseN","status":"passed"}
+{"stone":"5.1.execution.phase0_to_phaseN","status":"blocked","blocker":"review.peer","reason":"no review files found for hash d7020a9c"}
+{"stone":"5.1.execution.phase0_to_phaseN","status":"blocked","blocker":"review.peer","reason":"blockers exceed threshold (2 > 0)"}
+{"stone":"5.1.execution.phase0_to_phaseN","status":"blocked","blocker":"review.peer.exhausted","reason":"peer reviewer budget exhausted: repo-rules, arch-opport-decomposition, arch-hazards-maintenance, arch-hazards-behavior, ergo-friction-hazards"}
+{"stone":"5.1.execution.phase0_to_phaseN","status":"blocked","blocker":"review.peer.exhausted","reason":"peer reviewer budget exhausted: repo-rules, arch-opport-decomposition, arch-hazards-maintenance, arch-hazards-behavior, ergo-friction-hazards"}
+{"stone":"5.1.execution.phase0_to_phaseN","status":"approved"}
+{"stone":"5.1.execution.phase0_to_phaseN","status":"passed"}
+{"stone":"5.3.verification","status":"blocked"}
+{"stone":"5.3.verification","status":"blocked","blocker":"review.self","reason":"review.self required: has-behavior-coverage"}
+{"stone":"5.3.verification","status":"blocked"}
+{"stone":"5.3.verification","status":"blocked"}
+{"stone":"5.3.verification","status":"blocked"}
+{"stone":"5.3.verification","status":"blocked"}
+{"stone":"5.3.verification","status":"blocked"}
+{"stone":"5.3.verification","status":"blocked"}
+{"stone":"5.3.verification","status":"blocked"}
+{"stone":"5.3.verification","status":"blocked"}
+{"stone":"5.3.verification","status":"approved"}
+{"stone":"5.3.verification","status":"blocked"}
+{"stone":"5.3.verification","status":"blocked"}
+{"stone":"5.3.verification","status":"blocked"}
+{"stone":"5.3.verification","status":"blocked"}
+{"stone":"5.3.verification","status":"blocked"}
+{"stone":"5.3.verification","status":"blocked"}
+{"stone":"5.3.verification","status":"blocked"}
+{"stone":"5.3.verification","status":"overruled"}
+{"stone":"5.3.verification","status":"blocked"}
+{"stone":"5.3.verification","status":"passed"}
+{"stone":"5.5.playtest","status":"blocked","blocker":"review.self","reason":"review.self required: has-clear-instructions"}
+{"stone":"5.5.playtest","status":"blocked","blocker":"approval","reason":"wait for human approval"}
+{"stone":"5.5.playtest","status":"blocked","blocker":"approval","reason":"wait for human approval"}

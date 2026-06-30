@@ -1,12 +1,12 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
-exports[`trail threading given: [case1] client invokes with exid when: [t0] invoked with trail.exid then: handler receives client exid via trail context 1`] = `
+exports[`trail threading given: [case1] caller invokes with exid when: [t0] invoked with trail.exid then: handler receives caller exid via trail context 1`] = `
 {
-  "receivedExid": "exid:client-provided",
+  "receivedExid": "exid:caller-provided",
 }
 `;
 
-exports[`trail threading given: [case2] client invokes without context when: [t0] invoked without trail then: handler auto-generates exid 1`] = `
+exports[`trail threading given: [case2] caller invokes without context when: [t0] invoked without trail then: handler auto-generates exid 1`] = `
 {
   "hasExid": true,
 }

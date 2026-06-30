@@ -51,7 +51,7 @@ export const genConstraintErrorMiddleware = (opts?: {
       ? getErrorResponseBodyContemp({ error, errorClass: 'ConstraintError' })
       : getErrorResponseBodyAncient({ error, errorType: 'BadRequestError' });
 
-    // for API Gateway: return HTTP response
+    // for api gateway: return http response
     if (opts?.apiGateway) {
       /**
        * .as = middy types request.response as unknown, but we set it to ApiGatewayResponse

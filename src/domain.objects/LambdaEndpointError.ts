@@ -1,19 +1,16 @@
 import { HelpfulError } from 'helpful-errors';
 
+import type { LambdaEndpoint } from './LambdaEndpoint';
+
 /**
  * .what = error for failed lambda invocations via askLambdaEndpoint
- * .why = provides rich context for debug: service, function, exid, cause
+ * .why = provides rich context for debug: endpoint, exid, cause
  */
 export interface LambdaEndpointErrorMetadata {
   /**
-   * the service that owns the lambda function
+   * the endpoint that was invoked (service, access, function, slug)
    */
-  service: string;
-
-  /**
-   * the lambda function name that was invoked
-   */
-  function: string;
+  endpoint: LambdaEndpoint;
 
   /**
    * the exid (execution id) for trail correlation
@@ -26,7 +23,7 @@ export interface LambdaEndpointErrorMetadata {
   errorType?: string;
 
   /**
-   * the HTTP status code from the Lambda invocation
+   * the http status code from the lambda invocation
    * non-200 indicates invocation itself failed (throttle, permission, not found)
    */
   statusCode?: number;

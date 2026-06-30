@@ -1,5 +1,6 @@
 import { ConstraintError } from 'helpful-errors';
 
+import type { LambdaEndpoint } from '../../../domain.objects/LambdaEndpoint';
 import { LambdaEndpointError } from '../../../domain.objects/LambdaEndpointError';
 import {
   getIsAncientErrorResponse,
@@ -7,6 +8,7 @@ import {
 } from '../error/getIsLambdaErrorResponse';
 import { getLambdaErrorMetadata } from '../error/getLambdaErrorMetadata';
 import { getStackTraceString } from '../error/getStackTraceString';
+import { asUnprefixedErrorMessage } from './asUnprefixedErrorMessage';
 import { getDecodedPayload } from './getDecodedPayload';
 import { getParsedJson } from './getParsedJson';
 
@@ -21,15 +23,13 @@ import { getParsedJson } from './getParsedJson';
 export const getParsedResponse = <TResponse>(input: {
   payload: Uint8Array | undefined;
   functionError: string | undefined;
-  service: string;
-  function: string;
+  endpoint: LambdaEndpoint;
   exid: string | null;
 }): TResponse => {
   // validate payload exists
   if (!input.payload) {
     throw new LambdaEndpointError('lambda returned empty payload', {
-      service: input.service,
-      function: input.function,
+      endpoint: input.endpoint,
       exid: input.exid,
     });
   }
@@ -41,8 +41,7 @@ export const getParsedResponse = <TResponse>(input: {
   const parseResult = getParsedJson({ json: payloadString });
   if (!parseResult.success) {
     throw new LambdaEndpointError('lambda returned invalid json', {
-      service: input.service,
-      function: input.function,
+      endpoint: input.endpoint,
       exid: input.exid,
       cause: parseResult.error,
     });
@@ -55,9 +54,10 @@ export const getParsedResponse = <TResponse>(input: {
 
     // ConstraintError = caller's fault, not lambda error (lambda succeeded)
     if (err.class === 'ConstraintError') {
-      throw new ConstraintError(err.message, {
-        service: input.service,
-        function: input.function,
+      // strip prefix to avoid double prefix (handler already prefixed the message)
+      const message = asUnprefixedErrorMessage({ message: err.message });
+      throw new ConstraintError(message, {
+        endpoint: input.endpoint,
         exid: input.exid,
         causeMessage: err.cause,
         details: err.details,
@@ -66,8 +66,7 @@ export const getParsedResponse = <TResponse>(input: {
 
     // all other error classes = lambda invocation error
     throw new LambdaEndpointError(err.message, {
-      service: input.service,
-      function: input.function,
+      endpoint: input.endpoint,
       exid: input.exid,
       errorType: err.class,
       causeMessage: err.cause,
@@ -86,9 +85,12 @@ export const getParsedResponse = <TResponse>(input: {
       parsed.errorType === 'ConstraintError' ||
       parsed.errorType === 'BadRequestError'
     ) {
-      throw new ConstraintError(parsed.errorMessage, {
-        service: input.service,
-        function: input.function,
+      // strip prefix to avoid double prefix (handler already prefixed the message)
+      const message = asUnprefixedErrorMessage({
+        message: parsed.errorMessage,
+      });
+      throw new ConstraintError(message, {
+        endpoint: input.endpoint,
         exid: input.exid,
         stackTrace,
         ...errorMeta,
@@ -97,8 +99,7 @@ export const getParsedResponse = <TResponse>(input: {
 
     // all other error types = lambda invocation error
     throw new LambdaEndpointError(parsed.errorMessage, {
-      service: input.service,
-      function: input.function,
+      endpoint: input.endpoint,
       exid: input.exid,
       errorType: parsed.errorType,
       stackTrace,

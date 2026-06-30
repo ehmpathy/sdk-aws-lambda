@@ -1,6 +1,6 @@
 /**
  * .what = end-to-end user journey tests for sdk-aws-lambda
- * .why = verify the complete user experience from handler creation to client invocation
+ * .why = verify the complete user experience from handler creation to caller invocation
  */
 import type { APIGatewayProxyEvent, Context } from 'aws-lambda';
 import { genContextLogTrail } from 'sdk-logs';
@@ -198,12 +198,12 @@ describe('user journey: api gateway handler', () => {
   });
 });
 
-describe('user journey: lambda client contract verification', () => {
+describe('user journey: lambda caller contract verification', () => {
   /**
    * .what = compile-time type contract tests for askLambdaEndpoint
    * .why = verifies public API contract without AWS infrastructure
    *
-   * .mock = AWS Lambda Client (InvokeCommand)
+   * .mock = AWS LambdaClient (InvokeCommand)
    * .why = real integration tests require deployed lambda infrastructure
    *        - sdk is for lambda creation, no deployed lambdas exist in this repo
    *        - aws accounts for test infrastructure not provisioned
@@ -230,14 +230,14 @@ describe('user journey: lambda client contract verification', () => {
         // invalid shapes would cause typescript errors, not runtime failures
         const validInput: Parameters<typeof askLambdaEndpoint>[0] = {
           which: {
-            service: 'user-service',
+            service: 'svc-user',
             function: 'getUser',
           },
           event: { userId: '123' },
         };
 
         // sanity check the shape at runtime
-        expect(validInput.which.service).toBe('user-service');
+        expect(validInput.which.service).toBe('svc-user');
         expect(validInput.which.function).toBe('getUser');
       });
     });
@@ -311,6 +311,29 @@ describe('user journey: trail context propagation', () => {
         expect(firstResult.receivedExid).toBe('exid:journey');
         expect(secondResult.receivedExid).toBe('exid:journey');
         expect({ firstResult, secondResult }).toMatchSnapshot();
+      });
+    });
+
+    when('[t1] handlers invoked without trail context', () => {
+      then('they generate fresh trail context', async () => {
+        // without explicit trail, handler generates one
+        const firstResult = await firstHandler(
+          { data: 'test' },
+          createMockContext(),
+        );
+
+        expect(firstResult.stage).toBe('first');
+        // receivedExid is either null (no trail) or auto-generated exid
+        expect(
+          firstResult.receivedExid === null ||
+            firstResult.receivedExid.startsWith('exid:'),
+        ).toBe(true);
+        expect({
+          stage: firstResult.stage,
+          receivedExidIsNullOrGenerated:
+            firstResult.receivedExid === null ||
+            firstResult.receivedExid.startsWith('exid:'),
+        }).toMatchSnapshot();
       });
     });
   });

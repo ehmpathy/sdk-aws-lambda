@@ -33,6 +33,7 @@ describe('genConstraintErrorMiddleware', () => {
           errorType: 'BadRequestError',
         });
         // snapshot for contract visibility
+        expect(request.response).toBeDefined();
         expect(request.response).toMatchSnapshot();
       });
 
@@ -74,7 +75,7 @@ describe('genConstraintErrorMiddleware', () => {
 
         await middleware.onError!(request);
 
-        // apiGateway mode returns HTTP response
+        // apiGateway mode returns http response
         expect(request.response).toEqual({
           statusCode: 400,
           body: JSON.stringify({
@@ -84,6 +85,7 @@ describe('genConstraintErrorMiddleware', () => {
           headers: { 'Content-Type': 'application/json' },
         });
         // snapshot for contract visibility
+        expect(request.response).toBeDefined();
         expect(request.response).toMatchSnapshot();
       });
     });
@@ -255,6 +257,7 @@ describe('genConstraintErrorMiddleware', () => {
           errorType: 'BadRequestError',
         });
         // snapshot for contract visibility
+        expect(request.response).toBeDefined();
         expect(request.response).toMatchSnapshot();
       });
 
@@ -293,7 +296,7 @@ describe('genConstraintErrorMiddleware', () => {
 
         await middleware.onError!(request);
 
-        // apiGateway mode returns HTTP response
+        // apiGateway mode returns http response
         expect(request.response).toEqual({
           statusCode: 400,
           body: JSON.stringify({
@@ -303,6 +306,7 @@ describe('genConstraintErrorMiddleware', () => {
           headers: { 'Content-Type': 'application/json' },
         });
         // snapshot for contract visibility
+        expect(request.response).toBeDefined();
         expect(request.response).toMatchSnapshot();
       });
     });
@@ -412,7 +416,7 @@ describe('genConstraintErrorMiddleware', () => {
 
         await middleware.onError!(request);
 
-        // apiGateway mode returns HTTP response with contemp format for contemp callers
+        // apiGateway mode returns http response with contemp format for contemp callers
         expect(request.response).toEqual({
           statusCode: 400,
           body: JSON.stringify({
@@ -425,6 +429,7 @@ describe('genConstraintErrorMiddleware', () => {
           headers: { 'Content-Type': 'application/json' },
         });
         // snapshot for contract visibility
+        expect(request.response).toBeDefined();
         expect(request.response).toMatchSnapshot();
       });
     });

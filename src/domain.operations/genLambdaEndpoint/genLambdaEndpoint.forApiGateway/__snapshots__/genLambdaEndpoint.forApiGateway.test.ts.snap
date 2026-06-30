@@ -1,6 +1,46 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
-exports[`genLambdaEndpoint.forApiGateway given: [case3] CORS configured when: [t0] handler invoked then: it should include CORS headers 1`] = `
+exports[`genLambdaEndpoint.forApiGateway given: [case1] valid request when: [t0] handler invoked then: result matches snapshot 1`] = `
+{
+  "body": {
+    "id": "user-123",
+    "name": "Alice",
+  },
+  "hasSecurityHeaders": true,
+  "statusCode": 200,
+}
+`;
+
+exports[`genLambdaEndpoint.forApiGateway given: [case2] invalid request body when: [t0] handler invoked then: result matches snapshot 1`] = `
+{
+  "body": {
+    "details": {
+      "issues": [
+        {
+          "code": "invalid_format",
+          "message": "Invalid email address",
+          "path": "email",
+        },
+      ],
+    },
+    "errorMessage": "✋ ConstraintError: validation failed: email: Invalid email address
+
+{
+  "issues": [
+    {
+      "path": "email",
+      "message": "Invalid email address",
+      "code": "invalid_format"
+    }
+  ]
+}",
+    "errorType": "BadRequestError",
+  },
+  "statusCode": 400,
+}
+`;
+
+exports[`genLambdaEndpoint.forApiGateway given: [case3] cors configured when: [t0] handler invoked then: it should include cors headers 1`] = `
 {
   "body": {
     "result": "ok",
@@ -19,5 +59,111 @@ exports[`genLambdaEndpoint.forApiGateway given: [case4] handler error when: [t0]
   "errorType": "InternalServiceError",
   "hasCorrelationId": true,
   "statusCode": 500,
+}
+`;
+
+exports[`genLambdaEndpoint.forApiGateway given: [case5] access to raw event when: [t0] handler invoked then: result matches snapshot 1`] = `
+{
+  "body": {
+    "method": "POST",
+    "path": "/users",
+  },
+  "statusCode": 200,
+}
+`;
+
+exports[`genLambdaEndpoint.forApiGateway given: [case6] deserialize body disabled when: [t0] handler invoked then: result matches snapshot 1`] = `
+{
+  "body": {
+    "received": "{"signature":"webhook-data"}",
+  },
+  "statusCode": 200,
+}
+`;
+
+exports[`genLambdaEndpoint.forApiGateway given: [case7] introspection request in prep env when: [t0] handler invoked with introspect payload then: response matches snapshot 1`] = `
+{
+  "body": {
+    "input": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "customerId": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "customerId",
+      ],
+      "type": "object",
+    },
+    "output": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "balance": {
+          "type": "number",
+        },
+        "name": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "name",
+        "balance",
+      ],
+      "type": "object",
+    },
+  },
+  "statusCode": 200,
+}
+`;
+
+exports[`genLambdaEndpoint.forApiGateway given: [case8] introspection request in prod env when: [t0] handler invoked with introspect payload then: result matches snapshot 1`] = `
+{
+  "body": {
+    "details": {
+      "access": "prod",
+      "env": {
+        "access": "prod",
+      },
+    },
+    "errorMessage": "✋ ConstraintError: introspection is only available in prep environment, current: prod
+
+{
+  "env": {
+    "access": "prod"
+  },
+  "access": "prod"
+}",
+    "errorType": "BadRequestError",
+  },
+  "statusCode": 400,
+}
+`;
+
+exports[`genLambdaEndpoint.forApiGateway given: [case9] introspection request without env config when: [t0] handler invoked with introspect payload then: result matches snapshot 1`] = `
+{
+  "body": {
+    "details": {
+      "hint": "pass env config to genLambdaEndpoint",
+    },
+    "errorMessage": "✋ ConstraintError: introspection requires env.access context but env was not provided to handler
+
+{
+  "hint": "pass env config to genLambdaEndpoint"
+}",
+    "errorType": "BadRequestError",
+  },
+  "statusCode": 400,
+}
+`;
+
+exports[`genLambdaEndpoint.forApiGateway given: [case10] normal request with env config when: [t0] handler invoked with normal payload then: result matches snapshot 1`] = `
+{
+  "body": {
+    "message": "Hello, Bob!",
+  },
+  "statusCode": 200,
 }
 `;

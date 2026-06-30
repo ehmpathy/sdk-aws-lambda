@@ -11,8 +11,8 @@ import { askLambdaEndpoint } from './askLambdaEndpoint';
 const genTestLog = () => genContextLogTrail({ trail: null, env: null });
 
 /**
- * .what = masks dynamic exids in error snapshots
- * .why = exids are generated at runtime, change between test runs
+ * .what = masks dynamic exids in error snapshots and filters undefined values
+ * .why = exids are generated at runtime; undefined is not valid JSON
  */
 const maskExid = (input: {
   message: string;
@@ -20,16 +20,18 @@ const maskExid = (input: {
 }) => ({
   message: input.message.replace(/exid:[a-f0-9-]+/g, 'exid:[masked]'),
   metadata: input.metadata
-    ? { ...input.metadata, exid: '[masked]' }
+    ? Object.fromEntries(
+        Object.entries({ ...input.metadata, exid: '[masked]' }).filter(
+          ([, v]) => v !== undefined,
+        ),
+      )
     : undefined,
 });
 
 // mock the aws sdk
 jest.mock('@aws-sdk/client-lambda');
 
-const MockedLambdaClient = LambdaClient as jest.MockedClass<
-  typeof LambdaClient
->;
+const MockedLambdaSdk = LambdaClient as jest.MockedClass<typeof LambdaClient>;
 const MockedInvokeCommand = InvokeCommand as jest.MockedClass<
   typeof InvokeCommand
 >;
@@ -48,7 +50,7 @@ describe('askLambdaEndpoint', () => {
           StatusCode: 200,
           Payload: Buffer.from(JSON.stringify(mockResponse)),
         });
-        MockedLambdaClient.mockImplementation(
+        MockedLambdaSdk.mockImplementation(
           () => ({ send: mockSend }) as unknown as LambdaClient,
         );
 
@@ -88,7 +90,7 @@ describe('askLambdaEndpoint', () => {
           FunctionError: 'Unhandled',
           Payload: Buffer.from(JSON.stringify(errorPayload)),
         });
-        MockedLambdaClient.mockImplementation(
+        MockedLambdaSdk.mockImplementation(
           () => ({ send: mockSend }) as unknown as LambdaClient,
         );
 
@@ -96,7 +98,10 @@ describe('askLambdaEndpoint', () => {
         const error = await getError(async () =>
           askLambdaEndpoint(
             {
-              which: { service: 'svc-user', function: 'getUser' },
+              which: {
+                service: 'svc-user',
+                function: 'getUser',
+              },
               event: { userId: 'unknown' },
             },
             {
@@ -129,7 +134,7 @@ describe('askLambdaEndpoint', () => {
           StatusCode: 200,
           Payload: Buffer.from(JSON.stringify({ success: true })),
         });
-        MockedLambdaClient.mockImplementation(
+        MockedLambdaSdk.mockImplementation(
           () => ({ send: mockSend }) as unknown as LambdaClient,
         );
 
@@ -164,26 +169,29 @@ describe('askLambdaEndpoint', () => {
     });
   });
 
-  given('[case4] custom lambda client', () => {
-    when('[t0] context provides lambda client', () => {
-      then('it should use provided client', async () => {
+  given('[case4] custom sdkLambda', () => {
+    when('[t0] context provides sdkLambda', () => {
+      then('it should use provided sdkLambda', async () => {
         // arrange
         const customSend = jest.fn().mockResolvedValue({
           StatusCode: 200,
           Payload: Buffer.from(JSON.stringify({ custom: true })),
         });
-        const customClient = { send: customSend } as unknown as LambdaClient;
+        const customSdk = { send: customSend } as unknown as LambdaClient;
 
         // act
         const result = await askLambdaEndpoint(
           {
-            which: { service: 'svc-custom', function: 'customFn' },
+            which: {
+              service: 'svc-custom',
+              function: 'customFn',
+            },
             event: {},
           },
           {
             ...genTestLog(),
             env: { access: 'test' },
-            aws: { lambda: { sdk: customClient } },
+            aws: { lambda: { sdk: customSdk } },
           },
         );
 
@@ -191,13 +199,116 @@ describe('askLambdaEndpoint', () => {
         expect(result).toEqual({ custom: true });
         expect(result).toMatchSnapshot();
         expect(customSend).toHaveBeenCalledTimes(1);
-        // verify default client was not created
-        expect(MockedLambdaClient).not.toHaveBeenCalled();
+        // verify default sdkLambda was not created
+        expect(MockedLambdaSdk).not.toHaveBeenCalled();
       });
     });
   });
 
-  given('[case5] function name generation', () => {
+  given('[case5] ancient payload format', () => {
+    when('[t0] struct.payload is ancient', () => {
+      then('it should send raw event without trail wrapper', async () => {
+        // arrange
+        const mockSend = jest.fn().mockResolvedValue({
+          StatusCode: 200,
+          Payload: Buffer.from(JSON.stringify({ success: true })),
+        });
+        MockedLambdaSdk.mockImplementation(
+          () => ({ send: mockSend }) as unknown as LambdaClient,
+        );
+
+        const testEvent = { userId: 'user-456', action: 'test' };
+
+        // act
+        await askLambdaEndpoint(
+          {
+            which: {
+              service: 'svc-legacy',
+              function: 'legacyFn',
+            },
+            event: testEvent,
+            struct: { payload: 'ancient' },
+          },
+          {
+            ...genTestLog(),
+            env: { access: 'test' },
+          },
+        );
+
+        // assert - verify payload is raw event without trail wrapper
+        const invokeCall = MockedInvokeCommand.mock.calls[0];
+        expect(invokeCall).toBeDefined();
+        const invokeInput = invokeCall?.[0];
+        expect(invokeInput?.Payload).toBeDefined();
+        const payloadStr = Buffer.from(
+          invokeInput?.Payload as Uint8Array,
+        ).toString();
+        const payload = JSON.parse(payloadStr);
+
+        // ancient format: raw event (no trail property)
+        expect(payload).toEqual(testEvent);
+        expect(payload.trail).toBeUndefined();
+        expect(payload.event).toBeUndefined();
+
+        // snapshot for contract
+        expect({ payloadFormat: 'ancient', payload }).toMatchSnapshot();
+      });
+    });
+
+    when('[t1] struct.payload is contemp (default)', () => {
+      then('it should send wrapped event with trail', async () => {
+        // arrange
+        const mockSend = jest.fn().mockResolvedValue({
+          StatusCode: 200,
+          Payload: Buffer.from(JSON.stringify({ success: true })),
+        });
+        MockedLambdaSdk.mockImplementation(
+          () => ({ send: mockSend }) as unknown as LambdaClient,
+        );
+
+        const logWithTrail = genContextLogTrail({
+          trail: { exid: 'test-exid-contemp', stack: [] },
+          env: null,
+        });
+
+        const testEvent = { userId: 'user-789', action: 'test' };
+
+        // act
+        await askLambdaEndpoint(
+          {
+            which: {
+              service: 'svc-modern',
+              function: 'modernFn',
+            },
+            event: testEvent,
+            struct: { payload: 'contemp' },
+          },
+          {
+            ...logWithTrail,
+            env: { access: 'test' },
+          },
+        );
+
+        // assert - verify payload is wrapped with trail
+        const invokeCall = MockedInvokeCommand.mock.calls[0];
+        const invokeInput = invokeCall?.[0];
+        const payloadStr = Buffer.from(
+          invokeInput?.Payload as Uint8Array,
+        ).toString();
+        const payload = JSON.parse(payloadStr);
+
+        // contemp format: wrapped with event and trail
+        expect(payload.event).toEqual(testEvent);
+        expect(payload.trail).toBeDefined();
+        expect(payload.trail.exid).toBe('test-exid-contemp');
+
+        // snapshot for contract
+        expect({ payloadFormat: 'contemp', payload }).toMatchSnapshot();
+      });
+    });
+  });
+
+  given('[case6] function name generation', () => {
     when('[t0] service and function provided', () => {
       then('it should generate correct function name', async () => {
         // arrange
@@ -205,14 +316,17 @@ describe('askLambdaEndpoint', () => {
           StatusCode: 200,
           Payload: Buffer.from(JSON.stringify({})),
         });
-        MockedLambdaClient.mockImplementation(
+        MockedLambdaSdk.mockImplementation(
           () => ({ send: mockSend }) as unknown as LambdaClient,
         );
 
         // act
         await askLambdaEndpoint(
           {
-            which: { service: 'svc-invoice', function: 'createInvoice' },
+            which: {
+              service: 'svc-invoice',
+              function: 'createInvoice',
+            },
             event: {},
           },
           {
@@ -235,7 +349,7 @@ describe('askLambdaEndpoint', () => {
     });
   });
 
-  given('[case6] lambda invocation failure paths', () => {
+  given('[case7] lambda invocation failure paths', () => {
     when('[t0] lambda returns 404 (function not found)', () => {
       then('it should throw with actionable hint', async () => {
         // arrange
@@ -243,7 +357,7 @@ describe('askLambdaEndpoint', () => {
           StatusCode: 404,
           Payload: Buffer.from(''),
         });
-        MockedLambdaClient.mockImplementation(
+        MockedLambdaSdk.mockImplementation(
           () => ({ send: mockSend }) as unknown as LambdaClient,
         );
 
@@ -251,7 +365,10 @@ describe('askLambdaEndpoint', () => {
         const error = await getError(async () =>
           askLambdaEndpoint(
             {
-              which: { service: 'svc-absent', function: 'absentFn' },
+              which: {
+                service: 'svc-absent',
+                function: 'absentFn',
+              },
               event: {},
             },
             {
@@ -284,7 +401,7 @@ describe('askLambdaEndpoint', () => {
           StatusCode: 403,
           Payload: Buffer.from(''),
         });
-        MockedLambdaClient.mockImplementation(
+        MockedLambdaSdk.mockImplementation(
           () => ({ send: mockSend }) as unknown as LambdaClient,
         );
 
@@ -292,7 +409,10 @@ describe('askLambdaEndpoint', () => {
         const error = await getError(async () =>
           askLambdaEndpoint(
             {
-              which: { service: 'svc-denied', function: 'deniedFn' },
+              which: {
+                service: 'svc-denied',
+                function: 'deniedFn',
+              },
               event: {},
             },
             {
@@ -304,7 +424,7 @@ describe('askLambdaEndpoint', () => {
 
         // assert
         expect(error.message).toContain('access denied');
-        expect(error.message).toContain('IAM permissions');
+        expect(error.message).toContain('iam permissions');
         const errorWithMeta = error as Error & {
           metadata?: Record<string, unknown>;
         };
@@ -324,7 +444,7 @@ describe('askLambdaEndpoint', () => {
           StatusCode: 429,
           Payload: Buffer.from(''),
         });
-        MockedLambdaClient.mockImplementation(
+        MockedLambdaSdk.mockImplementation(
           () => ({ send: mockSend }) as unknown as LambdaClient,
         );
 
@@ -332,7 +452,10 @@ describe('askLambdaEndpoint', () => {
         const error = await getError(async () =>
           askLambdaEndpoint(
             {
-              which: { service: 'svc-throttle', function: 'throttleFn' },
+              which: {
+                service: 'svc-throttle',
+                function: 'throttleFn',
+              },
               event: {},
             },
             {
@@ -364,7 +487,7 @@ describe('askLambdaEndpoint', () => {
           StatusCode: 500,
           Payload: Buffer.from(''),
         });
-        MockedLambdaClient.mockImplementation(
+        MockedLambdaSdk.mockImplementation(
           () => ({ send: mockSend }) as unknown as LambdaClient,
         );
 
@@ -372,7 +495,10 @@ describe('askLambdaEndpoint', () => {
         const error = await getError(async () =>
           askLambdaEndpoint(
             {
-              which: { service: 'svc-error', function: 'errorFn' },
+              which: {
+                service: 'svc-error',
+                function: 'errorFn',
+              },
               event: {},
             },
             {
@@ -404,7 +530,7 @@ describe('askLambdaEndpoint', () => {
           StatusCode: 504,
           Payload: Buffer.from(''),
         });
-        MockedLambdaClient.mockImplementation(
+        MockedLambdaSdk.mockImplementation(
           () => ({ send: mockSend }) as unknown as LambdaClient,
         );
 
@@ -412,7 +538,10 @@ describe('askLambdaEndpoint', () => {
         const error = await getError(async () =>
           askLambdaEndpoint(
             {
-              which: { service: 'svc-timeout', function: 'timeoutFn' },
+              which: {
+                service: 'svc-timeout',
+                function: 'timeoutFn',
+              },
               event: {},
             },
             {

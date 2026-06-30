@@ -4,7 +4,7 @@
  *
  * .prereq
  *   - rhx keyrack unlock --owner ehmpath --env test
- *   - svc-demo-getEventEcho lambda deployed (see provision/aws.infra/account=demo/)
+ *   - svc-prep-getEventEcho lambda deployed (see provision/aws.infra/account=demo/)
  */
 import { genContextLogTrail } from 'sdk-logs';
 import { getError, given, then, useThen, when } from 'test-fns';
@@ -23,7 +23,7 @@ const genTestLog = (trail?: { exid: string; stack?: string[] }) =>
   });
 
 describe('askLambdaEndpoint', () => {
-  given('[case1] svc-demo-getEventEcho lambda exists', () => {
+  given('[case1] svc-prep-getEventEcho lambda exists', () => {
     when('[t0] invoked with message and trail', () => {
       const response = useThen('invocation succeeds', async () =>
         askLambdaEndpoint<
@@ -39,7 +39,7 @@ describe('askLambdaEndpoint', () => {
           },
           {
             ...genTestLog({ exid: 'exid:integration-test' }),
-            env: { access: 'demo', region: 'us-east-1' },
+            env: { access: 'prep', region: 'us-east-1' },
           },
         ),
       );
@@ -53,7 +53,7 @@ describe('askLambdaEndpoint', () => {
       });
 
       then('it returns function metadata', () => {
-        expect(response.meta.functionName).toBe('svc-demo-getEventEcho');
+        expect(response.meta.functionName).toBe('svc-prep-getEventEcho');
         expect(response.meta.invokedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
       });
 
@@ -83,7 +83,7 @@ describe('askLambdaEndpoint', () => {
           },
           {
             ...genTestLog(),
-            env: { access: 'demo', region: 'us-east-1' },
+            env: { access: 'prep', region: 'us-east-1' },
           },
         ),
       );
@@ -106,12 +106,15 @@ describe('askLambdaEndpoint', () => {
         const caught = await getError(async () =>
           askLambdaEndpoint<{ message: string }, unknown>(
             {
-              which: { service: 'svc-nonexistent', function: 'notReal' },
+              which: {
+                service: 'svc-nonexistent',
+                function: 'notReal',
+              },
               event: { message: 'hello' },
             },
             {
               ...genTestLog(),
-              env: { access: 'demo', region: 'us-east-1' },
+              env: { access: 'prep', region: 'us-east-1' },
             },
           ),
         );
@@ -130,7 +133,7 @@ describe('askLambdaEndpoint', () => {
       });
 
       then('error message indicates function not found', () => {
-        expect(errorDetails.message).toContain('svc-nonexistent-demo-notReal');
+        expect(errorDetails.message).toContain('svc-nonexistent-prep-notReal');
       });
 
       then('error matches snapshot', () => {

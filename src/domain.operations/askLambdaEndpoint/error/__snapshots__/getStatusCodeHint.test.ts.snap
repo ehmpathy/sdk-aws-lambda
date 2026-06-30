@@ -7,7 +7,7 @@ exports[`getStatusCodeHint given: [case2] snapshot all hints when: [t0] hints ar
     "statusCode": 400,
   },
   {
-    "hint": "access denied — check IAM permissions for lambda:InvokeFunction",
+    "hint": "access denied — check iam permissions for lambda:InvokeFunction",
     "statusCode": 403,
   },
   {
@@ -15,7 +15,7 @@ exports[`getStatusCodeHint given: [case2] snapshot all hints when: [t0] hints ar
     "statusCode": 404,
   },
   {
-    "hint": "request timeout — consider increasing client timeout",
+    "hint": "request timeout — consider increasing caller timeout",
     "statusCode": 408,
   },
   {

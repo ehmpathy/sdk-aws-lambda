@@ -10,8 +10,10 @@ import type {
 import type { ContextLogTrail } from 'sdk-logs';
 import type { ZodSchema } from 'zod';
 
+import type { ContextAwsLambdaServer } from '../../../domain.objects/ContextAwsLambdaServer';
 import { genConstraintErrorMiddleware } from '../middleware/genConstraintErrorMiddleware';
 import { genInternalServiceErrorMiddleware } from '../middleware/genInternalServiceErrorMiddleware';
+import { genIntrospectionMiddleware } from '../middleware/genIntrospectionMiddleware';
 import type { IoLogTranslate } from '../middleware/genIoLoggerMiddleware';
 import { genIoLoggerMiddleware } from '../middleware/genIoLoggerMiddleware';
 import { genTrailMiddleware } from '../middleware/genTrailMiddleware';
@@ -24,7 +26,7 @@ import { genZodBodyValidationMiddleware } from './middleware/genZodBodyValidatio
 
 export interface CorsConfig {
   /**
-   * .what = origins to accept for CORS
+   * .what = origins to accept for cors
    * .why = sets Access-Control-Allow-Origin header
    *
    * special:
@@ -43,7 +45,7 @@ export interface CorsConfig {
   credentials: boolean;
 
   /**
-   * .what = headers allowed in CORS requests
+   * .what = headers allowed in cors requests
    * .why = sets Access-Control-Allow-Headers header
    *
    * defaults to 'content-type,authorization'
@@ -68,14 +70,21 @@ export type ForApiGatewayInput<TInput, TOutput> = {
   cors?: CorsConfig;
   deserialize?: {
     /**
-     * .what = whether to deserialize JSON body
-     * .why = converts JSON string body to object when content-type is application/json
+     * .what = whether to deserialize json body
+     * .why = converts json string body to object when content-type is application/json
      *
      * defaults to true; set to false for raw string input
      */
     body: boolean;
   };
 };
+
+/**
+ * .what = sdk contract type for forApiGateway context
+ * .why = exported for consumer type inference; the shared handler-side context
+ *        ({ env?: EnvConfig; log? }) reused by genLambdaEndpoint + forApiGateway
+ */
+export type ForApiGatewayContext = ContextAwsLambdaServer;
 
 /**
  * .what = converts cors config to @middy/http-cors format
@@ -100,29 +109,32 @@ const serializers = [
 ];
 
 /**
- * .what = generates API Gateway lambda handler with HTTP features
- * .why = adds CORS, security headers, error handler, body serialization, and validation
+ * .what = generates API Gateway lambda handler with http features
+ * .why = adds cors, security headers, error handler, body serialization, and validation
  *
  * follows simple-lambda-handlers createApiGatewayHandler pattern:
  * - uses middy middleware chain
  * - uses @middy/http-cors for dynamic origin match
  * - uses @middy/http-security-headers for OWASP security headers
- * - uses @middy/http-json-body-parser for JSON body parse
+ * - uses @middy/http-json-body-parser for json body parse
  * - uses @middy/http-response-serializer for response serialization
  */
-export const forApiGateway = <TInput, TOutput>(config: {
-  schema: {
-    input: ZodSchema<TInput>;
-    output: ZodSchema<TOutput>;
-  };
-  invoke: (
-    input: { event: TInput; rawEvent: UnifiedApiGatewayEvent },
-    context: ContextLogTrail,
-  ) => Promise<TOutput>;
-  logTranslate?: IoLogTranslate;
-  cors?: CorsConfig;
-  deserialize?: { body: boolean };
-}): middy.MiddyfiedHandler<
+export const forApiGateway = <TInput, TOutput>(
+  config: {
+    schema: {
+      input: ZodSchema<TInput>;
+      output: ZodSchema<TOutput>;
+    };
+    invoke: (
+      input: { event: TInput; rawEvent: UnifiedApiGatewayEvent },
+      context: ContextLogTrail,
+    ) => Promise<TOutput>;
+    logTranslate?: IoLogTranslate;
+    cors?: CorsConfig;
+    deserialize?: { body: boolean };
+  },
+  context?: ContextAwsLambdaServer,
+): middy.MiddyfiedHandler<
   APIGatewayProxyEvent,
   APIGatewayProxyResult,
   Error,
@@ -133,13 +145,13 @@ export const forApiGateway = <TInput, TOutput>(config: {
   // build logic wrapper that validates output and invokes user handler
   const logic = async (
     event: UnifiedApiGatewayEvent,
-    context: Context,
+    lambdaContext: Context,
   ): Promise<{
     statusCode: number;
     body?: TOutput;
   }> => {
-    // get log from context (injected by trail middleware)
-    const log = (context as unknown as ContextLogTrail).log;
+    // get log from lambda context (injected by trail middleware)
+    const log = (lambdaContext as unknown as ContextLogTrail).log;
 
     // invoke user handler with validated body and raw event
     const response = await config.invoke(
@@ -162,12 +174,13 @@ export const forApiGateway = <TInput, TOutput>(config: {
   // middleware order matters:
   // 1. error handlers (onError) - must be first to catch errors from all other middleware
   // 2. io logger - logs input/output for debug
-  // 3. response serializer (onAfter) - serializes response body to JSON
+  // 3. response serializer (onAfter) - serializes response body to json
   // 4. cors (onAfter) - adds cors headers to response
   // 5. security headers (onAfter) - adds security headers to response
   // 6. event normalization (onBefore) - normalizes v1/v2 API Gateway events
   // 7. trail (onBefore) - injects trail context
-  // 8. body validation (onBefore) - validates event.body against schema
+  // 8. introspection (onBefore) - intercepts introspect requests, returns schema
+  // 9. body validation (onBefore) - validates event.body against schema
   const middlewares = [
     genConstraintErrorMiddleware({ apiGateway: true }),
     genInternalServiceErrorMiddleware({ apiGateway: true }),
@@ -182,6 +195,11 @@ export const forApiGateway = <TInput, TOutput>(config: {
     }),
     genApiGatewayEventNormalizationMiddleware({ parseBody: deserialize.body }),
     genTrailMiddleware(),
+    genIntrospectionMiddleware({
+      schema: config.schema,
+      env: context?.env,
+      apiGateway: true,
+    }),
     genZodBodyValidationMiddleware({ schema: config.schema.input }),
   ];
 

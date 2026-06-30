@@ -1,9 +1,10 @@
 import type { LambdaClient } from '@aws-sdk/client-lambda';
 
+import { sdkLambdaInvoke } from '../../../access/sdks/lambda/sdkLambdaInvoke';
+import type { LambdaEndpoint } from '../../../domain.objects/LambdaEndpoint';
 import { LambdaEndpointError } from '../../../domain.objects/LambdaEndpointError';
 import { getStatusCodeHint } from '../error/getStatusCodeHint';
 import { getParsedResponse } from '../serde/getParsedResponse';
-import { sdkLambdaInvoke } from './sdkLambdaInvoke';
 
 /**
  * .what = minimal log interface for lambda invocation
@@ -14,16 +15,21 @@ export interface MinimalLogMethods {
 }
 
 /**
- * .what = invocation args for lambda execution
- * .why = typed input for executor functions
+ * .what = invocation input for lambda execution
+ * .why = what to invoke (the endpoint) with which payload + trail exid
  */
-export type InvocationArgs = {
-  functionName: string;
+export type InvocationInput = {
+  endpoint: LambdaEndpoint;
   payload: unknown;
   exid: string;
-  service: string;
-  function: string;
-  lambdaClient: LambdaClient;
+};
+
+/**
+ * .what = invocation context for lambda execution
+ * .why = injected dependencies (sdk client + log), not invocation identity
+ */
+export type InvocationContext = {
+  sdkLambda: LambdaClient;
   log: MinimalLogMethods | null;
 };
 
@@ -32,29 +38,33 @@ export type InvocationArgs = {
  * .why = extracted to enable cache wrapper composition
  */
 export const executeLambdaInvocation = async <TResponse>(
-  input: InvocationArgs,
+  input: InvocationInput,
+  context: InvocationContext,
 ): Promise<TResponse> => {
   // log invocation
-  input.log?.debug('askLambdaEndpoint.invoke', {
-    functionName: input.functionName,
+  context.log?.debug('askLambdaEndpoint.invoke', {
+    slug: input.endpoint.slug,
     exid: input.exid,
   });
 
   // invoke lambda via communicator
-  const result = await sdkLambdaInvoke({
-    client: input.lambdaClient,
-    functionName: input.functionName,
-    payload: input.payload,
-  }).catch((error: unknown) => {
-    throw new LambdaEndpointError(
-      `lambda invocation threw: ${error instanceof Error ? error.message : String(error)}`,
-      {
-        service: input.service,
-        function: input.function,
-        exid: input.exid,
-        cause: error instanceof Error ? error : undefined,
-      },
-    );
+  // @error-enrichment: all sdkLambdaInvoke errors wrapped with endpoint context
+  //   - allowlist: all errors (sdk, network, timeout) → wrap with endpoint context
+  //   - original error preserved via `cause` for full stack trace
+  //   - throw raw error would lose which endpoint failed
+  const result = await sdkLambdaInvoke(
+    { slug: input.endpoint.slug, payload: input.payload },
+    { sdkLambda: context.sdkLambda },
+  ).catch((error: unknown) => {
+    // throw non-Error values (unexpected)
+    if (!(error instanceof Error)) throw error;
+
+    // wrap Error with endpoint context (error preserved via cause)
+    throw new LambdaEndpointError(`lambda invocation threw: ${error.message}`, {
+      endpoint: input.endpoint,
+      exid: input.exid,
+      cause: error,
+    });
   });
 
   // check invocation status (200 = invocation succeeded, handler may have thrown)
@@ -64,8 +74,7 @@ export const executeLambdaInvocation = async <TResponse>(
     // construct actionable error message based on status code
     const statusHint = getStatusCodeHint(statusCode);
     throw new LambdaEndpointError(`lambda invocation failed: ${statusHint}`, {
-      service: input.service,
-      function: input.function,
+      endpoint: input.endpoint,
       exid: input.exid,
       statusCode,
     });
@@ -75,14 +84,13 @@ export const executeLambdaInvocation = async <TResponse>(
   const response = getParsedResponse<TResponse>({
     payload: result.payload,
     functionError: result.functionError,
-    service: input.service,
-    function: input.function,
+    endpoint: input.endpoint,
     exid: input.exid,
   });
 
   // log result
-  input.log?.debug('askLambdaEndpoint.result', {
-    functionName: input.functionName,
+  context.log?.debug('askLambdaEndpoint.result', {
+    slug: input.endpoint.slug,
     statusCode: result.statusCode,
   });
 

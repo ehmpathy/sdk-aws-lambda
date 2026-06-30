@@ -2,6 +2,7 @@ import { BadRequestError, getError } from 'helpful-errors';
 import { given, then, when } from 'test-fns';
 
 import { LambdaEndpointError } from '../../../domain.objects/LambdaEndpointError';
+import { asLambdaEndpoint } from '../../asLambdaEndpoint/asLambdaEndpoint';
 import { getParsedResponse } from './getParsedResponse';
 
 const toPayload = (obj: unknown): Uint8Array =>
@@ -13,8 +14,11 @@ describe('getParsedResponse', () => {
       const result = getParsedResponse<{ data: string }>({
         payload: toPayload({ data: 'hello' }),
         functionError: undefined,
-        service: 'svc-orders',
-        function: 'getOrder',
+        endpoint: asLambdaEndpoint({
+          service: 'svc-orders',
+          access: 'prep',
+          function: 'getOrder',
+        }),
         exid: 'exid:abc123',
       });
 
@@ -31,8 +35,11 @@ describe('getParsedResponse', () => {
           getParsedResponse({
             payload: undefined,
             functionError: undefined,
-            service: 'svc-orders',
-            function: 'getOrder',
+            endpoint: asLambdaEndpoint({
+              service: 'svc-orders',
+              access: 'prep',
+              function: 'getOrder',
+            }),
             exid: 'exid:abc123',
           }),
         );
@@ -44,8 +51,11 @@ describe('getParsedResponse', () => {
           getParsedResponse({
             payload: undefined,
             functionError: undefined,
-            service: 'svc-orders',
-            function: 'getOrder',
+            endpoint: asLambdaEndpoint({
+              service: 'svc-orders',
+              access: 'prep',
+              function: 'getOrder',
+            }),
             exid: 'exid:abc123',
           }),
         );
@@ -61,8 +71,11 @@ describe('getParsedResponse', () => {
           getParsedResponse({
             payload: new TextEncoder().encode('not json'),
             functionError: undefined,
-            service: 'svc-orders',
-            function: 'getOrder',
+            endpoint: asLambdaEndpoint({
+              service: 'svc-orders',
+              access: 'prep',
+              function: 'getOrder',
+            }),
             exid: 'exid:abc123',
           }),
         );
@@ -74,8 +87,11 @@ describe('getParsedResponse', () => {
           getParsedResponse({
             payload: new TextEncoder().encode('not json'),
             functionError: undefined,
-            service: 'svc-orders',
-            function: 'getOrder',
+            endpoint: asLambdaEndpoint({
+              service: 'svc-orders',
+              access: 'prep',
+              function: 'getOrder',
+            }),
             exid: 'exid:abc123',
           }),
         );
@@ -95,8 +111,11 @@ describe('getParsedResponse', () => {
               stackTrace: ['at handler', 'at process'],
             }),
             functionError: undefined,
-            service: 'svc-orders',
-            function: 'getOrder',
+            endpoint: asLambdaEndpoint({
+              service: 'svc-orders',
+              access: 'prep',
+              function: 'getOrder',
+            }),
             exid: 'exid:abc123',
           }),
         );
@@ -112,8 +131,11 @@ describe('getParsedResponse', () => {
               stackTrace: ['at handler', 'at process'],
             }),
             functionError: undefined,
-            service: 'svc-orders',
-            function: 'getOrder',
+            endpoint: asLambdaEndpoint({
+              service: 'svc-orders',
+              access: 'prep',
+              function: 'getOrder',
+            }),
             exid: 'exid:abc123',
           }),
         );
@@ -129,8 +151,11 @@ describe('getParsedResponse', () => {
               stackTrace: ['at handler', 'at process'],
             }),
             functionError: undefined,
-            service: 'svc-orders',
-            function: 'getOrder',
+            endpoint: asLambdaEndpoint({
+              service: 'svc-orders',
+              access: 'prep',
+              function: 'getOrder',
+            }),
             exid: 'exid:abc123',
           }),
         );
@@ -147,8 +172,11 @@ describe('getParsedResponse', () => {
               stackTrace: ['at handler', 'at process'],
             }),
             functionError: undefined,
-            service: 'svc-orders',
-            function: 'getOrder',
+            endpoint: asLambdaEndpoint({
+              service: 'svc-orders',
+              access: 'prep',
+              function: 'getOrder',
+            }),
             exid: 'exid:abc123',
           }),
         );
@@ -165,8 +193,11 @@ describe('getParsedResponse', () => {
               errorMessage: 'minimal error',
             }),
             functionError: undefined,
-            service: 'svc-orders',
-            function: 'getOrder',
+            endpoint: asLambdaEndpoint({
+              service: 'svc-orders',
+              access: 'prep',
+              function: 'getOrder',
+            }),
             exid: null,
           }),
         );
@@ -180,8 +211,11 @@ describe('getParsedResponse', () => {
               errorMessage: 'minimal error',
             }),
             functionError: undefined,
-            service: 'svc-orders',
-            function: 'getOrder',
+            endpoint: asLambdaEndpoint({
+              service: 'svc-orders',
+              access: 'prep',
+              function: 'getOrder',
+            }),
             exid: null,
           }),
         );
@@ -202,8 +236,11 @@ describe('getParsedResponse', () => {
           items: ['a', 'b', 'c'],
         }),
         functionError: undefined,
-        service: 'svc-users',
-        function: 'getUser',
+        endpoint: asLambdaEndpoint({
+          service: 'svc-users',
+          access: 'prep',
+          function: 'getUser',
+        }),
         exid: 'exid:xyz',
       });
 
@@ -233,8 +270,11 @@ describe('getParsedResponse', () => {
           causeMessage: 'zod validation failed',
         }),
         functionError: undefined,
-        service: 'svc-users',
-        function: 'createUser',
+        endpoint: asLambdaEndpoint({
+          service: 'svc-users',
+          access: 'prep',
+          function: 'createUser',
+        }),
         exid: 'exid:abc123',
       });
 
@@ -261,14 +301,13 @@ describe('getParsedResponse', () => {
         ).toEqual('zod validation failed');
       });
 
-      then('it should include service and function in metadata', async () => {
+      then('it should include endpoint in metadata', async () => {
         const error = (await getError(parseWithBadRequest)) as BadRequestError;
-        expect((error.metadata as { service: string }).service).toEqual(
-          'svc-users',
-        );
-        expect((error.metadata as { function: string }).function).toEqual(
-          'createUser',
-        );
+        const endpoint = (
+          error.metadata as { endpoint: { service: string; function: string } }
+        ).endpoint;
+        expect(endpoint.service).toEqual('svc-users');
+        expect(endpoint.function).toEqual('createUser');
       });
 
       then('it should match snapshot', async () => {
@@ -289,8 +328,11 @@ describe('getParsedResponse', () => {
           causeMessage: 'connection timeout',
         }),
         functionError: undefined,
-        service: 'svc-users',
-        function: 'createUser',
+        endpoint: asLambdaEndpoint({
+          service: 'svc-users',
+          access: 'prep',
+          function: 'createUser',
+        }),
         exid: 'exid:xyz789',
       });
 

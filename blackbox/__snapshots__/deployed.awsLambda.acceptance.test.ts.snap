@@ -10,7 +10,7 @@ exports[`e2e: deployed goSurf lambda with trail propagation given: [case1] deplo
 
 exports[`e2e: deployed goSurf lambda with trail propagation given: [case1] deployed goSurf lambda via declastruct when: [t2] invoked with invalid input then: handler returns validation error 1`] = `
 {
-  "message": "BadRequestError: BadRequestError5: validation failed
+  "message": "✋ ConstraintError: validation failed: style: Invalid option: expected one of "longboard"|"shortboard"|"bodyboard"
 
 {
   "issues": [
@@ -23,9 +23,13 @@ exports[`e2e: deployed goSurf lambda with trail propagation given: [case1] deplo
 }
 
 {
-  "service": "svc-seaturtle",
-  "function": "goSurf",
-  "exid": "exid:a1af49d0-b1da-4072-ae65-e82179e95e35",
+  "endpoint": {
+    "service": "svc-seaturtle",
+    "access": "prod",
+    "function": "goSurf",
+    "slug": "svc-seaturtle-prod-goSurf"
+  },
+  "exid": "exid:fixed-t2-validation",
   "details": {
     "issues": [
       {
@@ -47,11 +51,21 @@ exports[`e2e: deployed goSurf lambda with trail propagation given: [case1] deplo
         },
       ],
     },
-    "exid": "exid:a1af49d0-b1da-4072-ae65-e82179e95e35",
-    "function": "goSurf",
-    "service": "svc-seaturtle",
-    "stackTrace": undefined,
+    "endpoint": LambdaEndpoint {
+      "access": "prod",
+      "function": "goSurf",
+      "service": "svc-seaturtle",
+      "slug": "svc-seaturtle-prod-goSurf",
+    },
+    "exid": "exid:fixed-t2-validation",
   },
   "name": "Error",
+}
+`;
+
+exports[`e2e: deployed goSurf lambda with trail propagation given: [case1] deployed goSurf lambda via declastruct when: [t3] invoked with non-existent function then: handler returns function not found error 1`] = `
+{
+  "messageContainsNotFound": true,
+  "name": "LambdaEndpointError",
 }
 `;

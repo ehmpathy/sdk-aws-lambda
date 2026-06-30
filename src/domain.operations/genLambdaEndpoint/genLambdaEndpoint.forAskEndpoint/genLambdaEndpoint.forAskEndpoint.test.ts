@@ -1,6 +1,6 @@
 import type { Context } from 'aws-lambda';
 import { getError } from 'helpful-errors';
-import { given, then, when } from 'test-fns';
+import { given, then, useThen, when } from 'test-fns';
 import { z } from 'zod';
 
 import { genLambdaEndpoint } from './genLambdaEndpoint.forAskEndpoint';
@@ -25,20 +25,28 @@ describe('genLambdaEndpoint', () => {
   given('[case1] valid input and output', () => {
     const schema = {
       input: z.object({ name: z.string() }),
-      output: z.object({ greeting: z.string() }),
+      output: z.object({ salute: z.string() }),
     };
 
     when('[t0] handler invoked', () => {
-      then('it should return validated output', async () => {
+      const result = useThen('handler returns salute', async () => {
         const handler = genLambdaEndpoint({
           schema,
           invoke: async ({ event }) => {
-            return { greeting: `Hello, ${event.name}!` };
+            return { salute: `Hello, ${event.name}!` };
           },
         });
 
-        const result = await handler({ name: 'Alice' }, createMockContext());
-        expect(result).toEqual({ greeting: 'Hello, Alice!' });
+        return handler({ name: 'Alice' }, createMockContext());
+      });
+
+      then('it should return validated output', () => {
+        expect(result).toEqual({ salute: 'Hello, Alice!' });
+      });
+
+      then('result matches snapshot', () => {
+        expect(result).toBeDefined();
+        expect(result).toMatchSnapshot();
       });
     });
   });
@@ -50,37 +58,37 @@ describe('genLambdaEndpoint', () => {
     };
 
     when('[t0] handler invoked', () => {
-      then('it should return error response (not throw)', async () => {
+      const result = useThen('handler returns error response', async () => {
         const handler = genLambdaEndpoint({
           schema,
           invoke: async () => ({ result: true }),
         });
 
         // BadRequestError = lambda succeeds, returns error response object
-        const result = await handler(
+        return handler(
           { name: 'Bob', age: 'not a number' } as unknown as {
             name: string;
             age: number;
           },
           createMockContext(),
         );
+      });
 
+      then('it should return BadRequestError type', () => {
         expect(result).toMatchObject({
           errorType: 'BadRequestError',
         });
+      });
+
+      then('error message indicates validation failure', () => {
         expect(
           (result as unknown as { errorMessage: string }).errorMessage,
         ).toContain('validation failed');
+      });
 
-        // snapshot for contract exhaustiveness
-        const errorResult = result as unknown as {
-          errorMessage: string;
-          errorType: string;
-        };
-        expect({
-          errorType: errorResult.errorType,
-          errorMessageContains: 'validation failed',
-        }).toMatchSnapshot();
+      then('result matches snapshot', () => {
+        expect(result).toBeDefined();
+        expect(result).toMatchSnapshot();
       });
     });
   });
@@ -154,7 +162,7 @@ describe('genLambdaEndpoint', () => {
     };
 
     when('[t0] handler invoked with sensitive data', () => {
-      then('it should apply input translation', async () => {
+      const result = useThen('handler processes request', async () => {
         const handler = genLambdaEndpoint({
           schema,
           invoke: async () => ({ success: true }),
@@ -166,13 +174,19 @@ describe('genLambdaEndpoint', () => {
           },
         });
 
-        // just verify handler runs without error
-        const result = await handler(
+        return handler(
           { username: 'alice', password: 'secret123' },
           createMockContext(),
         );
+      });
 
+      then('it should return success', () => {
         expect(result).toEqual({ success: true });
+      });
+
+      then('result matches snapshot', () => {
+        expect(result).toBeDefined();
+        expect(result).toMatchSnapshot();
       });
     });
   });
@@ -188,8 +202,9 @@ describe('genLambdaEndpoint', () => {
     };
 
     when('[t0] handler invoked', () => {
-      then('it should apply input transform', async () => {
-        let capturedEmail: string | undefined;
+      let capturedEmail: string | undefined;
+
+      const result = useThen('handler applies transform', async () => {
         const handler = genLambdaEndpoint({
           schema,
           invoke: async ({ event }) => {
@@ -198,13 +213,162 @@ describe('genLambdaEndpoint', () => {
           },
         });
 
-        const result = await handler(
-          { email: 'ALICE@EXAMPLE.COM' },
-          createMockContext(),
+        return handler({ email: 'ALICE@EXAMPLE.COM' }, createMockContext());
+      });
+
+      then('input is lowercased before handler', () => {
+        expect(capturedEmail).toBe('alice@example.com');
+      });
+
+      then('output reflects transformed email', () => {
+        expect(result.email).toBe('alice@example.com');
+      });
+
+      then('result matches snapshot', () => {
+        expect(result).toBeDefined();
+        expect(result).toMatchSnapshot();
+      });
+    });
+  });
+
+  given('[case7] introspection request in prep env', () => {
+    const schema = {
+      input: z.object({ customerId: z.string() }),
+      output: z.object({ name: z.string(), balance: z.number() }),
+    };
+
+    when('[t0] handler invoked with introspect payload', () => {
+      const result = useThen('handler returns schema', async () => {
+        const handler = genLambdaEndpoint(
+          {
+            schema,
+            invoke: async () => ({ name: 'test', balance: 100 }),
+          },
+          { env: { access: 'prep' } },
         );
 
-        expect(capturedEmail).toBe('alice@example.com');
-        expect(result.email).toBe('alice@example.com');
+        return handler({ introspect: 'schema' } as any, createMockContext());
+      });
+
+      then('response contains input schema', () => {
+        const response = result as unknown as {
+          input: { type: string; properties: Record<string, unknown> };
+        };
+        expect(response.input.type).toBe('object');
+        expect(response.input.properties.customerId).toBeDefined();
+      });
+
+      then('response contains output schema', () => {
+        const response = result as unknown as {
+          output: { type: string; properties: Record<string, unknown> };
+        };
+        expect(response.output.type).toBe('object');
+        expect(response.output.properties.name).toBeDefined();
+        expect(response.output.properties.balance).toBeDefined();
+      });
+
+      then('response matches snapshot', () => {
+        expect(result).toMatchSnapshot();
+      });
+    });
+  });
+
+  given('[case8] introspection request in prod env', () => {
+    const schema = {
+      input: z.object({ id: z.string() }),
+      output: z.object({ value: z.number() }),
+    };
+
+    when('[t0] handler invoked with introspect payload', () => {
+      const result = useThen('handler returns error response', async () => {
+        const handler = genLambdaEndpoint(
+          {
+            schema,
+            invoke: async () => ({ value: 42 }),
+          },
+          { env: { access: 'prod' } },
+        );
+
+        return handler({ introspect: 'schema' } as any, createMockContext());
+      });
+
+      then('returns BadRequestError type', () => {
+        expect(result).toMatchObject({ errorType: 'BadRequestError' });
+      });
+
+      then('error message mentions prep environment', () => {
+        expect(
+          (result as unknown as { errorMessage: string }).errorMessage,
+        ).toContain('prep');
+      });
+
+      then('result matches snapshot', () => {
+        expect(result).toBeDefined();
+        expect(result).toMatchSnapshot();
+      });
+    });
+  });
+
+  given('[case9] introspection request without env config', () => {
+    const schema = {
+      input: z.object({ id: z.string() }),
+      output: z.object({ value: z.number() }),
+    };
+
+    when('[t0] handler invoked with introspect payload', () => {
+      const result = useThen('handler returns error response', async () => {
+        const handler = genLambdaEndpoint({
+          schema,
+          invoke: async () => ({ value: 42 }),
+          // no env provided
+        });
+
+        return handler({ introspect: 'schema' } as any, createMockContext());
+      });
+
+      then('returns BadRequestError type', () => {
+        expect(result).toMatchObject({ errorType: 'BadRequestError' });
+      });
+
+      then('error message mentions env', () => {
+        expect(
+          (result as unknown as { errorMessage: string }).errorMessage,
+        ).toContain('env');
+      });
+
+      then('result matches snapshot', () => {
+        expect(result).toBeDefined();
+        expect(result).toMatchSnapshot();
+      });
+    });
+  });
+
+  given('[case10] normal request with env config', () => {
+    const schema = {
+      input: z.object({ name: z.string() }),
+      output: z.object({ salute: z.string() }),
+    };
+
+    when('[t0] handler invoked with normal payload', () => {
+      const result = useThen('handler processes request', async () => {
+        const handler = genLambdaEndpoint(
+          {
+            schema,
+            invoke: async ({ event }) => ({ salute: `Hello, ${event.name}!` }),
+          },
+          { env: { access: 'prep' } },
+        );
+
+        return handler({ name: 'Bob' }, createMockContext());
+      });
+
+      then('passes through to handler as normal', () => {
+        expect(result).toEqual({ salute: 'Hello, Bob!' });
+      });
+
+      then('result matches snapshot', () => {
+        expect(result).toBeDefined();
+        expect(result).toMatchSnapshot();
       });
     });
   });

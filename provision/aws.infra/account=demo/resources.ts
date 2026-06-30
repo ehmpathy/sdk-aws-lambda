@@ -47,7 +47,7 @@ export const getResources = async (): Promise<DomainEntity<any>[]> => {
 
   // declare test lambda function ($LATEST, no versions needed for tests)
   const testLambda = DeclaredAwsLambda.as({
-    name: 'svc-demo-getEventEcho',
+    name: 'svc-prep-getEventEcho',
     runtime: 'nodejs20.x',
     handler: 'handler.handler',
     timeout: 30,
@@ -62,7 +62,7 @@ export const getResources = async (): Promise<DomainEntity<any>[]> => {
 
   // ancient handler for round-trip tests (flat error format)
   const ancientLambda = DeclaredAwsLambda.as({
-    name: 'svc-demo-echoAncient',
+    name: 'svc-prep-echoAncient',
     runtime: 'nodejs20.x',
     handler: 'handler.handler',
     timeout: 30,
@@ -78,7 +78,7 @@ export const getResources = async (): Promise<DomainEntity<any>[]> => {
 
   // contemp handler for round-trip tests (genLambdaEndpoint with caller detection)
   const contempLambda = DeclaredAwsLambda.as({
-    name: 'svc-demo-echoContemp',
+    name: 'svc-prep-echoContemp',
     runtime: 'nodejs20.x',
     handler: 'handler.handler',
     timeout: 30,

@@ -1,13 +1,19 @@
 import { getError, HelpfulError } from 'helpful-errors';
 import { given, then, when } from 'test-fns';
 
+import { asLambdaEndpoint } from '../domain.operations/asLambdaEndpoint/asLambdaEndpoint';
 import { LambdaEndpointError } from './LambdaEndpointError';
+
+const exampleEndpoint = asLambdaEndpoint({
+  service: 'svc-orders',
+  access: 'prep',
+  function: 'getOrderByUuid',
+});
 
 describe('LambdaEndpointError', () => {
   given('[case1] error is constructed with full metadata', () => {
     const error = new LambdaEndpointError('lambda invocation failed', {
-      service: 'svc-orders',
-      function: 'getOrderByUuid',
+      endpoint: exampleEndpoint,
       exid: 'exid:abc123',
       errorType: 'ValidationError',
       stackTrace: 'Error: validation failed\n  at handler...',
@@ -30,12 +36,12 @@ describe('LambdaEndpointError', () => {
         expect(error.code?.slug).toEqual('LAMBDA_ENDPOINT_ERROR');
       });
 
-      then('it should include service in metadata', () => {
-        expect(error.metadata.service).toEqual('svc-orders');
+      then('it should include endpoint service in metadata', () => {
+        expect(error.metadata.endpoint.service).toEqual('svc-orders');
       });
 
-      then('it should include function in metadata', () => {
-        expect(error.metadata.function).toEqual('getOrderByUuid');
+      then('it should include endpoint function in metadata', () => {
+        expect(error.metadata.endpoint.function).toEqual('getOrderByUuid');
       });
 
       then('it should include exid in metadata', () => {
@@ -54,8 +60,7 @@ describe('LambdaEndpointError', () => {
 
   given('[case2] error is constructed with null exid', () => {
     const error = new LambdaEndpointError('lambda invocation failed', {
-      service: 'svc-orders',
-      function: 'getOrderByUuid',
+      endpoint: exampleEndpoint,
       exid: null,
     });
 
@@ -68,8 +73,7 @@ describe('LambdaEndpointError', () => {
 
   given('[case3] error message includes metadata', () => {
     const error = new LambdaEndpointError('lambda invocation failed', {
-      service: 'svc-orders',
-      function: 'getOrderByUuid',
+      endpoint: exampleEndpoint,
       exid: 'exid:abc123',
     });
 
@@ -88,8 +92,11 @@ describe('LambdaEndpointError', () => {
     when('[t0] error is caught via getError', () => {
       const thrownError = getError(() => {
         throw new LambdaEndpointError('test error', {
-          service: 'svc-test',
-          function: 'testFn',
+          endpoint: asLambdaEndpoint({
+            service: 'svc-test',
+            access: 'prep',
+            function: 'testFn',
+          }),
           exid: null,
         });
       });
@@ -102,8 +109,7 @@ describe('LambdaEndpointError', () => {
 
   given('[case5] error has name property', () => {
     const error = new LambdaEndpointError('lambda invocation failed', {
-      service: 'svc-orders',
-      function: 'getOrderByUuid',
+      endpoint: exampleEndpoint,
       exid: 'exid:abc123',
     });
 
@@ -116,8 +122,7 @@ describe('LambdaEndpointError', () => {
 
   given('[case6] error serializes to json', () => {
     const error = new LambdaEndpointError('lambda invocation failed', {
-      service: 'svc-orders',
-      function: 'getOrderByUuid',
+      endpoint: exampleEndpoint,
       exid: 'exid:abc123',
     });
 

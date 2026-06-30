@@ -1,0 +1,411 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`introspection given: [case2] genLambdaEndpoint with introspection in prep env when: [t0] invoked with introspect payload then: result matches snapshot 1`] = `
+{
+  "input": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "name": {
+        "type": "string",
+      },
+    },
+    "required": [
+      "name",
+    ],
+    "type": "object",
+  },
+  "output": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "salute": {
+        "type": "string",
+      },
+    },
+    "required": [
+      "salute",
+    ],
+    "type": "object",
+  },
+}
+`;
+
+exports[`introspection given: [case3] genLambdaEndpoint with introspection in prod env (ancient caller) when: [t0] invoked with introspect payload (flat/ancient format) then: result matches snapshot 1`] = `
+{
+  "details": {
+    "access": "prod",
+    "env": {
+      "access": "prod",
+    },
+  },
+  "errorMessage": "✋ ConstraintError: introspection is only available in prep environment, current: prod
+
+{
+  "env": {
+    "access": "prod"
+  },
+  "access": "prod"
+}",
+  "errorType": "BadRequestError",
+}
+`;
+
+exports[`introspection given: [case3b] genLambdaEndpoint with introspection in prod env (contemp caller) when: [t0] invoked with introspect payload (wrapped/contemp format) then: result matches snapshot 1`] = `
+{
+  "error": {
+    "_serde": "LambdaEndpointError::contemp",
+    "class": "ConstraintError",
+    "details": {
+      "access": "prod",
+      "env": {
+        "access": "prod",
+      },
+    },
+    "message": "✋ ConstraintError: introspection is only available in prep environment, current: prod
+
+{
+  "env": {
+    "access": "prod"
+  },
+  "access": "prod"
+}",
+  },
+}
+`;
+
+exports[`introspection given: [case4] genLambdaEndpoint without env config (ancient caller) when: [t0] invoked with introspect payload (flat/ancient format) then: result matches snapshot 1`] = `
+{
+  "details": {
+    "hint": "pass env config to genLambdaEndpoint",
+  },
+  "errorMessage": "✋ ConstraintError: introspection requires env.access context but env was not provided to handler
+
+{
+  "hint": "pass env config to genLambdaEndpoint"
+}",
+  "errorType": "BadRequestError",
+}
+`;
+
+exports[`introspection given: [case4b] genLambdaEndpoint without env config (contemp caller) when: [t0] invoked with introspect payload (wrapped/contemp format) then: result matches snapshot 1`] = `
+{
+  "error": {
+    "_serde": "LambdaEndpointError::contemp",
+    "class": "ConstraintError",
+    "details": {
+      "hint": "pass env config to genLambdaEndpoint",
+    },
+    "message": "✋ ConstraintError: introspection requires env.access context but env was not provided to handler
+
+{
+  "hint": "pass env config to genLambdaEndpoint"
+}",
+  },
+}
+`;
+
+exports[`introspection given: [case5] forApiGateway with introspection in prep env when: [t0] invoked with introspect payload then: result matches snapshot 1`] = `
+{
+  "body": "{"input":{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"data":{"type":"string"}},"required":["data"],"additionalProperties":false},"output":{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"success":{"type":"boolean"}},"required":["success"],"additionalProperties":false}}",
+  "headers": {
+    "Content-Type": "application/json",
+  },
+  "statusCode": 200,
+}
+`;
+
+exports[`introspection given: [case6] introspection with complex schema when: [t0] invoked with introspect payload then: result matches snapshot 1`] = `
+{
+  "input": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "options": {
+        "additionalProperties": false,
+        "properties": {
+          "limit": {
+            "default": 10,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer",
+          },
+          "verbose": {
+            "type": "boolean",
+          },
+        },
+        "required": [
+          "limit",
+        ],
+        "type": "object",
+      },
+      "user": {
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "format": "email",
+            "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
+            "type": "string",
+          },
+          "id": {
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "type": "string",
+          },
+          "roles": {
+            "items": {
+              "enum": [
+                "admin",
+                "user",
+                "guest",
+              ],
+              "type": "string",
+            },
+            "type": "array",
+          },
+        },
+        "required": [
+          "id",
+          "email",
+          "roles",
+        ],
+        "type": "object",
+      },
+    },
+    "required": [
+      "user",
+    ],
+    "type": "object",
+  },
+  "output": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "result": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "data": {
+                "items": {
+                  "type": "string",
+                },
+                "type": "array",
+              },
+              "status": {
+                "const": "success",
+                "type": "string",
+              },
+            },
+            "required": [
+              "status",
+              "data",
+            ],
+            "type": "object",
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "message": {
+                "type": "string",
+              },
+              "status": {
+                "const": "error",
+                "type": "string",
+              },
+            },
+            "required": [
+              "status",
+              "message",
+            ],
+            "type": "object",
+          },
+        ],
+      },
+    },
+    "required": [
+      "result",
+    ],
+    "type": "object",
+  },
+}
+`;
+
+exports[`introspection given: [case7] introspection with async env config when: [t0] invoked with introspect payload then: result matches snapshot 1`] = `
+{
+  "input": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "name": {
+        "type": "string",
+      },
+    },
+    "required": [
+      "name",
+    ],
+    "type": "object",
+  },
+  "output": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "salute": {
+        "type": "string",
+      },
+    },
+    "required": [
+      "salute",
+    ],
+    "type": "object",
+  },
+}
+`;
+
+exports[`introspection given: [case8] getOneLambdaContract via in-process harness when: [t0] getOneLambdaContract is called then: result matches snapshot 1`] = `
+{
+  "input": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "include": {
+        "items": {
+          "enum": [
+            "profile",
+            "settings",
+          ],
+          "type": "string",
+        },
+        "type": "array",
+      },
+      "userId": {
+        "format": "uuid",
+        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+        "type": "string",
+      },
+    },
+    "required": [
+      "userId",
+    ],
+    "type": "object",
+  },
+  "output": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "metadata": {
+        "additionalProperties": false,
+        "properties": {
+          "fetchedAt": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "fetchedAt",
+        ],
+        "type": "object",
+      },
+      "user": {
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "format": "email",
+            "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
+            "type": "string",
+          },
+          "id": {
+            "type": "string",
+          },
+          "name": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+        ],
+        "type": "object",
+      },
+    },
+    "required": [
+      "user",
+      "metadata",
+    ],
+    "type": "object",
+  },
+}
+`;
+
+exports[`introspection given: [case11] getAllLambdaContracts via in-process harness when: [t0] getAllLambdaContracts is called then: result matches snapshot 1`] = `
+{
+  "getSettings": {
+    "input": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "userId": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "userId",
+      ],
+      "type": "object",
+    },
+    "output": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "language": {
+          "type": "string",
+        },
+        "theme": {
+          "enum": [
+            "light",
+            "dark",
+          ],
+          "type": "string",
+        },
+      },
+      "required": [
+        "theme",
+        "language",
+      ],
+      "type": "object",
+    },
+  },
+  "getUser": {
+    "input": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "userId": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "userId",
+      ],
+      "type": "object",
+    },
+    "output": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "email": {
+          "type": "string",
+        },
+        "name": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "name",
+        "email",
+      ],
+      "type": "object",
+    },
+  },
+}
+`;

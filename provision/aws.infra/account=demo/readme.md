@@ -5,7 +5,7 @@ aws resources for sdk-aws-lambda integration tests in the demo account.
 ## resources
 
 - `sdk-aws-lambda-test-role` — iam role for lambda execution
-- `svc-demo-getEventEcho` — test lambda that echoes input with trail context
+- `svc-prep-getEventEcho` — test lambda that echoes input with trail context
 
 ## prerequisites
 
@@ -46,7 +46,7 @@ invoke the lambda to verify:
 
 ```sh
 aws lambda invoke \
-  --function-name svc-demo-getEventEcho \
+  --function-name svc-prep-getEventEcho \
   --payload '{"message":"hello","trail":{"exid":"exid:test"}}' \
   --cli-binary-format raw-in-base64-out \
   /dev/stdout
