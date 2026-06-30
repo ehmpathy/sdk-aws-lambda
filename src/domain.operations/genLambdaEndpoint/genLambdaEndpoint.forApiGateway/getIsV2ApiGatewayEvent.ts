@@ -1,7 +1,7 @@
 import type { APIGatewayProxyEventV2 } from 'aws-lambda';
 
 /**
- * .what = type guard for API Gateway v2 (HTTP API) events
+ * .what = type guard for api gateway v2 (http api) events
  * .why = enables detection of event format for middleware
  */
 export const getIsV2ApiGatewayEvent = (

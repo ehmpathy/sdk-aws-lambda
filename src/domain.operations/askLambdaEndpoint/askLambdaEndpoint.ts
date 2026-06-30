@@ -1,16 +1,17 @@
-import type { LambdaClient } from '@aws-sdk/client-lambda';
-import type { ContextLogTrail } from 'sdk-logs';
 import type { SimpleInMemoryCache } from 'simple-in-memory-cache';
 import type { SimpleCache } from 'with-simple-cache';
 
+import { genLambdaSdk } from '../../access/sdks/lambda/genLambdaSdk';
+import type { ContextAwsLambdaCaller } from '../../domain.objects/ContextAwsLambdaCaller';
+import { asLambdaEndpoint } from '../asLambdaEndpoint/asLambdaEndpoint';
 import { asCachedExecutor } from './cache/asCachedExecutor';
 import { getAskLambdaCacheKey } from './cache/getAskLambdaCacheKey';
-import { getAccessFromContext } from './context/getAccessFromContext';
 import { getExidFromContext } from './context/getExidFromContext';
 import { getLogForExidExtraction } from './context/getLogForExidExtraction';
-import type { InvocationArgs } from './invoke/executeLambdaInvocation';
-import { genLambdaClient } from './invoke/genLambdaClient';
-import { getLambdaFunctionName } from './serde/getLambdaFunctionName';
+import type {
+  InvocationContext,
+  InvocationInput,
+} from './invoke/executeLambdaInvocation';
 import { getLambdaPayload } from './serde/getLambdaPayload';
 
 /**
@@ -40,14 +41,7 @@ export const askLambdaEndpoint = async <TRequest, TResponse>(
       payload?: 'ancient' | 'contemp';
     };
   },
-  context: ContextLogTrail & {
-    env: {
-      access: string;
-      region?: string;
-    };
-    aws?: {
-      lambda?: { sdk?: LambdaClient };
-    };
+  context: ContextAwsLambdaCaller & {
     cache?: {
       response?: SimpleCache<TResponse>;
       dedupe?: SimpleInMemoryCache<TResponse>;
@@ -68,13 +62,10 @@ export const askLambdaEndpoint = async <TRequest, TResponse>(
     });
   }
 
-  // get access level from context
-  const access = getAccessFromContext({ env: context.env });
-
-  // build function name
-  const functionName = getLambdaFunctionName({
+  // build the endpoint from the selector + ambient access (computes slug)
+  const endpoint = asLambdaEndpoint({
     service: input.which.service,
-    access,
+    access: context.env.access,
     function: input.which.function,
   });
 
@@ -85,29 +76,23 @@ export const askLambdaEndpoint = async <TRequest, TResponse>(
       ? input.event
       : getLambdaPayload({ event: input.event, trail: { exid } });
 
-  // get or create lambda client
-  const lambdaClient = genLambdaClient({
+  // get or create LambdaClient
+  const sdkLambda = genLambdaSdk({
     sdk: context.aws?.lambda?.sdk,
     env: { region: context.env.region },
   });
 
-  // prepare invocation args
-  const invocationArgs: InvocationArgs = {
-    functionName,
-    payload,
-    exid,
-    service: input.which.service,
-    function: input.which.function,
-    lambdaClient,
+  // prepare invocation input + context
+  const invocationInput: InvocationInput = { endpoint, payload, exid };
+  const invocationContext: InvocationContext = {
+    sdkLambda,
     log: context.log,
   };
 
   // build cache key generator
-  const getCacheKey = () =>
+  const getCacheKey = (): string =>
     getAskLambdaCacheKey({
-      service: input.which.service,
-      function: input.which.function,
-      access,
+      endpoint,
       event: input.event as Record<string, unknown>,
     });
 
@@ -118,7 +103,7 @@ export const askLambdaEndpoint = async <TRequest, TResponse>(
   });
 
   // execute invocation
-  return execute(invocationArgs);
+  return execute(invocationInput, invocationContext);
 };
 
 /**

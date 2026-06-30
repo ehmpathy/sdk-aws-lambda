@@ -96,7 +96,7 @@ exports[`genTrailMiddleware given: [case7] SQS-style event (Records array, no tr
 }
 `;
 
-exports[`genTrailMiddleware given: [case8] legacy client payload (raw event, no trail wrapper) when: [t0] middleware invoked with legacy payload then: result structure matches snapshot 1`] = `
+exports[`genTrailMiddleware given: [case8] ancient caller payload (raw event, no trail wrapper) when: [t0] middleware invoked with legacy payload then: result structure matches snapshot 1`] = `
 {
   "exidGenerated": true,
   "input": {

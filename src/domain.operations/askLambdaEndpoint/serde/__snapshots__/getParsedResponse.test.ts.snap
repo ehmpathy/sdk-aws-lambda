@@ -4,8 +4,12 @@ exports[`getParsedResponse given: [case6] BadRequestError response with validati
 [Error: ✋ ConstraintError: validation failed
 
 {
-  "service": "svc-users",
-  "function": "createUser",
+  "endpoint": {
+    "service": "svc-users",
+    "access": "prep",
+    "function": "createUser",
+    "slug": "svc-users-prep-createUser"
+  },
   "exid": "exid:abc123",
   "stackTrace": "at handler",
   "details": {
@@ -25,8 +29,12 @@ exports[`getParsedResponse given: [case7] LambdaEndpointError with details when:
 [LambdaEndpointError: LambdaEndpointError: internal error
 
 {
-  "service": "svc-users",
-  "function": "createUser",
+  "endpoint": {
+    "service": "svc-users",
+    "access": "prep",
+    "function": "createUser",
+    "slug": "svc-users-prep-createUser"
+  },
   "exid": "exid:xyz789",
   "errorType": "DatabaseError",
   "stackTrace": "at query",

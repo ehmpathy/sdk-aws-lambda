@@ -11,15 +11,27 @@ export interface ValidationErrorMetadata {
 }
 
 /**
+ * .what = format issues summary for error message
+ * .why = extract message format from orchestrator
+ */
+const getIssuesMessage = (input: { issues: ZodIssueSummary[] }): string => {
+  return input.issues
+    .map((issue) => `${issue.path}: ${issue.message}`)
+    .join('; ');
+};
+
+/**
  * .what = transforms zod validation error into ConstraintError
- * .why = clients need friendly error messages for invalid input
+ * .why = callers need friendly error messages for invalid input
  */
 export const getValidationError = (input: {
   error: ZodError;
 }): ConstraintError<ValidationErrorMetadata> => {
   const issues = getZodIssuesSummary({ issues: input.error.issues });
+  const issuesMessage = getIssuesMessage({ issues });
 
-  return new ConstraintError<ValidationErrorMetadata>('validation failed', {
-    issues,
-  });
+  return new ConstraintError<ValidationErrorMetadata>(
+    `validation failed: ${issuesMessage}`,
+    { issues },
+  );
 };

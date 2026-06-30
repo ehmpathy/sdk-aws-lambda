@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { genLambdaEndpoint } from '../src/index';
 
 describe('trail threading', () => {
-  given('[case1] client invokes with exid', () => {
+  given('[case1] caller invokes with exid', () => {
     const schema = {
       input: z.object({
         value: z.string(),
@@ -39,19 +39,19 @@ describe('trail threading', () => {
     } as Context;
 
     when('[t0] invoked with trail.exid', () => {
-      then('handler receives client exid via trail context', async () => {
+      then('handler receives caller exid via trail context', async () => {
         // use wrapped format { event, trail } for trail propagation
         const result = await handler(
-          { event: { value: 'test' }, trail: { exid: 'exid:client-provided' } },
+          { event: { value: 'test' }, trail: { exid: 'exid:caller-provided' } },
           mockContext,
         );
-        expect(result.receivedExid).toBe('exid:client-provided');
+        expect(result.receivedExid).toBe('exid:caller-provided');
         expect(result).toMatchSnapshot();
       });
     });
   });
 
-  given('[case2] client invokes without context', () => {
+  given('[case2] caller invokes without context', () => {
     const schema = {
       input: z.object({ value: z.string() }),
       output: z.object({ hasExid: z.boolean() }),

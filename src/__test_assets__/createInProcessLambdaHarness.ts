@@ -1,8 +1,23 @@
+/**
+ * @rule-exception rule.forbid.failhide
+ *   - location: invokeHandlerLikeAwsLambdaRuntime catch block
+ *   - why: test harness simulates aws lambda runtime error surface behavior
+ *   - errors-surfaced: yes — preserved in FunctionError response payload
+ *   - scope: test asset only (__test_assets__), not production code
+ */
 import type { Context } from 'aws-lambda';
 
 import { createTestContext } from './createTestContext';
 
-type Handler = (event: unknown, context: Context) => Promise<unknown>;
+/**
+ * .what = handler type compatible with genLambdaEndpoint output
+ * .why = harness passes events with unknown shape, handler narrows
+ *
+ * note: eslint-disable for any is required because middy handlers
+ *       have specific input types that we can't know at compile time
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Handler = (event: any, context: Context) => Promise<unknown>;
 
 interface HarnessHandlers {
   [service: string]: {
@@ -17,6 +32,18 @@ interface LambdaInvokeResponse {
 }
 
 /**
+ * .what = builds an error that mirrors the aws sdk ResourceNotFoundException
+ * .why = real LambdaClient.send rejects (does not return a body) when a
+ *        function is absent; the harness must surface the same shape so
+ *        callers exercise their not-found error path faithfully
+ */
+const genResourceNotFoundError = (input: { functionName: string }): Error => {
+  const error = new Error(`Function not found: ${input.functionName}`);
+  error.name = 'ResourceNotFoundException';
+  return error;
+};
+
+/**
  * .what = simulates aws lambda runtime's handler invocation with error surface
  * .why = aws lambda catches handler errors and surfaces them via FunctionError response
  *
@@ -25,7 +52,7 @@ interface LambdaInvokeResponse {
  *   .why-not-hidden:
  *     1. errors ARE surfaced — preserved in FunctionError response payload
  *     2. askLambdaEndpoint detects FunctionError and throws LambdaEndpointError
- *     3. full error chain: handler throws → harness surfaces → client throws
+ *     3. full error chain: handler throws → harness surfaces → caller throws
  *     4. error info preserved: errorMessage, errorType, stackTrace all passed through
  *   .why-no-rethrow:
  *     - aws lambda catches all handler errors and returns structured response
@@ -73,7 +100,7 @@ const invokeHandlerLikeAwsLambdaRuntime = async (input: {
 };
 
 /**
- * .what = creates mock lambda client that routes to in-process handlers
+ * .what = creates mock LambdaClient that routes to in-process handlers
  * .why = enables e2e tests without AWS credentials or network
  *
  * .usage
@@ -85,7 +112,7 @@ const invokeHandlerLikeAwsLambdaRuntime = async (input: {
 export const createInProcessLambdaHarness = (
   handlers: HarnessHandlers,
 ): {
-  mockLambdaClient: jest.Mock;
+  mockSdkLambda: jest.Mock;
   mockSend: jest.Mock;
 } => {
   const mockSend = jest
@@ -96,36 +123,25 @@ export const createInProcessLambdaHarness = (
       }) => {
         const fnName = command.input.FunctionName;
 
-        // parse function name: service-access-function
+        // parse function name: {service}-{access}-{function}
+        // where service follows svc-$noun pattern (e.g., svc-user)
         const parts = fnName.split('-');
-        if (parts.length < 3) {
-          return {
-            StatusCode: 404,
-            FunctionError: 'Unhandled',
-            Payload: Buffer.from(
-              JSON.stringify({
-                errorMessage: `function not found: ${fnName}`,
-                errorType: 'ResourceNotFoundException',
-              }),
-            ),
-          };
+        if (parts.length < 4) {
+          // aws sdk throws ResourceNotFoundException for absent functions
+          // (Invoke on an absent function rejects; it does not return a body)
+          throw genResourceNotFoundError({ functionName: fnName });
         }
 
-        const service = parts[0];
-        const fn = parts.slice(2).join('-'); // handle function names with dashes
+        // service is first two parts (svc-$noun pattern)
+        const service = `${parts[0]}-${parts[1]}`;
+        // access is third part (e.g., prep, prod)
+        // function is rest of parts joined (handle function names with dashes)
+        const fn = parts.slice(3).join('-');
 
         const handler = handlers[service ?? '']?.[fn ?? ''];
         if (!handler) {
-          return {
-            StatusCode: 404,
-            FunctionError: 'Unhandled',
-            Payload: Buffer.from(
-              JSON.stringify({
-                errorMessage: `function not found: ${fnName}`,
-                errorType: 'ResourceNotFoundException',
-              }),
-            ),
-          };
+          // aws sdk throws ResourceNotFoundException for absent functions
+          throw genResourceNotFoundError({ functionName: fnName });
         }
 
         // parse input payload
@@ -141,9 +157,9 @@ export const createInProcessLambdaHarness = (
       },
     );
 
-  const mockLambdaClient = jest.fn().mockImplementation(() => ({
+  const mockSdkLambda = jest.fn().mockImplementation(() => ({
     send: mockSend,
   }));
 
-  return { mockLambdaClient, mockSend };
+  return { mockSdkLambda, mockSend };
 };

@@ -1,0 +1,41 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`e2e: deployed introspectable lambda given: [case1] introspect one deployed contract when: [t0] getOneLambdaContract is called against the deployed lambda then: schema matches snapshot 1`] = `
+{
+  "input": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "shellId": {
+        "type": "string",
+      },
+      "size": {
+        "type": "number",
+      },
+    },
+    "required": [
+      "shellId",
+      "size",
+    ],
+    "type": "object",
+  },
+  "output": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "ok": {
+        "const": true,
+        "type": "boolean",
+      },
+      "shellId": {
+        "type": "string",
+      },
+    },
+    "required": [
+      "ok",
+      "shellId",
+    ],
+    "type": "object",
+  },
+}
+`;

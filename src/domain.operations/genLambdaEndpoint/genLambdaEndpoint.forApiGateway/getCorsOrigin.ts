@@ -1,11 +1,11 @@
 /**
- * .what = transforms CORS origins config to header value with dynamic origin match
- * .why = HTTP spec only allows ONE origin in Access-Control-Allow-Origin header
+ * .what = transforms cors origins config to header value with dynamic origin match
+ * .why = http spec only allows ONE origin in Access-Control-Allow-Origin header
  *
  * .how = matches request origin against allowed list:
  *        - '*' returns '*' (unless credentials, then echoes request origin)
  *        - string[] checks if request origin in list, echoes that origin if matched
- *        - no match returns null (no CORS header should be set)
+ *        - no match returns null (no cors header should be set)
  */
 export const getCorsOrigin = (input: {
   origins: string | string[];
@@ -28,7 +28,7 @@ export const getCorsOrigin = (input: {
       return origins;
     }
     // no request origin or no match - return configured origin anyway
-    // (may cause CORS failure but that's the expected behavior)
+    // (may cause cors failure but that's the expected behavior)
     return origins;
   }
 
@@ -37,7 +37,7 @@ export const getCorsOrigin = (input: {
     return requestOrigin;
   }
 
-  // no match - don't set CORS header (return null, not empty string)
+  // no match - don't set cors header (return null, not empty string)
   // note: if no requestOrigin provided, fall back to first origin for backwards compat
   if (!requestOrigin && origins.length > 0) {
     return origins[0]!;

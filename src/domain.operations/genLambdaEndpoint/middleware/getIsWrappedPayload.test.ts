@@ -402,7 +402,7 @@ describe('getIsWrappedPayload', () => {
     });
   });
 
-  given('[case22] legacy client payload (uuid action pattern)', () => {
+  given('[case22] ancient caller payload (uuid action pattern)', () => {
     const payload = {
       uuid: '123e4567-e89b-12d3-a456-426614174000',
       action: 'get',

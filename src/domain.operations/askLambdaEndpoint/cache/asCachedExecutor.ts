@@ -3,14 +3,18 @@ import { type SimpleCache, withSimpleCacheAsync } from 'with-simple-cache';
 
 import {
   executeLambdaInvocation,
-  type InvocationArgs,
+  type InvocationContext,
+  type InvocationInput,
 } from '../invoke/executeLambdaInvocation';
 
 /**
  * .what = executor type for lambda invocation
  * .why = typed for cache wrapper composition
  */
-type LambdaExecutor<TResponse> = (args: InvocationArgs) => Promise<TResponse>;
+type LambdaExecutor<TResponse> = (
+  input: InvocationInput,
+  context: InvocationContext,
+) => Promise<TResponse>;
 
 /**
  * .what = wraps executor with cache if caches provided

@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import {
   askLambdaEndpoint,
+  asLambdaEndpoint,
   BadRequestError,
   forApiGateway,
   genApiGatewayEventNormalizationMiddleware,
@@ -34,8 +35,11 @@ describe('sdk-aws-lambda', () => {
 
       then('LambdaEndpointError should be constructable', () => {
         const error = new LambdaEndpointError('test', {
-          service: 'svc',
-          function: 'fn',
+          endpoint: asLambdaEndpoint({
+            service: 'svc',
+            access: 'prep',
+            function: 'fn',
+          }),
           exid: null,
         });
         expect(error).toBeInstanceOf(Error);
@@ -355,7 +359,7 @@ describe('sdk-aws-lambda', () => {
       }),
     });
 
-    when('[t0] invoked with raw payload (legacy client)', () => {
+    when('[t0] invoked with raw payload (ancient caller)', () => {
       const rawPayload = { message: 'hello from legacy' };
 
       const result = useThen('handler completes', async () =>

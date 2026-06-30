@@ -1,0 +1,16 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`getAllLambdaFunctionsByPrefix given: [case1] demo lambda exists when: [t0] prefix matches demo lambda then: result matches snapshot 1`] = `
+{
+  "allStartWithPrefix": true,
+  "count": 3,
+  "includesGetEventEcho": true,
+}
+`;
+
+exports[`getAllLambdaFunctionsByPrefix given: [case2] prefix matches no lambdas when: [t0] prefix has no matches then: result matches snapshot 1`] = `
+{
+  "count": 0,
+  "isEmpty": true,
+}
+`;

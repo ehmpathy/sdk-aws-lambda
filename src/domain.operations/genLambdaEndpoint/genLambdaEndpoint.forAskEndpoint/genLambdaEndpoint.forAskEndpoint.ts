@@ -1,10 +1,12 @@
 import middy from '@middy/core';
 import type { Context } from 'aws-lambda';
-import type { ContextLogTrail, LogMethods } from 'sdk-logs';
+import type { ContextLogTrail } from 'sdk-logs';
 import type { ZodSchema } from 'zod';
 
+import type { ContextAwsLambdaServer } from '../../../domain.objects/ContextAwsLambdaServer';
 import { genConstraintErrorMiddleware } from '../middleware/genConstraintErrorMiddleware';
 import { genInternalServiceErrorMiddleware } from '../middleware/genInternalServiceErrorMiddleware';
+import { genIntrospectionMiddleware } from '../middleware/genIntrospectionMiddleware';
 import type { IoLogTranslate } from '../middleware/genIoLoggerMiddleware';
 import { genIoLoggerMiddleware } from '../middleware/genIoLoggerMiddleware';
 import { genTrailMiddleware } from '../middleware/genTrailMiddleware';
@@ -58,9 +60,10 @@ export type GenLambdaEndpointInput<TInput, TOutput> = {
 
 /**
  * .what = sdk contract type for genLambdaEndpoint context
- * .why = exported for consumer type inference
+ * .why = exported for consumer type inference; the shared handler-side context
+ *        ({ env?: EnvConfig; log? }) reused by genLambdaEndpoint + forApiGateway
  */
-export type GenLambdaEndpointContext = { log?: LogMethods };
+export type GenLambdaEndpointContext = ContextAwsLambdaServer;
 
 /**
  * .what = generates a lambda handler with validation and trail context
@@ -78,7 +81,7 @@ export type GenLambdaEndpointContext = { log?: LogMethods };
  * - output validation via zod schema
  */
 export const genLambdaEndpoint = <TInput, TOutput>(
-  config: {
+  input: {
     schema: {
       input: ZodSchema<TInput>;
       output: ZodSchema<TOutput>;
@@ -86,7 +89,7 @@ export const genLambdaEndpoint = <TInput, TOutput>(
     invoke: EndpointOperation<TInput, TOutput>;
     logTranslate?: IoLogTranslate;
   },
-  _genContext?: { log?: LogMethods },
+  context?: ContextAwsLambdaServer,
 ): middy.MiddyfiedHandler<
   LambdaHandlerInput<TInput>,
   TOutput,
@@ -94,28 +97,33 @@ export const genLambdaEndpoint = <TInput, TOutput>(
   Context
 > => {
   // build logic that invokes user handler and validates output
-  const logic = async (event: TInput, context: Context): Promise<TOutput> => {
-    // get log from context (injected by trail middleware)
-    const log = (context as unknown as ContextLogTrail).log;
+  const logic = async (
+    event: TInput,
+    lambdaContext: Context,
+  ): Promise<TOutput> => {
+    // get log from lambda context (injected by trail middleware)
+    const log = (lambdaContext as unknown as ContextLogTrail).log;
 
     // invoke user handler
-    const response = await config.invoke({ event }, { log });
+    const response = await input.invoke({ event }, { log });
 
     // validate output and return typed result
-    return getValidatedOutput({ response, schema: config.schema.output });
+    return getValidatedOutput({ response, schema: input.schema.output });
   };
 
   // middleware order matters:
   // 1. error handlers (onError) - must be first to catch errors from all other middleware
-  // 2. io logger - logs input/output for debug
-  // 3. trail (onBefore) - injects trail context
-  // 4. validation (onBefore) - validates event against schema
+  // 2. trail (onBefore) - injects trail context (must be early so isContempCaller is set for error handlers)
+  // 3. io logger - logs input/output for debug
+  // 4. introspection (onBefore) - intercepts introspect requests, returns schema
+  // 5. validation (onBefore) - validates event against schema
   const middlewares = [
     genConstraintErrorMiddleware(),
     genInternalServiceErrorMiddleware(),
-    genIoLoggerMiddleware({ logTranslate: config.logTranslate }),
     genTrailMiddleware(),
-    genZodEventValidationMiddleware({ schema: config.schema.input }),
+    genIoLoggerMiddleware({ logTranslate: input.logTranslate }),
+    genIntrospectionMiddleware({ schema: input.schema, env: context?.env }),
+    genZodEventValidationMiddleware({ schema: input.schema.input }),
   ];
 
   /**

@@ -1,16 +1,16 @@
 /**
  * .what = transforms http status code to actionable hint message
- * .why = helps users understand and address lambda invocation failures
+ * .why = helps humans understand and address lambda invocation failures
  */
 export const getStatusCodeHint = (statusCode: number): string => {
   // check common aws lambda status codes
   if (statusCode === 400) return 'bad request — check payload format and size';
   if (statusCode === 403)
-    return 'access denied — check IAM permissions for lambda:InvokeFunction';
+    return 'access denied — check iam permissions for lambda:InvokeFunction';
   if (statusCode === 404)
     return 'function not found — verify service name, access level, and function name are correct';
   if (statusCode === 408)
-    return 'request timeout — consider increasing client timeout';
+    return 'request timeout — consider increasing caller timeout';
   if (statusCode === 413)
     return 'payload too large — reduce request size (max 6MB sync, 256KB async)';
   if (statusCode === 429)

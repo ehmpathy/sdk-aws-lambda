@@ -1,5 +1,5 @@
 /**
- * ancient error response body (flat, for backwards compat)
+ * ancient error response body (flat format, backwards compat)
  */
 export interface LambdaEndpointErrorResponseBodyAncient {
   errorMessage: string;

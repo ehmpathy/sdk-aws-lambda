@@ -7,9 +7,10 @@ import {
 import { LambdaEndpointError } from '../domain.objects/LambdaEndpointError';
 import { getDecodedPayload } from '../domain.operations/askLambdaEndpoint/serde/getDecodedPayload';
 import { getParsedJson } from '../domain.operations/askLambdaEndpoint/serde/getParsedJson';
+import { asLambdaEndpoint } from '../domain.operations/asLambdaEndpoint/asLambdaEndpoint';
 
 /**
- * .what = simulates simple-lambda-client invocation pattern
+ * .what = simulates ancient-caller invocation pattern (pre-sdk-aws-lambda)
  * .why = tests backwards compat with ancient callers (no trail wrapper)
  *
  * key differences from askLambdaEndpoint:
@@ -26,16 +27,20 @@ export const askLambdaEndpointAncient = async <TRequest, TResponse>(
     env: { access: string; region: string };
   },
 ): Promise<TResponse> => {
-  // build function name (service-access-function pattern)
-  const functionName = `${input.which.service}-${context.env.access}-${input.which.function}`;
+  // build the endpoint from the selector + ambient access (computes slug = aws function name)
+  const endpoint = asLambdaEndpoint({
+    service: input.which.service,
+    access: context.env.access,
+    function: input.which.function,
+  });
 
-  // create lambda client
-  const client = new LambdaClient({ region: context.env.region });
+  // create lambda sdk instance
+  const sdkLambda = new LambdaClient({ region: context.env.region });
 
   // invoke lambda with raw event (no wrapper)
-  const response: InvokeCommandOutput = await client.send(
+  const response: InvokeCommandOutput = await sdkLambda.send(
     new InvokeCommand({
-      FunctionName: functionName,
+      FunctionName: endpoint.slug,
       Payload: Buffer.from(JSON.stringify(input.event)),
     }),
   );
@@ -43,8 +48,7 @@ export const askLambdaEndpointAncient = async <TRequest, TResponse>(
   // check for invocation error
   if (response.StatusCode !== 200) {
     throw new LambdaEndpointError('lambda invocation failed', {
-      service: input.which.service,
-      function: input.which.function,
+      endpoint,
       exid: null,
       statusCode: response.StatusCode,
     });
@@ -53,8 +57,7 @@ export const askLambdaEndpointAncient = async <TRequest, TResponse>(
   // check for absent payload
   if (!response.Payload) {
     throw new LambdaEndpointError('lambda returned no payload', {
-      service: input.which.service,
-      function: input.which.function,
+      endpoint,
       exid: null,
     });
   }
@@ -64,8 +67,7 @@ export const askLambdaEndpointAncient = async <TRequest, TResponse>(
   const parseResult = getParsedJson({ json: payloadString });
   if (!parseResult.success) {
     throw new LambdaEndpointError('lambda returned invalid json', {
-      service: input.which.service,
-      function: input.which.function,
+      endpoint,
       exid: null,
       cause: parseResult.error,
     });
@@ -86,8 +88,7 @@ export const askLambdaEndpointAncient = async <TRequest, TResponse>(
     };
 
     throw new LambdaEndpointError(errorResponse.errorMessage, {
-      service: input.which.service,
-      function: input.which.function,
+      endpoint,
       exid: null,
       errorType: errorResponse.errorType,
       causeMessage: errorResponse.causeMessage,

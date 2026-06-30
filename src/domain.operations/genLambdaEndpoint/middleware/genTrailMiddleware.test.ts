@@ -219,7 +219,7 @@ describe('genTrailMiddleware', () => {
     });
   });
 
-  given('[case8] legacy client payload (raw event, no trail wrapper)', () => {
+  given('[case8] ancient caller payload (raw event, no trail wrapper)', () => {
     const legacyPayload = {
       uuid: '123e4567-e89b-12d3-a456-426614174000',
       action: 'get',

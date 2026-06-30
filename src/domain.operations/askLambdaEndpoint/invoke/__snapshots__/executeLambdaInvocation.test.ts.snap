@@ -1,0 +1,28 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`executeLambdaInvocation given: [case1] sdkLambdaInvoke throws an error when: [t0] network error occurs then: error matches snapshot 1`] = `
+{
+  "causeMessage": "connection refused",
+  "message": "LambdaEndpointError: lambda invocation threw: connection refused
+
+{
+  "endpoint": {
+    "service": "svc-invoice",
+    "access": "prep",
+    "function": "createInvoice",
+    "slug": "svc-invoice-prep-createInvoice"
+  },
+  "exid": "snapshot-exid"
+}",
+  "metadata": {
+    "cause": [Error: connection refused],
+    "endpoint": LambdaEndpoint {
+      "access": "prep",
+      "function": "createInvoice",
+      "service": "svc-invoice",
+      "slug": "svc-invoice-prep-createInvoice",
+    },
+    "exid": "[masked]",
+  },
+}
+`;

@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
-exports[`askLambdaEndpoint given: [case1] svc-demo-getEventEcho lambda exists when: [t0] invoked with message and trail then: response matches snapshot 1`] = `
+exports[`askLambdaEndpoint given: [case1] svc-prep-getEventEcho lambda exists when: [t0] invoked with message and trail then: response matches snapshot 1`] = `
 {
   "echo": {
     "message": "hello",
@@ -9,7 +9,7 @@ exports[`askLambdaEndpoint given: [case1] svc-demo-getEventEcho lambda exists wh
     },
   },
   "meta": {
-    "functionName": "svc-demo-getEventEcho",
+    "functionName": "svc-prep-getEventEcho",
     "invokedAtPresent": true,
   },
 }

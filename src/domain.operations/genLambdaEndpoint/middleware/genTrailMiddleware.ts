@@ -44,7 +44,7 @@ export const genTrailMiddleware = (): {
     // unwrap event (if wrapped format)
     request.event = unwrappedEvent;
 
-    // inject log and client version flag into context
+    // inject log and caller version flag into context
     const contextBefore = (request.context ?? {}) as unknown as Record<
       string,
       unknown

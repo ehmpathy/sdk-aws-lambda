@@ -54,18 +54,6 @@
           },
           {
             "type": "command",
-            "command": "./node_modules/.bin/rhachet roles boot --role librarian",
-            "timeout": 30,
-            "author": "repo=bhrain/role=librarian"
-          },
-          {
-            "type": "command",
-            "command": "./node_modules/.bin/rhachet roles boot --role reflector",
-            "timeout": 30,
-            "author": "repo=bhrain/role=reflector"
-          },
-          {
-            "type": "command",
             "command": "./node_modules/.bin/rhachet roles boot --role reviewer",
             "timeout": 30,
             "author": "repo=bhrain/role=reviewer"
@@ -90,9 +78,9 @@
           },
           {
             "type": "command",
-            "command": "./node_modules/.bin/rhachet roles boot --repo rhachet --role enroller",
-            "timeout": 60,
-            "author": "repo=rhachet/role=enroller"
+            "command": "./node_modules/.bin/rhachet roles boot --role librarian",
+            "timeout": 30,
+            "author": "repo=bhrain/role=librarian"
           }
         ]
       },
@@ -417,8 +405,7 @@
       "Bash(gh search prs:*)",
       "Bash(gh search commits:*)",
       "Bash(gh api -X GET:*)",
-      "Bash(gh api --method GET:*)",
-      "Bash(source .agent/repo=.this/role=any/skills/use.apikeys.sh)"
+      "Bash(gh api --method GET:*)"
     ],
     "deny": [
       "Bash(bash:*)",

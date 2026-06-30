@@ -1,6 +1,6 @@
 /**
- * .what = HTTP status codes enum
- * .why = provides typed status codes for API responses
+ * .what = http status codes enum
+ * .why = provides typed status codes for api responses
  *
  * ref: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
  */
@@ -16,7 +16,7 @@ export enum HttpStatusCode {
   FOUND_302 = 302,
   NOT_MODIFIED_304 = 304,
 
-  // client error
+  // caller error
   BAD_REQUEST_400 = 400,
   UNAUTHORIZED_401 = 401,
   FORBIDDEN_403 = 403,

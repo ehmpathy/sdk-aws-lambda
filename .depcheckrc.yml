@@ -11,6 +11,7 @@ ignores:
   - if-env
   - rhachet
   - rhachet-brains-anthropic
+  - rhachet-brains-fireworksai
   - rhachet-brains-xai
   - "@tsconfig/node20"
   - "@tsconfig/strictest"

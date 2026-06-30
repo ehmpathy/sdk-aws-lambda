@@ -1,5 +1,5 @@
 import type { APIGatewayProxyEvent, Context } from 'aws-lambda';
-import { given, then, when } from 'test-fns';
+import { given, then, useThen, when } from 'test-fns';
 import { z } from 'zod';
 
 import { forApiGateway } from './genLambdaEndpoint.forApiGateway';
@@ -41,7 +41,7 @@ describe('genLambdaEndpoint.forApiGateway', () => {
     };
 
     when('[t0] handler invoked', () => {
-      then('it should return 200 with JSON body', async () => {
+      const result = useThen('handler returns response', async () => {
         const handler = forApiGateway({
           schema,
           invoke: async ({ event }) => ({
@@ -50,11 +50,10 @@ describe('genLambdaEndpoint.forApiGateway', () => {
           }),
         });
 
-        const result = await handler(
-          createV1Event({ name: 'Alice' }),
-          createMockContext(),
-        );
+        return handler(createV1Event({ name: 'Alice' }), createMockContext());
+      });
 
+      then('it should return 200 with JSON body', () => {
         expect(result.statusCode).toBe(200);
         expect(JSON.parse(result.body)).toEqual({
           id: 'user-123',
@@ -62,20 +61,7 @@ describe('genLambdaEndpoint.forApiGateway', () => {
         });
       });
 
-      then('it should include security headers', async () => {
-        const handler = forApiGateway({
-          schema,
-          invoke: async ({ event }) => ({
-            id: 'user-123',
-            name: event.name,
-          }),
-        });
-
-        const result = await handler(
-          createV1Event({ name: 'Alice' }),
-          createMockContext(),
-        );
-
+      then('it should include security headers', () => {
         // note: @middy/http-security-headers applies different headers based on Content-Type
         // - X-Content-Type-Options, Strict-Transport-Security, etc are always applied
         // - X-Frame-Options, X-XSS-Protection are HTML-only (only for text/html responses)
@@ -85,6 +71,16 @@ describe('genLambdaEndpoint.forApiGateway', () => {
           'max-age=',
         );
         expect(result.headers?.['Referrer-Policy']).toBe('no-referrer');
+      });
+
+      then('result matches snapshot', () => {
+        expect({
+          statusCode: result.statusCode,
+          body: JSON.parse(result.body),
+          hasSecurityHeaders: Boolean(
+            result.headers?.['X-Content-Type-Options'],
+          ),
+        }).toMatchSnapshot();
       });
     });
   });
@@ -96,33 +92,45 @@ describe('genLambdaEndpoint.forApiGateway', () => {
     };
 
     when('[t0] handler invoked', () => {
-      then('it should return 400 error response', async () => {
+      const result = useThen('handler returns error', async () => {
         const handler = forApiGateway({
           schema,
           invoke: async () => ({ success: true }),
         });
 
-        const result = await handler(
+        return handler(
           createV1Event({ email: 'not-an-email' }),
           createMockContext(),
         );
+      });
 
+      then('it should return 400 status', () => {
         expect(result.statusCode).toBe(400);
+      });
+
+      then('body contains validation error', () => {
         const body = JSON.parse(result.body);
         expect(body.errorMessage).toContain('validation failed');
         expect(body.errorType).toBe('BadRequestError');
       });
+
+      then('result matches snapshot', () => {
+        expect({
+          statusCode: result.statusCode,
+          body: JSON.parse(result.body),
+        }).toMatchSnapshot();
+      });
     });
   });
 
-  given('[case3] CORS configured', () => {
+  given('[case3] cors configured', () => {
     const schema = {
       input: z.object({ data: z.string() }),
       output: z.object({ result: z.string() }),
     };
 
     when('[t0] handler invoked', () => {
-      then('it should include CORS headers', async () => {
+      then('it should include cors headers', async () => {
         const handler = forApiGateway({
           schema,
           invoke: async () => ({ result: 'ok' }),
@@ -134,7 +142,7 @@ describe('genLambdaEndpoint.forApiGateway', () => {
         });
 
         const event = createV1Event({ data: 'test' });
-        // add Origin header to trigger CORS
+        // add Origin header to trigger cors
         (event.headers as Record<string, string>)['Origin'] =
           'https://example.com';
 
@@ -212,7 +220,7 @@ describe('genLambdaEndpoint.forApiGateway', () => {
     };
 
     when('[t0] handler invoked', () => {
-      then('it should have access to rawEvent', async () => {
+      const result = useThen('handler returns response', async () => {
         const handler = forApiGateway({
           schema,
           invoke: async ({ rawEvent }) => ({
@@ -221,15 +229,21 @@ describe('genLambdaEndpoint.forApiGateway', () => {
           }),
         });
 
-        const result = await handler(
-          createV1Event({ action: 'test' }),
-          createMockContext(),
-        );
+        return handler(createV1Event({ action: 'test' }), createMockContext());
+      });
 
+      then('it should have access to rawEvent', () => {
         expect(result.statusCode).toBe(200);
         const body = JSON.parse(result.body);
         expect(body.method).toBe('POST');
         expect(body.path).toBe('/users');
+      });
+
+      then('result matches snapshot', () => {
+        expect({
+          statusCode: result.statusCode,
+          body: JSON.parse(result.body),
+        }).toMatchSnapshot();
       });
     });
   });
@@ -241,7 +255,7 @@ describe('genLambdaEndpoint.forApiGateway', () => {
     };
 
     when('[t0] handler invoked', () => {
-      then('it should receive raw body string', async () => {
+      const result = useThen('handler returns response', async () => {
         const handler = forApiGateway({
           schema,
           invoke: async ({ event }) => ({
@@ -250,14 +264,185 @@ describe('genLambdaEndpoint.forApiGateway', () => {
           deserialize: { body: false },
         });
 
-        const result = await handler(
+        return handler(
           createV1Event({ signature: 'webhook-data' }),
           createMockContext(),
         );
+      });
 
+      then('it should receive raw body string', () => {
         expect(result.statusCode).toBe(200);
         const body = JSON.parse(result.body);
         expect(body.received).toBe('{"signature":"webhook-data"}');
+      });
+
+      then('result matches snapshot', () => {
+        expect({
+          statusCode: result.statusCode,
+          body: JSON.parse(result.body),
+        }).toMatchSnapshot();
+      });
+    });
+  });
+
+  given('[case7] introspection request in prep env', () => {
+    const schema = {
+      input: z.object({ customerId: z.string() }),
+      output: z.object({ name: z.string(), balance: z.number() }),
+    };
+
+    when('[t0] handler invoked with introspect payload', () => {
+      const result = useThen('handler returns schema', async () => {
+        const handler = forApiGateway(
+          {
+            schema,
+            invoke: async () => ({ name: 'test', balance: 100 }),
+          },
+          { env: { access: 'prep' } },
+        );
+
+        return handler(
+          createV1Event({ introspect: 'schema' }),
+          createMockContext(),
+        );
+      });
+
+      then('response status is 200', () => {
+        expect(result.statusCode).toBe(200);
+      });
+
+      then('response contains input schema', () => {
+        const body = JSON.parse(result.body);
+        expect(body.input.type).toBe('object');
+        expect(body.input.properties.customerId).toBeDefined();
+      });
+
+      then('response contains output schema', () => {
+        const body = JSON.parse(result.body);
+        expect(body.output.type).toBe('object');
+        expect(body.output.properties.name).toBeDefined();
+        expect(body.output.properties.balance).toBeDefined();
+      });
+
+      then('response matches snapshot', () => {
+        expect({
+          statusCode: result.statusCode,
+          body: JSON.parse(result.body),
+        }).toMatchSnapshot();
+      });
+    });
+  });
+
+  given('[case8] introspection request in prod env', () => {
+    const schema = {
+      input: z.object({ id: z.string() }),
+      output: z.object({ value: z.number() }),
+    };
+
+    when('[t0] handler invoked with introspect payload', () => {
+      const result = useThen('handler returns error', async () => {
+        const handler = forApiGateway(
+          {
+            schema,
+            invoke: async () => ({ value: 42 }),
+          },
+          { env: { access: 'prod' } },
+        );
+
+        return handler(
+          createV1Event({ introspect: 'schema' }),
+          createMockContext(),
+        );
+      });
+
+      then('returns 400 status', () => {
+        expect(result.statusCode).toBe(400);
+      });
+
+      then('body indicates prep environment required', () => {
+        const body = JSON.parse(result.body);
+        expect(body.errorMessage).toContain('prep');
+        expect(body.errorType).toBe('BadRequestError');
+      });
+
+      then('result matches snapshot', () => {
+        expect({
+          statusCode: result.statusCode,
+          body: JSON.parse(result.body),
+        }).toMatchSnapshot();
+      });
+    });
+  });
+
+  given('[case9] introspection request without env config', () => {
+    const schema = {
+      input: z.object({ id: z.string() }),
+      output: z.object({ value: z.number() }),
+    };
+
+    when('[t0] handler invoked with introspect payload', () => {
+      const result = useThen('handler returns error', async () => {
+        const handler = forApiGateway({
+          schema,
+          invoke: async () => ({ value: 42 }),
+          // no env provided
+        });
+
+        return handler(
+          createV1Event({ introspect: 'schema' }),
+          createMockContext(),
+        );
+      });
+
+      then('returns 400 status', () => {
+        expect(result.statusCode).toBe(400);
+      });
+
+      then('body indicates env is required', () => {
+        const body = JSON.parse(result.body);
+        expect(body.errorMessage).toContain('env');
+        expect(body.errorType).toBe('BadRequestError');
+      });
+
+      then('result matches snapshot', () => {
+        expect({
+          statusCode: result.statusCode,
+          body: JSON.parse(result.body),
+        }).toMatchSnapshot();
+      });
+    });
+  });
+
+  given('[case10] normal request with env config', () => {
+    const schema = {
+      input: z.object({ name: z.string() }),
+      output: z.object({ message: z.string() }),
+    };
+
+    when('[t0] handler invoked with normal payload', () => {
+      const result = useThen('handler returns response', async () => {
+        const handler = forApiGateway(
+          {
+            schema,
+            invoke: async ({ event }) => ({ message: `Hello, ${event.name}!` }),
+          },
+          { env: { access: 'prep' } },
+        );
+
+        return handler(createV1Event({ name: 'Bob' }), createMockContext());
+      });
+
+      then('passes through to handler as normal', () => {
+        expect(result.statusCode).toBe(200);
+        const body = JSON.parse(result.body);
+        expect(body).toEqual({ message: 'Hello, Bob!' });
+      });
+
+      then('result matches snapshot', () => {
+        expect({
+          statusCode: result.statusCode,
+          body: JSON.parse(result.body),
+        }).toMatchSnapshot();
       });
     });
   });

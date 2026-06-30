@@ -19,7 +19,7 @@ exports[`user journey: api gateway handler given: [case1] developer creates api 
 
 exports[`user journey: api gateway handler given: [case1] developer creates api gateway handler when: [t1] receives invalid request then: it returns 400 with error response 1`] = `
 {
-  "body": "{"errorMessage":"BadRequestError: validation failed\\n\\n{\\n  \\"issues\\": [\\n    {\\n      \\"path\\": \\"quantity\\",\\n      \\"message\\": \\"Too small: expected number to be >0\\",\\n      \\"code\\": \\"too_small\\"\\n    }\\n  ]\\n}","errorType":"BadRequestError","details":{"issues":[{"path":"quantity","message":"Too small: expected number to be >0","code":"too_small"}]}}",
+  "body": "{"errorMessage":"✋ ConstraintError: validation failed: quantity: Too small: expected number to be >0\\n\\n{\\n  \\"issues\\": [\\n    {\\n      \\"path\\": \\"quantity\\",\\n      \\"message\\": \\"Too small: expected number to be >0\\",\\n      \\"code\\": \\"too_small\\"\\n    }\\n  ]\\n}","errorType":"BadRequestError","details":{"issues":[{"path":"quantity","message":"Too small: expected number to be >0","code":"too_small"}]}}",
   "headers": {
     "Content-Type": "application/json",
   },
@@ -52,7 +52,7 @@ exports[`user journey: basic lambda endpoint given: [case1] developer creates a 
       },
     ],
   },
-  "errorMessage": "BadRequestError: validation failed
+  "errorMessage": "✋ ConstraintError: validation failed: userId: Invalid UUID; action: Invalid option: expected one of "read"|"write"|"delete"
 
 {
   "issues": [
@@ -82,5 +82,12 @@ exports[`user journey: trail context propagation given: [case1] handler chain wi
     "receivedExid": "exid:journey",
     "stage": "second",
   },
+}
+`;
+
+exports[`user journey: trail context propagation given: [case1] handler chain with trail context when: [t1] handlers invoked without trail context then: they generate fresh trail context 1`] = `
+{
+  "receivedExidIsNullOrGenerated": true,
+  "stage": "first",
 }
 `;

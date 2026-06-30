@@ -1,12 +1,12 @@
 /**
  * .what = e2e acceptance test proving genLambdaEndpoint + askLambdaEndpoint work together
- * .why = verify trail propagation from client to deployed handler in real AWS environment
+ * .why = verify trail propagation from caller to deployed handler in real AWS environment
  *
  * this test:
  * 1. bundles a handler (uses genLambdaEndpoint)
  * 2. deploys it to AWS via declastruct-aws imperative operations
  * 3. invokes it via askLambdaEndpoint
- * 4. verifies trail propagation from client to handler
+ * 4. verifies trail propagation from caller to handler
  */
 import * as esbuild from 'esbuild';
 import * as fs from 'fs/promises';
@@ -205,9 +205,9 @@ describe('e2e: deployed goSurf lambda with trail propagation', () => {
 
     // wait for lambda to be active
     console.log('wait for lambda to be active...');
-    const lambdaClient = new LambdaClient({ region: 'us-east-1' });
+    const sdkLambda = new LambdaClient({ region: 'us-east-1' });
     await waitUntilFunctionActiveV2(
-      { client: lambdaClient, maxWaitTime: 60 },
+      { client: sdkLambda, maxWaitTime: 60 },
       { FunctionName: LAMBDA_NAME },
     );
     console.log('lambda active');
@@ -241,7 +241,7 @@ describe('e2e: deployed goSurf lambda with trail propagation', () => {
         ),
       );
 
-      then('handler receives trail exid from client', () => {
+      then('handler receives trail exid from caller', () => {
         expect(result.trailExid).toEqual(trailExid);
       });
 
@@ -282,7 +282,7 @@ describe('e2e: deployed goSurf lambda with trail propagation', () => {
       );
 
       then('handler generates its own trail exid', () => {
-        // when no trail provided by client, askLambdaEndpoint generates one
+        // when no trail provided by caller, askLambdaEndpoint generates one
         // and the handler receives it via the payload
         expect(result.trailExid).toMatch(/^exid:/);
       });
@@ -313,7 +313,9 @@ describe('e2e: deployed goSurf lambda with trail propagation', () => {
                 },
               },
               {
-                ...genTestLog(),
+                // pin a fixed exid so the error snapshot is stable; a generated
+                // exid would land in the error message + metadata and permadiff
+                ...genTestLog({ exid: 'exid:fixed-t2-validation' }),
                 env: { access: 'prod', region: 'us-east-1' },
               },
             ),
@@ -321,14 +323,19 @@ describe('e2e: deployed goSurf lambda with trail propagation', () => {
         expect(error).toBeDefined();
         expect(error.message).toContain('validation');
         // snapshot full error object for contract visibility
+        // filter out undefined values for valid JSON representation
+        const rawMetadata = (error as Error & { metadata?: Record<string, unknown> }).metadata;
+        const cleanMetadata = rawMetadata
+          ? Object.fromEntries(
+              Object.entries(rawMetadata).filter(([, v]) => v !== undefined),
+            )
+          : undefined;
         const errorSnapshot = {
           name: error.name,
           message: error.message,
           // include all error properties for full contract visibility
           ...(error.cause ? { cause: String(error.cause) } : {}),
-          ...((error as Error & { metadata?: unknown }).metadata
-            ? { metadata: (error as Error & { metadata?: unknown }).metadata }
-            : {}),
+          ...(cleanMetadata ? { metadata: cleanMetadata } : {}),
           ...((error as Error & { service?: unknown }).service
             ? { service: (error as Error & { service?: unknown }).service }
             : {}),
@@ -339,6 +346,49 @@ describe('e2e: deployed goSurf lambda with trail propagation', () => {
             ? { errorType: (error as Error & { errorType?: unknown }).errorType }
             : {}),
           messageContainsValidation: error.message.includes('validation'),
+        };
+        expect(errorSnapshot).toMatchSnapshot();
+      });
+    });
+
+    when('[t3] invoked with non-existent function', () => {
+      then('handler returns function not found error', async () => {
+        const error = await getError(
+          async () =>
+            askLambdaEndpoint<
+              z.infer<typeof goSurfSchema.input>,
+              z.infer<typeof goSurfSchema.output>
+            >(
+              {
+                which: {
+                  service: 'svc-seaturtle',
+                  function: 'nonexistentFunction',
+                },
+                event: {
+                  ocean: 'pacific',
+                  style: 'longboard',
+                },
+              },
+              {
+                ...genTestLog(),
+                env: { access: 'prod', region: 'us-east-1' },
+              },
+            ),
+        );
+        expect(error).toBeDefined();
+        // snapshot error for contract visibility
+        const errorSnapshot = {
+          name: error.name,
+          messageContainsNotFound:
+            error.message.includes('not found') ||
+            error.message.includes('ResourceNotFoundException') ||
+            error.message.includes('Function not found'),
+          ...((error as Error & { service?: unknown }).service
+            ? { service: (error as Error & { service?: unknown }).service }
+            : {}),
+          ...((error as Error & { function?: unknown }).function
+            ? { function: (error as Error & { function?: unknown }).function }
+            : {}),
         };
         expect(errorSnapshot).toMatchSnapshot();
       });

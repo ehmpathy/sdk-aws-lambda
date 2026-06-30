@@ -12,8 +12,8 @@
  *
  * .prereq
  *   - rhx keyrack unlock --owner ehmpath --env test
- *   - svc-demo-echoAncient lambda deployed
- *   - svc-demo-echoContemp lambda deployed
+ *   - svc-prep-echoAncient lambda deployed
+ *   - svc-prep-echoContemp lambda deployed
  */
 import { ConstraintError } from 'helpful-errors';
 import { genContextLogTrail } from 'sdk-logs';
@@ -38,7 +38,7 @@ const genTestLog = () =>
     env: null,
   });
 
-const ENV = { access: 'demo', region: 'us-east-1' };
+const ENV = { access: 'prep' as const, region: 'us-east-1' };
 
 describe('askLambdaEndpoint round-trip', () => {
   /**
@@ -53,7 +53,10 @@ describe('askLambdaEndpoint round-trip', () => {
         const response = useThen('invocation succeeds', async () =>
           askLambdaEndpointAncient<EchoInput, EchoOutput>(
             {
-              which: { service: 'svc', function: 'echoContemp' },
+              which: {
+                service: 'svc',
+                function: 'echoContemp',
+              },
               event: { action: 'echo', message: 'hello' },
             },
             { env: ENV },
@@ -72,7 +75,10 @@ describe('askLambdaEndpoint round-trip', () => {
           const caught = await getError(async () =>
             askLambdaEndpointAncient<EchoInput, EchoOutput>(
               {
-                which: { service: 'svc', function: 'echoContemp' },
+                which: {
+                  service: 'svc',
+                  function: 'echoContemp',
+                },
                 event: { action: 'throwConstraintError' },
               },
               { env: ENV },
@@ -114,7 +120,10 @@ describe('askLambdaEndpoint round-trip', () => {
         const response = useThen('invocation succeeds', async () =>
           askLambdaEndpoint<EchoInput, EchoOutput>(
             {
-              which: { service: 'svc', function: 'echoAncient' },
+              which: {
+                service: 'svc',
+                function: 'echoAncient',
+              },
               event: { action: 'echo', message: 'hello' },
               struct: { payload: 'ancient' },
             },
@@ -134,7 +143,10 @@ describe('askLambdaEndpoint round-trip', () => {
           const caught = await getError(async () =>
             askLambdaEndpoint<EchoInput, EchoOutput>(
               {
-                which: { service: 'svc', function: 'echoAncient' },
+                which: {
+                  service: 'svc',
+                  function: 'echoAncient',
+                },
                 event: { action: 'throwConstraintError' },
                 struct: { payload: 'ancient' },
               },
@@ -174,7 +186,10 @@ describe('askLambdaEndpoint round-trip', () => {
         const response = useThen('invocation succeeds', async () =>
           askLambdaEndpoint<EchoInput, EchoOutput>(
             {
-              which: { service: 'svc', function: 'echoContemp' },
+              which: {
+                service: 'svc',
+                function: 'echoContemp',
+              },
               event: { action: 'echo', message: 'hello' },
             },
             { ...genTestLog(), env: ENV },
@@ -193,7 +208,10 @@ describe('askLambdaEndpoint round-trip', () => {
           const caught = await getError(async () =>
             askLambdaEndpoint<EchoInput, EchoOutput>(
               {
-                which: { service: 'svc', function: 'echoContemp' },
+                which: {
+                  service: 'svc',
+                  function: 'echoContemp',
+                },
                 event: { action: 'throwConstraintError' },
               },
               { ...genTestLog(), env: ENV },

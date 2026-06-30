@@ -28,6 +28,97 @@ export interface UnifiedApiGatewayEvent {
 }
 
 /**
+ * .what = parses JSON body string to object
+ * .why = API Gateway sends body as string, handlers need object
+ */
+const getParsedApiGatewayBody = (input: {
+  body: string | null | undefined;
+  isBase64Encoded: boolean;
+}): unknown => {
+  if (!input.body) return null;
+
+  // decode base64 if needed
+  const decoded = input.isBase64Encoded
+    ? Buffer.from(input.body, 'base64').toString('utf-8')
+    : input.body;
+
+  // parse json or return raw string
+  try {
+    return JSON.parse(decoded);
+  } catch {
+    return decoded;
+  }
+};
+
+/**
+ * .what = convert v2 HTTP API event to unified format
+ * .why = isolates transformation logic from orchestrator
+ */
+const asUnifiedEventFromV2 = (input: {
+  event: APIGatewayProxyEventV2;
+  parseBody: boolean;
+}): UnifiedApiGatewayEvent => {
+  const body = input.parseBody
+    ? getParsedApiGatewayBody({
+        body: input.event.body,
+        isBase64Encoded: input.event.isBase64Encoded,
+      })
+    : input.event.body;
+
+  return {
+    httpMethod: input.event.requestContext.http.method,
+    path: input.event.requestContext.http.path,
+    headers: input.event.headers as Record<string, string | undefined>,
+    queryStringParameters: input.event.queryStringParameters ?? null,
+    pathParameters: input.event.pathParameters ?? null,
+    body,
+    rawBody: input.event.body ?? null,
+    isBase64Encoded: input.event.isBase64Encoded,
+    requestContext: {
+      requestId: input.event.requestContext.requestId,
+      stage: input.event.requestContext.stage,
+      domainName: input.event.requestContext.domainName,
+      accountId: input.event.requestContext.accountId,
+    },
+    rawEvent: input.event,
+  };
+};
+
+/**
+ * .what = convert v1 REST API event to unified format
+ * .why = isolates transformation logic from orchestrator
+ */
+const asUnifiedEventFromV1 = (input: {
+  event: APIGatewayProxyEvent;
+  parseBody: boolean;
+}): UnifiedApiGatewayEvent => {
+  const body = input.parseBody
+    ? getParsedApiGatewayBody({
+        body: input.event.body,
+        isBase64Encoded: input.event.isBase64Encoded,
+      })
+    : input.event.body;
+
+  return {
+    httpMethod: input.event.httpMethod,
+    path: input.event.path,
+    headers: input.event.headers as Record<string, string | undefined>,
+    queryStringParameters: input.event.queryStringParameters ?? null,
+    pathParameters: input.event.pathParameters ?? null,
+    body,
+    rawBody: input.event.body ?? null,
+    isBase64Encoded: input.event.isBase64Encoded,
+    requestContext: {
+      requestId: input.event.requestContext.requestId,
+      stage: input.event.requestContext.stage,
+      domainName: input.event.requestContext.domainName,
+      accountId: input.event.requestContext.accountId,
+    },
+    rawEvent: input.event,
+  };
+};
+
+/**
  * .what = converts v1/v2 API Gateway events to unified format
  * .why = handlers work with consistent event shape regardless of API type
  */
@@ -39,87 +130,29 @@ export const genApiGatewayEventNormalizationMiddleware = (input: {
   const before: middy.MiddlewareFn<any, any> = async (request) => {
     const rawEvent = request.event;
 
-    // detect event version
+    // convert v2 HTTP API event to unified format
     if (getIsV2ApiGatewayEvent(rawEvent)) {
-      // v2 (HTTP API) event
-      const v2Event = rawEvent as APIGatewayProxyEventV2;
-      const body = input.parseBody
-        ? parseBody(v2Event.body, v2Event.isBase64Encoded)
-        : v2Event.body;
-
-      request.event = {
-        httpMethod: v2Event.requestContext.http.method,
-        path: v2Event.requestContext.http.path,
-        headers: v2Event.headers as Record<string, string | undefined>,
-        queryStringParameters: v2Event.queryStringParameters ?? null,
-        pathParameters: v2Event.pathParameters ?? null,
-        body,
-        rawBody: v2Event.body ?? null,
-        isBase64Encoded: v2Event.isBase64Encoded,
-        requestContext: {
-          requestId: v2Event.requestContext.requestId,
-          stage: v2Event.requestContext.stage,
-          domainName: v2Event.requestContext.domainName,
-          accountId: v2Event.requestContext.accountId,
-        },
-        rawEvent,
-      } as unknown as typeof request.event;
+      request.event = asUnifiedEventFromV2({
+        event: rawEvent as APIGatewayProxyEventV2,
+        parseBody: input.parseBody,
+      }) as unknown as typeof request.event;
       return;
     }
 
+    // convert v1 REST API event to unified format
     if (getIsV1ApiGatewayEvent(rawEvent)) {
-      // v1 (REST API) event
-      const v1Event = rawEvent as APIGatewayProxyEvent;
-      const body = input.parseBody
-        ? parseBody(v1Event.body, v1Event.isBase64Encoded)
-        : v1Event.body;
-
-      request.event = {
-        httpMethod: v1Event.httpMethod,
-        path: v1Event.path,
-        headers: v1Event.headers as Record<string, string | undefined>,
-        queryStringParameters: v1Event.queryStringParameters ?? null,
-        pathParameters: v1Event.pathParameters ?? null,
-        body,
-        rawBody: v1Event.body ?? null,
-        isBase64Encoded: v1Event.isBase64Encoded,
-        requestContext: {
-          requestId: v1Event.requestContext.requestId,
-          stage: v1Event.requestContext.stage,
-          domainName: v1Event.requestContext.domainName,
-          accountId: v1Event.requestContext.accountId,
-        },
-        rawEvent,
-      } as unknown as typeof request.event;
+      request.event = asUnifiedEventFromV1({
+        event: rawEvent as APIGatewayProxyEvent,
+        parseBody: input.parseBody,
+      }) as unknown as typeof request.event;
       return;
     }
 
+    // fail if neither v1 nor v2
     throw new MalfunctionError('event is neither v1 nor v2 API Gateway event', {
       rawEvent,
     });
   };
 
   return { before };
-};
-
-/**
- * .what = parses JSON body string to object
- * .why = API Gateway sends body as string, handlers need object
- */
-const parseBody = (
-  body: string | null | undefined,
-  isBase64Encoded: boolean,
-): unknown => {
-  if (!body) return null;
-
-  const decoded = isBase64Encoded
-    ? Buffer.from(body, 'base64').toString('utf-8')
-    : body;
-
-  try {
-    return JSON.parse(decoded);
-  } catch {
-    // return raw string if not valid JSON
-    return decoded;
-  }
 };

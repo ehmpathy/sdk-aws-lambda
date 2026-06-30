@@ -1,8 +1,33 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
-exports[`genLambdaEndpoint given: [case2] invalid input when: [t0] handler invoked then: it should return error response (not throw) 1`] = `
+exports[`genLambdaEndpoint given: [case1] valid input and output when: [t0] handler invoked then: result matches snapshot 1`] = `
 {
-  "errorMessageContains": "validation failed",
+  "salute": "Hello, Alice!",
+}
+`;
+
+exports[`genLambdaEndpoint given: [case2] invalid input when: [t0] handler invoked then: result matches snapshot 1`] = `
+{
+  "details": {
+    "issues": [
+      {
+        "code": "invalid_type",
+        "message": "Invalid input: expected number, received string",
+        "path": "age",
+      },
+    ],
+  },
+  "errorMessage": "✋ ConstraintError: validation failed: age: Invalid input: expected number, received string
+
+{
+  "issues": [
+    {
+      "path": "age",
+      "message": "Invalid input: expected number, received string",
+      "code": "invalid_type"
+    }
+  ]
+}",
   "errorType": "BadRequestError",
 }
 `;
@@ -29,5 +54,92 @@ exports[`genLambdaEndpoint given: [case3] invalid output when: [t0] handler retu
       },
     ],
   },
+}
+`;
+
+exports[`genLambdaEndpoint given: [case5] logTranslate for redaction when: [t0] handler invoked with sensitive data then: result matches snapshot 1`] = `
+{
+  "success": true,
+}
+`;
+
+exports[`genLambdaEndpoint given: [case6] schema with transforms when: [t0] handler invoked then: result matches snapshot 1`] = `
+{
+  "email": "alice@example.com",
+}
+`;
+
+exports[`genLambdaEndpoint given: [case7] introspection request in prep env when: [t0] handler invoked with introspect payload then: response matches snapshot 1`] = `
+{
+  "input": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "customerId": {
+        "type": "string",
+      },
+    },
+    "required": [
+      "customerId",
+    ],
+    "type": "object",
+  },
+  "output": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "balance": {
+        "type": "number",
+      },
+      "name": {
+        "type": "string",
+      },
+    },
+    "required": [
+      "name",
+      "balance",
+    ],
+    "type": "object",
+  },
+}
+`;
+
+exports[`genLambdaEndpoint given: [case8] introspection request in prod env when: [t0] handler invoked with introspect payload then: result matches snapshot 1`] = `
+{
+  "details": {
+    "access": "prod",
+    "env": {
+      "access": "prod",
+    },
+  },
+  "errorMessage": "✋ ConstraintError: introspection is only available in prep environment, current: prod
+
+{
+  "env": {
+    "access": "prod"
+  },
+  "access": "prod"
+}",
+  "errorType": "BadRequestError",
+}
+`;
+
+exports[`genLambdaEndpoint given: [case9] introspection request without env config when: [t0] handler invoked with introspect payload then: result matches snapshot 1`] = `
+{
+  "details": {
+    "hint": "pass env config to genLambdaEndpoint",
+  },
+  "errorMessage": "✋ ConstraintError: introspection requires env.access context but env was not provided to handler
+
+{
+  "hint": "pass env config to genLambdaEndpoint"
+}",
+  "errorType": "BadRequestError",
+}
+`;
+
+exports[`genLambdaEndpoint given: [case10] normal request with env config when: [t0] handler invoked with normal payload then: result matches snapshot 1`] = `
+{
+  "salute": "Hello, Bob!",
 }
 `;

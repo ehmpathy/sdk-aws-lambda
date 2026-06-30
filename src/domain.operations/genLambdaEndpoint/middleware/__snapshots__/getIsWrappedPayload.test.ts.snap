@@ -248,7 +248,7 @@ exports[`getIsWrappedPayload given: [case21] trail is array (invalid) when: [t0]
 }
 `;
 
-exports[`getIsWrappedPayload given: [case22] legacy client payload (uuid action pattern) when: [t0] checked then: result matches snapshot 1`] = `
+exports[`getIsWrappedPayload given: [case22] ancient caller payload (uuid action pattern) when: [t0] checked then: result matches snapshot 1`] = `
 {
   "input": {
     "action": "get",
