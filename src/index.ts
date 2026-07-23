@@ -14,7 +14,11 @@ export type {
   EnvAccess,
   EnvConfig,
 } from './domain.objects/ContextAwsLambdaServer';
+export { GeneratedFile } from './domain.objects/GeneratedFile';
 export { HttpStatusCode } from './domain.objects/HttpStatusCode';
+export { LambdaCredentialsAbsentError } from './domain.objects/LambdaCredentialsAbsentError';
+export { LambdaDomainObjectNotCapturableError } from './domain.objects/LambdaDomainObjectNotCapturableError';
+export { LambdaDomainObjectRefUnbindableError } from './domain.objects/LambdaDomainObjectRefUnbindableError';
 export { LambdaEndpoint } from './domain.objects/LambdaEndpoint';
 export { LambdaEndpointError } from './domain.objects/LambdaEndpointError';
 export type { LambdaEndpointSchema } from './domain.objects/LambdaEndpointSchema';
@@ -58,6 +62,8 @@ export { genIoLoggerMiddleware } from './domain.operations/genLambdaEndpoint/mid
 // middleware (for advanced use)
 export { genTrailMiddleware } from './domain.operations/genLambdaEndpoint/middleware/genTrailMiddleware';
 export { genZodOutputValidationMiddleware } from './domain.operations/genLambdaEndpoint/middleware/genZodOutputValidationMiddleware';
+// sdk codegen (generate a per-service sdk from introspection)
+export { genServiceSdk } from './domain.operations/genServiceSdk/genServiceSdk';
 // contract discovery (for sdk generation)
 export {
   type GetAllLambdaContractsContext,

@@ -1,0 +1,41 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`asGenArgs given: [case2] a malformed arg set when: [t0] absent --env then: it throws ConstraintError with a usage hint 1`] = `
+"✋ ConstraintError: --env <test|prep|prod> is required
+
+{
+  "usage": "sdk-aws-lambda gen --for svc-<noun> --into <dir> --env <test|prep|prod>"
+}"
+`;
+
+exports[`asGenArgs given: [case2] a malformed arg set when: [t0] absent --for then: it throws ConstraintError with a usage hint 1`] = `
+"✋ ConstraintError: --for is required; must be a svc-<noun> service name
+
+{
+  "usage": "sdk-aws-lambda gen --for svc-<noun> --into <dir> --env <test|prep|prod>"
+}"
+`;
+
+exports[`asGenArgs given: [case2] a malformed arg set when: [t0] absent --into then: it throws ConstraintError with a usage hint 1`] = `
+"✋ ConstraintError: --into <dir> is required
+
+{
+  "usage": "sdk-aws-lambda gen --for svc-<noun> --into <dir> --env <test|prep|prod>"
+}"
+`;
+
+exports[`asGenArgs given: [case2] a malformed arg set when: [t0] bad --env then: it throws ConstraintError with a usage hint 1`] = `
+"✋ ConstraintError: --env must be one of: test | prep | prod
+
+{
+  "usage": "sdk-aws-lambda gen --for svc-<noun> --into <dir> --env <test|prep|prod>"
+}"
+`;
+
+exports[`asGenArgs given: [case2] a malformed arg set when: [t0] non-svc --for then: it throws ConstraintError with a usage hint 1`] = `
+"✋ ConstraintError: invalid --for value 'jobs'; must be a svc-<noun> service name
+
+{
+  "usage": "sdk-aws-lambda gen --for svc-<noun> --into <dir> --env <test|prep|prod>"
+}"
+`;

@@ -1,6 +1,7 @@
 import type { LambdaClient } from '@aws-sdk/client-lambda';
 
 import type { ContextAwsLambdaCaller } from '../../domain.objects/ContextAwsLambdaCaller';
+import { LambdaCredentialsAbsentError } from '../../domain.objects/LambdaCredentialsAbsentError';
 import type { LambdaEndpointSchema } from '../../domain.objects/LambdaEndpointSchema';
 import { LambdaIntrospectionBlockedError } from '../../domain.objects/LambdaIntrospectionBlockedError';
 import { LambdaServiceNotFoundError } from '../../domain.objects/LambdaServiceNotFoundError';
@@ -38,7 +39,11 @@ export const getAllLambdaContracts = async (
   if (context.env.access !== 'prep') {
     throw new LambdaIntrospectionBlockedError(
       `introspection is only available in prep environment, got: ${context.env.access}`,
-      { service: input.which.service, access: context.env.access },
+      {
+        service: input.which.service,
+        access: context.env.access,
+        hint: 're-run with --env prep',
+      },
     );
   }
 
@@ -52,14 +57,29 @@ export const getAllLambdaContracts = async (
       m.genLambdaSdk({ env: { region: context.env.region } }),
     ));
 
-  // get all endpoint slugs by prefix
-  const slugs = await getAllLambdaFunctionsByPrefix({ prefix }, { sdkLambda });
+  // discover endpoint slugs by prefix. a creds failure surfaces on this first aws
+  // call — map it to a caller-must-fix LambdaCredentialsAbsentError (with an unlock
+  // hint), not a raw aws CredentialsProviderError
+  const slugs = await getAllLambdaFunctionsByPrefix(
+    { prefix },
+    { sdkLambda },
+  ).catch((error: unknown) =>
+    throwIfCredentialsError({
+      error,
+      service: input.which.service,
+      access: context.env.access,
+    }),
+  );
 
   // throw if no endpoints found
   if (slugs.length === 0) {
     throw new LambdaServiceNotFoundError(
       `no lambda functions found for service: ${input.which.service}`,
-      { service: input.which.service, prefix },
+      {
+        service: input.which.service,
+        prefix,
+        hint: 'check the --for service name and verify it is deployed to the prep environment',
+      },
     );
   }
 
@@ -92,6 +112,45 @@ export const getAllLambdaContracts = async (
 
   // assemble record keyed by bare function name
   return asContractRecord(entries);
+};
+
+/**
+ * .what = decide whether an error is an aws sdk credentials failure
+ * .why = a creds failure is caller-must-fix (unlock + retry), not a malfunction —
+ *        the discovery boundary maps it to a hinted LambdaCredentialsAbsentError
+ */
+const getIsCredentialsError = (error: unknown): boolean => {
+  if (!(error instanceof Error)) return false;
+  const name = error.name.toLowerCase();
+  const message = error.message.toLowerCase();
+  return (
+    name.includes('credential') ||
+    message.includes('credential') ||
+    (message.includes('security token') && message.includes('expired'))
+  );
+};
+
+/**
+ * .what = map an aws credentials failure to a hinted LambdaCredentialsAbsentError
+ * .why = surface a creds failure with an unlock hint (caller-must-fix) rather than a
+ *        raw aws error; any non-creds error rethrows unchanged. returns `never` — it
+ *        always throws — so the caller keeps a non-null slug list.
+ */
+const throwIfCredentialsError = (input: {
+  error: unknown;
+  service: string;
+  access: string;
+}): never => {
+  if (!getIsCredentialsError(input.error)) throw input.error;
+  throw new LambdaCredentialsAbsentError(
+    'aws credentials are absent or expired; cannot introspect',
+    {
+      service: input.service,
+      access: input.access,
+      hint: 'unlock prep creds (e.g. `rhx keyrack unlock --owner ehmpath --env prep`), then re-run',
+      cause: input.error instanceof Error ? input.error : undefined,
+    },
+  );
 };
 
 /**

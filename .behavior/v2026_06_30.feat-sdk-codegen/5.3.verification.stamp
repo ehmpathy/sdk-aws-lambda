@@ -1,0 +1,32 @@
+🦉 the way speaks for itself
+
+🗿 route.stone.set
+   ├─ stone = 5.3.verification
+   ├─ passage = allowed
+   ├─ guard
+   │  ├─ artifacts
+   │  │   ├─ $route/5.3.verification.yield.md
+   │  │   └─ src/**/*
+   │  ├─ reviews
+   │  │   ├─ r1: enroll-verif-snapshot-coverage (l3, 12/12)
+   │  │   │   ├─ approved, cached
+   │  │   │   ├─ 0 blockers ✓
+   │  │   │   ├─ 0 nitpicks ✓
+   │  │   │   ├─ tallied by reviewer@fireworks/deepseek/v4-flash
+   │  │   │   ├─ given: .behavior/v2026_06_30.feat-sdk-codegen/.reviews/peer/5.3.verification._.review.i017.34ca0127da897bf70c.r001._.given.by_peer.enroll-verif-snapshot-coverage.md
+   │  │   │   └─ taken: .behavior/v2026_06_30.feat-sdk-codegen/.reviews/peer/5.3.verification._.review.i017.34ca0127da897bf70c.r001._.taken.by_self.enroll-verif-snapshot-coverage.md
+   │  │   └─ r2: enroll-verif-test-intent (l3, 12/12)
+   │  │       ├─ approved, cached
+   │  │       ├─ 0 blockers ✓
+   │  │       ├─ 0 nitpicks ✓
+   │  │       ├─ tallied by reviewer@fireworks/deepseek/v4-flash
+   │  │       ├─ given: .behavior/v2026_06_30.feat-sdk-codegen/.reviews/peer/5.3.verification._.review.i017.34ca0127da897bf70c.r002._.given.by_peer.enroll-verif-test-intent.md
+   │  │       └─ taken: .behavior/v2026_06_30.feat-sdk-codegen/.reviews/peer/5.3.verification._.review.i017.34ca0127da897bf70c.r002._.taken.by_self.enroll-verif-test-intent.md
+   │  └─ judges
+   │      └─ j1: $rhachet run --repo bhrain --skill route.stone.judge --mechanism reviewed? --stone $stone --route $route --allow-blockers 0 --allow-nitpicks 0
+   │          └─ · cached
+   │             ├─ on $route/5.3.verification.yield.md
+   │             └─ on src/**/*
+   │
+   └─ the way continues, run
+      └─ rhx route.drive
