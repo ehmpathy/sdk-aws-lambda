@@ -1,0 +1,36 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`gen (cli) given: [case1] absent required args when: [t0] invoked with no args then: the result matches snapshot 1`] = `
+{
+  "exit": 2,
+  "message": "✋ ConstraintError: --for is required; must be a svc-<noun> service name
+
+{
+  "usage": "sdk-aws-lambda gen --for svc-<noun> --into <dir> --env <test|prep|prod>"
+}",
+}
+`;
+
+exports[`gen (cli) given: [case1] absent required args when: [t1] invoked with a non-svc --for then: the result matches snapshot 1`] = `
+{
+  "exit": 2,
+  "message": "✋ ConstraintError: invalid --for value 'jobs'; must be a svc-<noun> service name
+
+{
+  "usage": "sdk-aws-lambda gen --for svc-<noun> --into <dir> --env <test|prep|prod>"
+}",
+}
+`;
+
+exports[`gen (cli) given: [case2] introspection blocked outside prep when: [t0] invoked with --env prod then: the result matches snapshot 1`] = `
+{
+  "exit": 2,
+  "message": "✋ LambdaIntrospectionBlockedError: introspection is only available in prep environment, got: prod
+
+{
+  "service": "svc-jobs",
+  "access": "prod",
+  "hint": "re-run with --env prep"
+}",
+}
+`;
