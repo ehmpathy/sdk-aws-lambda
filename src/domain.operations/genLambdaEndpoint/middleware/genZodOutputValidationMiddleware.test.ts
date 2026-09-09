@@ -1,3 +1,5 @@
+import middy from '@middy/core';
+import type { Context } from 'aws-lambda';
 import { getError, MalfunctionError } from 'helpful-errors';
 import { given, then, when } from 'test-fns';
 import { z } from 'zod';
@@ -100,6 +102,69 @@ describe('genZodOutputValidationMiddleware', () => {
         });
         expect(result).toEqual({ required: 'value', optional: 'extra' });
       });
+    });
+  });
+
+  /**
+   * .what = the same middleware, run inside a REAL `middy(...).use(...)` chain
+   * .why = every case above hand-feeds a `request` object, so each proves this middleware's own
+   *        logic and says not one word about whether it COMPOSES. the two claims are separable,
+   *        and only this case can prove the second:
+   *          - that middy actually invokes the `after` hook we register
+   *          - that the value we write to `request.response` is the value the caller receives
+   *          - that a throw from the hook surfaces to the caller as a rejection, so a bad
+   *            response cannot reach the wire
+   *
+   * .note = the sdk-contract smoke test asserts only `typeof middleware === 'function'`, which
+   *         proves the export exists and no more. a middleware's whole purpose is to compose, so
+   *         composition is the claim its coverage owes
+   *
+   * .note = a middy chain is in-process, so this crosses no remote boundary and stays a unit test
+   *         (rule.forbid.unit.remote-boundaries)
+   */
+  given('[case5] composed into a real middy chain', () => {
+    const schema = z.object({
+      salute: z.string(),
+      shouted: z.boolean().default(false),
+    });
+
+    const createMockContext = (): Context =>
+      ({
+        functionName: 'test-function',
+        awsRequestId: 'test-request-id',
+      }) as Context;
+
+    when('[t0] the handler returns a response the schema accepts', () => {
+      then(
+        'the caller receives the VALIDATED value, defaults applied',
+        async () => {
+          const handler = middy(async () => ({ salute: 'aloha' })).use(
+            genZodOutputValidationMiddleware({ schema }),
+          );
+
+          const result = await handler({}, createMockContext());
+
+          // `shouted` was absent from the handler's return; the schema default supplies it —
+          // which proves the middleware's write to `request.response` reached the caller
+          expect(result).toEqual({ salute: 'aloha', shouted: false });
+        },
+      );
+    });
+
+    when('[t1] the handler returns a response the schema refuses', () => {
+      then(
+        'the invocation REJECTS, so no bad response reaches the wire',
+        async () => {
+          const handler = middy(async () => ({ salute: 42 })).use(
+            genZodOutputValidationMiddleware({ schema }),
+          );
+
+          const error = await getError(handler({}, createMockContext()));
+
+          expect(error).toBeInstanceOf(MalfunctionError);
+          expect(error.message).toContain('output validation failed');
+        },
+      );
     });
   });
 });

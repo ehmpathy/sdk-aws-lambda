@@ -37,8 +37,9 @@ const getCauseMessage = (input: { error: Error }): string | undefined => {
  * .why = named transformer for clear narrative
  */
 const getErrorMetadata = (input: { error: Error }): unknown | undefined => {
+  // .note = the `in` guard narrows, so this needs no cast (rule.forbid.as-cast)
   if ('metadata' in input.error) {
-    return (input.error as { metadata?: unknown }).metadata;
+    return input.error.metadata;
   }
   return undefined;
 };

@@ -42,18 +42,26 @@ export const genTrailMiddleware = (): {
     });
 
     // unwrap event (if wrapped format)
+    // .note = DELIBERATE MUTATION — `request` is middy's only channel to hand a value onward
     request.event = unwrappedEvent;
 
     // inject log and caller version flag into context
+    /**
+     * .as = TWO casts, one subject: middy types `request.context` as aws-lambda's `Context`,
+     *       which declares neither `log` nor `isContempCaller`. the first widens the read so
+     *       every extant key survives the spread; the second declares the extension this
+     *       middleware writes
+     *
+     * .why not `asContextTrailed` = that reader returns only the TWO sdk-managed fields, so a
+     *       spread of it would DROP every aws-supplied key. a writer needs the whole bag
+     *
+     * .removal = removable when middy's `Request` carries a caller-declared context type
+     *       parameter this chain can bind, such that a middleware may declare what it adds
+     */
     const contextBefore = (request.context ?? {}) as unknown as Record<
       string,
       unknown
     >;
-    /**
-     * .as = middy types request.context as aws-lambda Context, but we extend
-     *       it with ContextLogTrail and isContempCaller
-     * .removal = if middy gains typed middleware inference that tracks context extensions, remove cast
-     */
     request.context = {
       ...contextBefore,
       log: contextLogTrail.log,

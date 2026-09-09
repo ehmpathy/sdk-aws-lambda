@@ -107,7 +107,7 @@ exports[`introspection given: [case4b] genLambdaEndpoint without env config (con
 
 exports[`introspection given: [case5] forApiGateway with introspection in prep env when: [t0] invoked with introspect payload then: result matches snapshot 1`] = `
 {
-  "body": "{"input":{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"data":{"type":"string"}},"required":["data"],"additionalProperties":false},"output":{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"success":{"type":"boolean"}},"required":["success"],"additionalProperties":false}}",
+  "body": "{"input":{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"data":{"type":"string"}},"required":["data"],"additionalProperties":false},"output":{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"status":{"type":"number"},"headers":{"type":"object","propertyNames":{"type":"string"},"additionalProperties":{"type":"string"}},"body":{"type":"object","properties":{"success":{"type":"boolean"}},"required":["success"],"additionalProperties":false}},"additionalProperties":false}}",
   "headers": {
     "Content-Type": "application/json",
   },

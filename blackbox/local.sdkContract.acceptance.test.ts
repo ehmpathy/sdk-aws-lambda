@@ -3,6 +3,7 @@ import { getError, given, then, useThen, when } from 'test-fns';
 import { z } from 'zod';
 
 import {
+  asApiGatewayResponseSchema,
   askLambdaEndpoint,
   asLambdaEndpoint,
   BadRequestError,
@@ -175,12 +176,14 @@ describe('sdk-aws-lambda', () => {
   given('[case4] forApiGateway handler', () => {
     const schema = {
       input: z.object({ data: z.string() }),
-      output: z.object({ success: z.boolean() }),
+      output: asApiGatewayResponseSchema({
+        body: z.object({ success: z.boolean() }),
+      }),
     };
 
     const handler = forApiGateway({
       schema,
-      invoke: async () => ({ success: true }),
+      invoke: async () => ({ body: { success: true } }),
     });
 
     const mockContext = {

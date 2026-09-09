@@ -86,6 +86,34 @@ describe('genLambdaEndpoint', () => {
         ).toContain('validation failed');
       });
 
+      /**
+       * .what = this family's CALLER-fault settle state, asserted directly
+       * .why = a caller fault must not emit a cloudwatch error nor signal a retry, and in
+       *        lambda that distinction IS the promise's settle state
+       *        (invariant.badrequesterror-not-lambda-error). the `then`s above read an
+       *        already-awaited `result`, so they prove this incidentally while they name only
+       *        the errorType and the message
+       *
+       * .note = third of the four settle-state points; the api-gateway pair lives in that
+       *         family's suite (rule.require.sweep-the-defect-class)
+       */
+      then('the invocation SUCCEEDS — settles FULFILLED', async () => {
+        const handler = genLambdaEndpoint({
+          schema,
+          invoke: async () => ({ result: true }),
+        });
+
+        await expect(
+          handler(
+            { name: 'Bob', age: 'not a number' } as unknown as {
+              name: string;
+              age: number;
+            },
+            createMockContext(),
+          ),
+        ).resolves.toMatchObject({ errorType: 'BadRequestError' });
+      });
+
       then('result matches snapshot', () => {
         expect(result).toBeDefined();
         expect(result).toMatchSnapshot();
@@ -118,6 +146,36 @@ describe('genLambdaEndpoint', () => {
           message: errorWithMeta.message,
           metadata: errorWithMeta.metadata,
         }).toMatchSnapshot();
+      });
+
+      /**
+       * ⚠️ .what = this family's SERVER-fault settle state — the INVERSE of its api-gateway
+       *            peer, and the last of the four points
+       * .why = this family DECLINES to answer a server fault. that is what
+       *        `genInternalServiceErrorMiddleware({ asOutputAfter: false })` means: rethrow, so
+       *        the invocation FAILS, cloudwatch records a `FunctionError`, and the caller may
+       *        retry. no http client waits on this family, so a failed invocation is the RIGHT
+       *        contract where a 500 payload would be wrong
+       *
+       * .note = this is the settle state whose silent regression costs the most. if the
+       *         off-state were ever read as "absent" and a payload returned instead, every
+       *         server fault would become a SUCCESS: cloudwatch would no longer record them, no
+       *         alarm would fire, and no retry would happen — a total observability outage,
+       *         invisible to any test that asserts only the response value
+       *
+       *         the assertion above proves a rejection incidentally, by way of `getError`. this
+       *         one NAMES it, so a regression fails against the guarantee rather than against a
+       *         message string
+       */
+      then('the invocation FAILS — settles REJECTED', async () => {
+        const handler = genLambdaEndpoint({
+          schema,
+          invoke: async () => ({ data: 123 }) as unknown as { data: string },
+        });
+
+        await expect(
+          handler({ id: 'test' }, createMockContext()),
+        ).rejects.toThrow();
       });
     });
   });

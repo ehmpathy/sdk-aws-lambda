@@ -11,11 +11,27 @@ describe('genConstraintErrorMiddleware', () => {
     error: jest.fn(),
   });
 
+  /**
+   * .what = the two `asOutputAfter` shapes a family can hand this middleware
+   * .why = the middleware no longer reads a family flag — it renders through whatever it is
+   *        given. so this suite covers the two SHAPES, and does not claim to mirror the real
+   *        call sites: that would put one guarantee in two places
+   *        (rule.forbid.parallel-codepaths). each family's own suite proves its real chain
+   */
+  const asBody = { asOutputAfter: (body: unknown) => body };
+  const asWirePayload = {
+    asOutputAfter: (body: unknown) => ({
+      statusCode: 400,
+      body: JSON.stringify(body),
+      headers: { 'Content-Type': 'application/json' },
+    }),
+  };
+
   given('[case1] BadRequestError thrown (standard handler)', () => {
     when('[t0] middleware handles error', () => {
       then('it should return error response object', async () => {
         const mockLog = createMockLog();
-        const middleware = genConstraintErrorMiddleware();
+        const middleware = genConstraintErrorMiddleware(asBody);
         const error = new BadRequestError('Invalid input');
         const request = {
           event: {},
@@ -42,7 +58,7 @@ describe('genConstraintErrorMiddleware', () => {
         // They are logged via ioLogMiddleware at debug level (handler.output)
         // This matches simple-lambda-handlers behavior
         const mockLog = createMockLog();
-        const middleware = genConstraintErrorMiddleware();
+        const middleware = genConstraintErrorMiddleware(asBody);
         const error = new BadRequestError('Invalid input');
         const request = {
           event: {},
@@ -63,7 +79,7 @@ describe('genConstraintErrorMiddleware', () => {
     when('[t0] middleware handles error', () => {
       then('it should return 400 with JSON body', async () => {
         const mockLog = createMockLog();
-        const middleware = genConstraintErrorMiddleware({ apiGateway: true });
+        const middleware = genConstraintErrorMiddleware(asWirePayload);
         const error = new BadRequestError('Invalid input');
         const request = {
           event: {},
@@ -97,7 +113,7 @@ describe('genConstraintErrorMiddleware', () => {
         'it should NOT set response (pass through to InternalServiceError handler)',
         async () => {
           const mockLog = createMockLog();
-          const middleware = genConstraintErrorMiddleware();
+          const middleware = genConstraintErrorMiddleware(asBody);
           const error = new Error('Database connection failed');
           const request = {
             event: {},
@@ -119,7 +135,7 @@ describe('genConstraintErrorMiddleware', () => {
         'it should NOT log (logs are in InternalServiceError handler)',
         async () => {
           const mockLog = createMockLog();
-          const middleware = genConstraintErrorMiddleware();
+          const middleware = genConstraintErrorMiddleware(asBody);
           const error = new Error('Database connection failed');
           const request = {
             event: {},
@@ -141,7 +157,7 @@ describe('genConstraintErrorMiddleware', () => {
     when('[t0] middleware handles error', () => {
       then('it should include causeMessage in response', async () => {
         const mockLog = createMockLog();
-        const middleware = genConstraintErrorMiddleware();
+        const middleware = genConstraintErrorMiddleware(asBody);
         const cause = new Error('Connection refused');
         const error = new BadRequestError('Failed to validate user', { cause });
         const request = {
@@ -165,7 +181,7 @@ describe('genConstraintErrorMiddleware', () => {
     when('[t0] middleware invoked', () => {
       then('it should not modify response', async () => {
         const mockLog = createMockLog();
-        const middleware = genConstraintErrorMiddleware();
+        const middleware = genConstraintErrorMiddleware(asBody);
         const request = {
           event: {},
           error: undefined,
@@ -185,7 +201,7 @@ describe('genConstraintErrorMiddleware', () => {
     when('[t0] middleware handles error', () => {
       then('it should treat as BadRequestError', async () => {
         const mockLog = createMockLog();
-        const middleware = genConstraintErrorMiddleware();
+        const middleware = genConstraintErrorMiddleware(asBody);
         const error = new Error('Custom bad request');
         error.name = 'BadRequestError';
         const request = {
@@ -211,7 +227,7 @@ describe('genConstraintErrorMiddleware', () => {
     when('[t0] middleware handles error', () => {
       then('it should include details in response', async () => {
         const mockLog = createMockLog();
-        const middleware = genConstraintErrorMiddleware();
+        const middleware = genConstraintErrorMiddleware(asBody);
         // simulate an error with metadata property (as BadRequestError would have)
         const error = Object.assign(new Error('Invalid input'), {
           name: 'BadRequestError',
@@ -239,7 +255,7 @@ describe('genConstraintErrorMiddleware', () => {
     when('[t0] middleware handles error', () => {
       then('it should return error response object', async () => {
         const mockLog = createMockLog();
-        const middleware = genConstraintErrorMiddleware();
+        const middleware = genConstraintErrorMiddleware(asBody);
         const error = new ConstraintError('Invalid input');
         const request = {
           event: {},
@@ -263,7 +279,7 @@ describe('genConstraintErrorMiddleware', () => {
 
       then('it should NOT log at error level', async () => {
         const mockLog = createMockLog();
-        const middleware = genConstraintErrorMiddleware();
+        const middleware = genConstraintErrorMiddleware(asBody);
         const error = new ConstraintError('Invalid input');
         const request = {
           event: {},
@@ -284,7 +300,7 @@ describe('genConstraintErrorMiddleware', () => {
     when('[t0] middleware handles error', () => {
       then('it should return 400 with JSON body', async () => {
         const mockLog = createMockLog();
-        const middleware = genConstraintErrorMiddleware({ apiGateway: true });
+        const middleware = genConstraintErrorMiddleware(asWirePayload);
         const error = new ConstraintError('Invalid input');
         const request = {
           event: {},
@@ -316,7 +332,7 @@ describe('genConstraintErrorMiddleware', () => {
     when('[t0] middleware handles error', () => {
       then('it should treat as ConstraintError', async () => {
         const mockLog = createMockLog();
-        const middleware = genConstraintErrorMiddleware();
+        const middleware = genConstraintErrorMiddleware(asBody);
         const error = new Error('Custom constraint');
         error.name = 'ConstraintError';
         const request = {
@@ -344,7 +360,7 @@ describe('genConstraintErrorMiddleware', () => {
         'it should return errorType: ConstraintError (modern semantics)',
         async () => {
           const mockLog = createMockLog();
-          const middleware = genConstraintErrorMiddleware();
+          const middleware = genConstraintErrorMiddleware(asBody);
           const error = new ConstraintError('Invalid input');
           const request = {
             event: {},
@@ -375,7 +391,7 @@ describe('genConstraintErrorMiddleware', () => {
         'it should still return errorType: ConstraintError (modern semantics)',
         async () => {
           const mockLog = createMockLog();
-          const middleware = genConstraintErrorMiddleware();
+          const middleware = genConstraintErrorMiddleware(asBody);
           const error = new BadRequestError('Invalid input');
           const request = {
             event: {},
@@ -404,7 +420,7 @@ describe('genConstraintErrorMiddleware', () => {
     when('[t2] apiGateway mode', () => {
       then('it should return 400 with errorType: ConstraintError', async () => {
         const mockLog = createMockLog();
-        const middleware = genConstraintErrorMiddleware({ apiGateway: true });
+        const middleware = genConstraintErrorMiddleware(asWirePayload);
         const error = new ConstraintError('Invalid input');
         const request = {
           event: {},
@@ -441,7 +457,7 @@ describe('genConstraintErrorMiddleware', () => {
         'it should return errorType: BadRequestError (backwards compat)',
         async () => {
           const mockLog = createMockLog();
-          const middleware = genConstraintErrorMiddleware();
+          const middleware = genConstraintErrorMiddleware(asBody);
           const error = new ConstraintError('Invalid input');
           const request = {
             event: {},
@@ -467,7 +483,7 @@ describe('genConstraintErrorMiddleware', () => {
         'it should return errorType: BadRequestError (backwards compat)',
         async () => {
           const mockLog = createMockLog();
-          const middleware = genConstraintErrorMiddleware();
+          const middleware = genConstraintErrorMiddleware(asBody);
           const error = new ConstraintError('Invalid input');
           const request = {
             event: {},

@@ -1,0 +1,241 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`an api-gateway handler owns its own wire response given: [case1] a twilio webhook that answers 204 with no body when: [t0] a real form-encoded request reaches it then: the whole wire response is what a reviewer expects 1`] = `
+{
+  "headers": {
+    "origin-agent-cluster": "?1",
+    "referrer-policy": "no-referrer",
+    "strict-transport-security": "max-age=15552000; includeSubDomains; preload",
+    "x-content-type-options": "nosniff",
+    "x-dns-prefetch-control": "off",
+    "x-download-options": "noopen",
+    "x-permitted-cross-domain-policies": "none",
+  },
+  "status": 204,
+  "text": "",
+}
+`;
+
+exports[`an api-gateway handler owns its own wire response given: [case2] a short-url that answers 308 with a Location header when: [t0] a real http request reaches it then: the whole wire response is what a reviewer expects 1`] = `
+{
+  "headers": {
+    "location": "https://ehmpath.com/surf/pipeline",
+    "origin-agent-cluster": "?1",
+    "referrer-policy": "no-referrer",
+    "strict-transport-security": "max-age=15552000; includeSubDomains; preload",
+    "x-content-type-options": "nosniff",
+    "x-dns-prefetch-control": "off",
+    "x-download-options": "noopen",
+    "x-permitted-cross-domain-policies": "none",
+  },
+  "status": 308,
+  "text": "",
+}
+`;
+
+exports[`an api-gateway handler owns its own wire response given: [case3] a twilio voice webhook that answers twiml xml when: [t0] a real http request reaches it then: the whole wire response is what a reviewer expects 1`] = `
+{
+  "headers": {
+    "content-type": "text/xml",
+    "origin-agent-cluster": "?1",
+    "referrer-policy": "no-referrer",
+    "strict-transport-security": "max-age=15552000; includeSubDomains; preload",
+    "x-content-type-options": "nosniff",
+    "x-dns-prefetch-control": "off",
+    "x-download-options": "noopen",
+    "x-permitted-cross-domain-policies": "none",
+  },
+  "status": 200,
+  "text": "<Response><Say>cowabunga</Say></Response>",
+}
+`;
+
+exports[`an api-gateway handler owns its own wire response given: [case4] a handler that returns only a body — the convenient default when: [t0] a real http request reaches it then: the whole wire response is what a reviewer expects 1`] = `
+{
+  "headers": {
+    "content-type": "application/json",
+    "origin-agent-cluster": "?1",
+    "referrer-policy": "no-referrer",
+    "strict-transport-security": "max-age=15552000; includeSubDomains; preload",
+    "x-content-type-options": "nosniff",
+    "x-dns-prefetch-control": "off",
+    "x-download-options": "noopen",
+    "x-permitted-cross-domain-policies": "none",
+  },
+  "status": 200,
+  "text": "{"salutation":"aloha, kai"}",
+}
+`;
+
+exports[`an api-gateway handler owns its own wire response given: [case5] a handler that throws a BadRequestError with a cause when: [t0] a real http request reaches it then: the whole wire response is what a reviewer expects 1`] = `
+{
+  "headers": {
+    "content-type": "application/json",
+  },
+  "status": 400,
+  "text": "{"errorMessage":"BadRequestError: from is not a valid e164\\n\\n{\\n  \\"metadata\\": {\\n    \\"fieldAtFault\\": \\"from\\",\\n    \\"apiKeyUsed\\": \\"sk-should-not-be-in-metadata-0xc0ffee\\"\\n  }\\n}","errorType":"BadRequestError","causeMessage":"e164 wants a plus prefix","details":{"cause":{},"metadata":{"fieldAtFault":"from","apiKeyUsed":"sk-should-not-be-in-metadata-0xc0ffee"}}}",
+}
+`;
+
+exports[`an api-gateway handler owns its own wire response given: [case6] a handler that throws an unexpected error when: [t0] a real http request reaches it then: the whole wire response is what a reviewer expects 1`] = `
+{
+  "headers": {
+    "content-type": "application/json",
+  },
+  "status": 500,
+  "text": "{"errorMessage":"internal server error","errorType":"InternalServiceError","correlationId":"exid:[masked]"}",
+}
+`;
+
+exports[`an api-gateway handler owns its own wire response given: [case7] a handler that opts out of output validation via z.any() when: [t0] a real http request reaches it then: the whole wire response is what a reviewer expects 1`] = `
+{
+  "headers": {
+    "origin-agent-cluster": "?1",
+    "referrer-policy": "no-referrer",
+    "strict-transport-security": "max-age=15552000; includeSubDomains; preload",
+    "x-content-type-options": "nosniff",
+    "x-dns-prefetch-control": "off",
+    "x-download-options": "noopen",
+    "x-opted-out": "yes",
+    "x-permitted-cross-domain-policies": "none",
+  },
+  "status": 204,
+  "text": "",
+}
+`;
+
+exports[`an api-gateway handler owns its own wire response given: [case8] a cors-configured handler, on BOTH its paths when: [t0] the request succeeds — the positive control then: the whole wire response is what a reviewer expects 1`] = `
+{
+  "headers": {
+    "access-control-allow-headers": "content-type,authorization",
+    "access-control-allow-origin": "*",
+    "content-type": "application/json",
+    "origin-agent-cluster": "?1",
+    "referrer-policy": "no-referrer",
+    "strict-transport-security": "max-age=15552000; includeSubDomains; preload",
+    "x-content-type-options": "nosniff",
+    "x-dns-prefetch-control": "off",
+    "x-download-options": "noopen",
+    "x-permitted-cross-domain-policies": "none",
+  },
+  "status": 200,
+  "text": "{"salutation":"aloha"}",
+}
+`;
+
+exports[`an api-gateway handler owns its own wire response given: [case8] a cors-configured handler, on BOTH its paths when: [t1] the SAME handler throws then: the whole wire response is what a reviewer expects 1`] = `
+{
+  "headers": {
+    "content-type": "application/json",
+  },
+  "status": 400,
+  "text": "{"errorMessage":"BadRequestError: surfer is not a valid e164","errorType":"BadRequestError"}",
+}
+`;
+
+exports[`an api-gateway handler owns its own wire response given: [case9] a handler that returns the aws-native wire shape when: [t0] a real http request reaches it then: the whole wire response is what a reviewer expects 1`] = `
+{
+  "headers": {
+    "content-type": "application/json",
+  },
+  "status": 500,
+  "text": "{"errorMessage":"internal server error","errorType":"InternalServiceError","correlationId":"exid:[masked]"}",
+}
+`;
+
+exports[`an api-gateway handler owns its own wire response given: [case10] a handler that returns an EXPLICIT empty-string body when: [t0] a real http request reaches it then: the whole wire response is what a reviewer expects — 2-byte body 1`] = `
+{
+  "headers": {
+    "content-type": "application/json",
+    "origin-agent-cluster": "?1",
+    "referrer-policy": "no-referrer",
+    "strict-transport-security": "max-age=15552000; includeSubDomains; preload",
+    "x-content-type-options": "nosniff",
+    "x-dns-prefetch-control": "off",
+    "x-download-options": "noopen",
+    "x-permitted-cross-domain-policies": "none",
+  },
+  "status": 200,
+  "text": """",
+}
+`;
+
+exports[`an api-gateway handler owns its own wire response given: [case11] a cors PREFLIGHT against a strict-schema handler when: [t0] a browser sends the preflight then: the whole wire response is what a reviewer expects 1`] = `
+{
+  "headers": {
+    "content-type": "application/json",
+  },
+  "status": 400,
+  "text": "{"errorMessage":"✋ ConstraintError: validation failed: : Invalid input: expected object, received null\\n\\n{\\n  \\"issues\\": [\\n    {\\n      \\"path\\": \\"\\",\\n      \\"message\\": \\"Invalid input: expected object, received null\\",\\n      \\"code\\": \\"invalid_type\\"\\n    }\\n  ]\\n}","errorType":"BadRequestError","details":{"issues":[{"path":"","message":"Invalid input: expected object, received null","code":"invalid_type"}]}}",
+}
+`;
+
+exports[`an api-gateway handler owns its own wire response given: [case12] an HTTP-API (v2) trigger that answers 204 with no body when: [t0] a real form-encoded request reaches it over v2 then: the whole wire response is what a reviewer expects 1`] = `
+{
+  "headers": {
+    "origin-agent-cluster": "?1",
+    "referrer-policy": "no-referrer",
+    "strict-transport-security": "max-age=15552000; includeSubDomains; preload",
+    "x-content-type-options": "nosniff",
+    "x-dns-prefetch-control": "off",
+    "x-download-options": "noopen",
+    "x-permitted-cross-domain-policies": "none",
+  },
+  "status": 204,
+  "text": "",
+}
+`;
+
+exports[`an api-gateway handler owns its own wire response given: [case13] an HTTP-API (v2) trigger that answers 308 with a Location when: [t0] a real http request reaches it over v2 then: the whole wire response is what a reviewer expects 1`] = `
+{
+  "headers": {
+    "location": "https://ehmpath.com/surf/pipeline",
+    "origin-agent-cluster": "?1",
+    "referrer-policy": "no-referrer",
+    "strict-transport-security": "max-age=15552000; includeSubDomains; preload",
+    "x-content-type-options": "nosniff",
+    "x-dns-prefetch-control": "off",
+    "x-download-options": "noopen",
+    "x-permitted-cross-domain-policies": "none",
+  },
+  "status": 308,
+  "text": "",
+}
+`;
+
+exports[`an api-gateway handler owns its own wire response given: [case14] an HTTP-API (v2) trigger that answers with verbatim xml when: [t0] a real http request reaches it over v2 then: the whole wire response is what a reviewer expects 1`] = `
+{
+  "headers": {
+    "content-type": "text/xml",
+    "origin-agent-cluster": "?1",
+    "referrer-policy": "no-referrer",
+    "strict-transport-security": "max-age=15552000; includeSubDomains; preload",
+    "x-content-type-options": "nosniff",
+    "x-dns-prefetch-control": "off",
+    "x-download-options": "noopen",
+    "x-permitted-cross-domain-policies": "none",
+  },
+  "status": 200,
+  "text": "<Response><Say>cowabunga</Say></Response>",
+}
+`;
+
+exports[`an api-gateway handler owns its own wire response given: [case15] an HTTP-API (v2) trigger whose handler throws when: [t0] it throws a BadRequestError over v2 then: the whole wire response is what a reviewer expects 1`] = `
+{
+  "headers": {
+    "content-type": "application/json",
+  },
+  "status": 400,
+  "text": "{"errorMessage":"BadRequestError: surfer is not a valid e164","errorType":"BadRequestError","causeMessage":"e164 wants a plus prefix","details":{"cause":{}}}",
+}
+`;
+
+exports[`an api-gateway handler owns its own wire response given: [case15] an HTTP-API (v2) trigger whose handler throws when: [t1] it throws an unexpected error over v2 then: the whole wire response is what a reviewer expects 1`] = `
+{
+  "headers": {
+    "content-type": "application/json",
+  },
+  "status": 500,
+  "text": "{"errorMessage":"internal server error","errorType":"InternalServiceError","correlationId":"exid:[masked]"}",
+}
+`;

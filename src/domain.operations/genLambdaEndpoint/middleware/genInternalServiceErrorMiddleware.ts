@@ -1,16 +1,39 @@
 import type middy from '@middy/core';
 
+import { asContextTrailed } from './asContextTrailed';
 import { getIsConstraintError } from './getIsConstraintError';
 
 /**
  * .what = middleware that logs and handles internal service errors
- * .why = all errors that are not BadRequestError are internal service errors
- *        - logs the error loudly
- *        - for apiGateway: returns 500 response (no details to avoid leaks)
- *        - for standard: passes error up the chain
+ * .why = all errors that are not a ConstraintError are internal service errors, so each one is
+ *        logged loudly and never echoed to the wire — no internal detail, no secret
+ *
+ * .note = this middleware does NOT know which families exist. the family states what a server
+ *         fault owes the wire via `asOutputAfter` — and that includes the choice to DECLINE and
+ *         let the invocation fail. a flag read here would fork one guarantee across two paths
+ *         (rule.forbid.parallel-codepaths)
  */
-export const genInternalServiceErrorMiddleware = (opts?: {
-  apiGateway?: boolean;
+export const genInternalServiceErrorMiddleware = (opts: {
+  /**
+   * .what = renders a server fault as this family's `outputAfter`, or declines to answer
+   * .why = the two families make DIFFERENT guarantees for the same fault, so this is not one
+   *        shape with two renderings (rule.forbid.parallel-codepaths exempts genuinely
+   *        different guarantees — it forbids only the FLAG that selected between them):
+   *
+   *   function -> answer the wire with this shape; the invocation SUCCEEDS, since http demands
+   *               a response and a hung request is worse than a 500
+   *   false    -> DISARMED; rethrow, so the invocation FAILS, cloudwatch records the error, and
+   *               the caller may retry — which is the right contract for a server fault when no
+   *               http client waits on it
+   *
+   * .note = the off-state is `false`, never absent. an absent field would disable a guarantee by
+   *         omission, so a caller who forgot it would be indistinguishable from one who chose it
+   *         (rule.require.explicit-optout), and `false` differs maximally in form from
+   *         `undefined` (rule.forbid.opposite-senses-on-undefined-and-null)
+   */
+  asOutputAfter:
+    | ((input: { error: Error; exid: string | null }) => unknown)
+    | false;
 }): {
   onError: middy.MiddlewareFn<any, any>;
 } => {
@@ -23,10 +46,8 @@ export const genInternalServiceErrorMiddleware = (opts?: {
     const isBadRequest = getIsConstraintError({ error });
     if (isBadRequest) return;
 
-    // get log from context if available
-    const log = (
-      request.context as { log?: { error?: (...args: any[]) => void } }
-    )?.log;
+    // read the sdk-managed context once — trail may not have run yet
+    const { log } = asContextTrailed({ context: request.context });
 
     // log the error via context.log or fallback to console
     const logError = log?.error ?? console.error;
@@ -35,31 +56,20 @@ export const genInternalServiceErrorMiddleware = (opts?: {
       stackTrace: error.stack,
     });
 
-    // if we're in the api gateway context, handle the error and return a standard response
-    if (opts?.apiGateway) {
-      // get exid from trail context if available for correlation
-      const exid = (request.context as { log?: { trail?: { exid?: string } } })
-        ?.log?.trail?.exid;
+    // a family that declines to answer lets the invocation fail, so cloudwatch records it
+    if (opts.asOutputAfter === false) throw error;
 
-      // build the response object with generic message
-      // note: we include a generic message and correlation id (exid) but no details to avoid leaks
-      request.response = {
-        statusCode: 500,
-        body: JSON.stringify({
-          errorMessage: 'internal server error',
-          errorType: 'InternalServiceError',
-          ...(exid ? { correlationId: exid } : {}),
-        }),
-        headers: { 'Content-Type': 'application/json' },
-      };
+    // get exid from trail context if available for correlation
+    const exid = log?.trail?.exid ?? null;
 
-      // return undefined so that middy knows we handled the error
-      // prevents cloudWatch from classifying this as a lambda error
-      return;
-    }
-
-    // if we didn't handle the error above, rethrow it
-    throw error;
+    /**
+     * .what = answer the wire with this family's shape for a server fault
+     * .why = middy treats a set `request.response` as "handled", which keeps the invocation a
+     *        SUCCESS and stops cloudwatch from a lambda-error classification
+     *
+     * .note = DELIBERATE MUTATION — `request` is middy's only channel to hand a value onward
+     */
+    request.response = opts.asOutputAfter({ error, exid });
   };
   return { onError };
 };

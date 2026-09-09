@@ -4,7 +4,6 @@ import type { ZodType } from 'zod';
 
 import type { EnvConfig } from '../../../domain.objects/ContextAwsLambdaServer';
 import type { LambdaEndpointSchema } from '../../../domain.objects/LambdaEndpointSchema';
-import type { ApiGatewayResponse } from './genConstraintErrorMiddleware';
 import { getJsonSchemaFromZod } from './genIntrospectionMiddleware.getJsonSchemaFromZod';
 import { isIntrospectionPayload } from './genIntrospectionMiddleware.isIntrospectionPayload';
 
@@ -23,15 +22,30 @@ export const genIntrospectionMiddleware = <TInput, TOutput>(opts: {
     output: ZodType<TOutput>;
   };
   env?: EnvConfig;
-  apiGateway?: boolean;
+
+  /**
+   * .what = reads `inputAfter` out of the middy request, per family
+   * .why = each family keeps the caller's value in a DIFFERENT place, and only the family
+   *        knows which. the api-gateway chain must keep `request.event` HTTP-SHAPED, since
+   *        `@middy/http-cors` reads `request.event.headers` and derives the http method from
+   *        `request.event` in its `after` hook — so that family carries the value at
+   *        `event.body`, while the ask-endpoint family carries it at `event` itself
+   */
+  asInputAfter: (request: any) => unknown;
+
+  /**
+   * .what = renders the schema as this family's `outputAfter`, per family
+   * .why = the short-circuit writes STRAIGHT to the wire, so the shape is the family's own:
+   *        api-gateway owes a wire payload, while an ask-endpoint response IS its payload
+   */
+  asOutputAfter: (schema: LambdaEndpointSchema) => unknown;
 }): {
   before: middy.MiddlewareFn<any, any>;
 } => {
   const before: middy.MiddlewareFn<any, any> = async (request) => {
-    // extract payload - for API Gateway, body is already parsed by httpJsonBodyParser
-    const payload = opts.apiGateway ? request.event?.body : request.event;
+    // read inputAfter from wherever this family keeps it
+    const payload = opts.asInputAfter(request);
 
-    // check if introspection request
     if (!isIntrospectionPayload(payload)) return;
 
     // extract env from config
@@ -59,17 +73,13 @@ export const genIntrospectionMiddleware = <TInput, TOutput>(opts: {
       output: getJsonSchemaFromZod(opts.schema.output),
     };
 
-    // set response to short-circuit middleware chain
-    if (opts.apiGateway) {
-      request.response = {
-        statusCode: 200,
-        body: JSON.stringify(schema),
-        headers: { 'Content-Type': 'application/json' },
-      } as ApiGatewayResponse;
-      return request.response;
-    }
-
-    request.response = schema;
+    /**
+     * .what = short-circuit the chain with this family's own wire shape
+     * .note = DELIBERATE MUTATION. middy's `before` contract is that a hook short-circuits by
+     *         assignment to `request.response`; there is no immutable form of that signal
+     *         (rule.require.immutable-vars, the annotated-exception clause)
+     */
+    request.response = opts.asOutputAfter(schema);
     return request.response;
   };
 

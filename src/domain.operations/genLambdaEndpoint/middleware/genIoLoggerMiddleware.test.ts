@@ -54,7 +54,25 @@ describe('genIoLoggerMiddleware', () => {
     });
   });
 
-  given('[case3] onError hook with response', () => {
+  /**
+   * ⚠️ .what = this case builds a request state that NEITHER shipped chain produces today
+   * .why = `onError` reads `request.response`, and in both `forApiGateway` and
+   *        `forAskEndpoint` this middleware is registered at a HIGHER array index than the
+   *        error builders — so middy's hook reversal runs it BEFORE they set the response,
+   *        and `request.response` is always `undefined` there. the state below is injected by
+   *        hand
+   *
+   * .note = so read this case for what it is: a UNIT test of the branch's own logic, never
+   *         evidence that the branch is reachable in a composed chain. to read it as the
+   *         latter is the false-confidence pattern this repo already retired once
+   *         (rule.require.snapshots-deny-volatile-not-allow-expected)
+   *
+   * .why kept = the branch goes live the moment the F32 header-order reorder lands, and this
+   *             case is the coverage that reorder needs on day one. the honest fix is the
+   *             reorder, and its blast radius sits outside this bound — so the case stays and
+   *             states its own limit, rather than vanish and take the coverage with it
+   */
+  given('[case3] onError with an INJECTED response', () => {
     when('[t0] middleware invoked', () => {
       then('it should log the response', async () => {
         const mockLog = createMockLog();

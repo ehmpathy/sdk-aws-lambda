@@ -2,17 +2,40 @@ import { ConstraintError, getError } from 'helpful-errors';
 import { given, then, useThen, when } from 'test-fns';
 import { z } from 'zod';
 
+import type { LambdaEndpointSchema } from '../../../domain.objects/LambdaEndpointSchema';
 import { genIntrospectionMiddleware } from './genIntrospectionMiddleware';
 
 describe('genIntrospectionMiddleware', () => {
   const inputSchema = z.object({ customerId: z.string() });
   const outputSchema = z.object({ name: z.string(), balance: z.number() });
 
+  /**
+   * .what = the two reader/writer pairs this middleware can be handed
+   * .why = the middleware no longer knows which families exist — it reads `inputAfter` and
+   *        renders `outputAfter` through whatever it is given. so this suite covers the two
+   *        SHAPES, and deliberately does not claim to mirror the real call sites: that would
+   *        put one guarantee in two places (rule.forbid.parallel-codepaths). each family's own
+   *        suite proves its real chain end-to-end
+   */
+  const atEvent = {
+    asInputAfter: (request: any) => request.event,
+    asOutputAfter: (schema: LambdaEndpointSchema) => schema,
+  };
+  const atEventBody = {
+    asInputAfter: (request: any) => request.event?.body,
+    asOutputAfter: (schema: LambdaEndpointSchema) => ({
+      statusCode: 200,
+      body: JSON.stringify(schema),
+      headers: { 'Content-Type': 'application/json' },
+    }),
+  };
+
   describe('forAskEndpoint (standard lambda)', () => {
     given('[case1] introspection request in prep env', () => {
       const middleware = genIntrospectionMiddleware({
         schema: { input: inputSchema, output: outputSchema },
         env: { access: 'prep' },
+        ...atEvent,
       });
 
       when('[t0] before middleware runs', () => {
@@ -59,6 +82,7 @@ describe('genIntrospectionMiddleware', () => {
       const middleware = genIntrospectionMiddleware({
         schema: { input: inputSchema, output: outputSchema },
         env: { access: 'prod' },
+        ...atEvent,
       });
 
       when('[t0] before middleware runs', () => {
@@ -93,6 +117,7 @@ describe('genIntrospectionMiddleware', () => {
       const middleware = genIntrospectionMiddleware({
         schema: { input: inputSchema, output: outputSchema },
         env: { access: 'test' },
+        ...atEvent,
       });
 
       when('[t0] before middleware runs', () => {
@@ -113,6 +138,7 @@ describe('genIntrospectionMiddleware', () => {
       const middleware = genIntrospectionMiddleware({
         schema: { input: inputSchema, output: outputSchema },
         // no env provided
+        ...atEvent,
       });
 
       when('[t0] before middleware runs', () => {
@@ -138,6 +164,7 @@ describe('genIntrospectionMiddleware', () => {
       const middleware = genIntrospectionMiddleware({
         schema: { input: inputSchema, output: outputSchema },
         env: { access: 'prep' },
+        ...atEvent,
       });
 
       when('[t0] before middleware runs', () => {
@@ -159,7 +186,7 @@ describe('genIntrospectionMiddleware', () => {
       const middleware = genIntrospectionMiddleware({
         schema: { input: inputSchema, output: outputSchema },
         env: { access: 'prep' },
-        apiGateway: true,
+        ...atEventBody,
       });
 
       when('[t0] before middleware runs', () => {
@@ -194,7 +221,7 @@ describe('genIntrospectionMiddleware', () => {
       const middleware = genIntrospectionMiddleware({
         schema: { input: inputSchema, output: outputSchema },
         env: { access: 'prod' },
-        apiGateway: true,
+        ...atEventBody,
       });
 
       when('[t0] before middleware runs', () => {
@@ -224,7 +251,7 @@ describe('genIntrospectionMiddleware', () => {
       const middleware = genIntrospectionMiddleware({
         schema: { input: inputSchema, output: outputSchema },
         env: { access: 'prep' },
-        apiGateway: true,
+        ...atEventBody,
       });
 
       when('[t0] before middleware runs', () => {
@@ -246,6 +273,7 @@ describe('genIntrospectionMiddleware', () => {
       const middleware = genIntrospectionMiddleware({
         schema: { input: inputSchema, output: outputSchema },
         env: async () => ({ access: 'prep' }),
+        ...atEvent,
       });
 
       when('[t0] before middleware runs', () => {
