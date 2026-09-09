@@ -7,7 +7,13 @@ import { genContextLogTrail } from 'sdk-logs';
 import { given, then, useThen, when } from 'test-fns';
 import { z } from 'zod';
 
-import { askLambdaEndpoint, forApiGateway, genLambdaEndpoint } from '../src/index';
+import {
+  asApiGatewayResponseSchema,
+  askLambdaEndpoint,
+  forApiGateway,
+  genLambdaEndpoint,
+} from '../src/index';
+import { asParsedResponseBody } from '../src/__test_assets__/asParsedResponseBody';
 
 /**
  * .what = generates test log context
@@ -110,6 +116,26 @@ describe('user journey: basic lambda endpoint', () => {
   });
 });
 
+/**
+ * ⚠️ .note on GRAIN — this block asserts the handler's RETURN VALUE, never the wire bytes
+ *
+ * .what = it invokes the handler in-process with a hand-built `APIGatewayProxyEvent` and reads
+ *         `result.statusCode` / `result.headers` / `result.body`
+ *
+ * .why = the subject here is the SDK-AUTHORING contract: does `forApiGateway` accept this
+ *        config shape, and does it hand back the payload shape a lambda runtime expects. that
+ *        question is answered at the return value, so a socket would add cost and no signal
+ *
+ * ⚠️ .why this is NOT the wire proof = the wish is explicit that a return value proves no fact
+ *        about the wire ("an assertion that the handler returned `{ statusCode: 204 }` does not
+ *        prove api gateway sees a 204 with no body"). that proof lives at wire grain, in
+ *        `blackbox/local.wireResponse.acceptance.test.ts`, where 15 cases go over a real socket
+ *        via `genApiGatewayProxyHarness` + `getOneWireResponse` and pin the actual bytes
+ *
+ * .note = read the two files as a PAIR: this one fixes the config contract, that one fixes the
+ *         bytes. a reader who takes this block for the wire proof would over-credit it — which
+ *         is exactly what review r009 flagged
+ */
 describe('user journey: api gateway handler', () => {
   given('[case1] developer creates api gateway handler', () => {
     const schema = {
@@ -117,9 +143,11 @@ describe('user journey: api gateway handler', () => {
         productId: z.string(),
         quantity: z.number().positive(),
       }),
-      output: z.object({
-        orderId: z.string(),
-        total: z.number(),
+      output: asApiGatewayResponseSchema({
+        body: z.object({
+          orderId: z.string(),
+          total: z.number(),
+        }),
       }),
     };
 
@@ -130,8 +158,10 @@ describe('user journey: api gateway handler', () => {
       }: {
         event: { productId: string; quantity: number };
       }) => ({
-        orderId: `order-${Date.now()}`,
-        total: event.quantity * 9.99,
+        body: {
+          orderId: `order-${Date.now()}`,
+          total: event.quantity * 9.99,
+        },
       }),
     });
 
@@ -155,7 +185,7 @@ describe('user journey: api gateway handler', () => {
         const result = await handler(event, createMockContext());
 
         expect(result.statusCode).toBe(200);
-        expect(JSON.parse(result.body)).toMatchObject({
+        expect(asParsedResponseBody({ response: result })).toMatchObject({
           orderId: expect.stringMatching(/^order-/),
           total: 29.97,
         });
@@ -164,7 +194,7 @@ describe('user journey: api gateway handler', () => {
         expect({
           ...result,
           body: JSON.stringify({
-            ...JSON.parse(result.body),
+            ...asParsedResponseBody({ response: result }),
             orderId: '[dynamic]',
           }),
         }).toMatchSnapshot();

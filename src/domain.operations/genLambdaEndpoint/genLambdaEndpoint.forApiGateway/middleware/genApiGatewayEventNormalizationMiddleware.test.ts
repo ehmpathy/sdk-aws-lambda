@@ -2,10 +2,8 @@ import type { APIGatewayProxyEvent, APIGatewayProxyEventV2 } from 'aws-lambda';
 import { getError } from 'helpful-errors';
 import { given, then, when } from 'test-fns';
 
-import {
-  genApiGatewayEventNormalizationMiddleware,
-  type UnifiedApiGatewayEvent,
-} from './genApiGatewayEventNormalizationMiddleware';
+import type { UnifiedApiGatewayEvent } from '../UnifiedApiGatewayEvent';
+import { genApiGatewayEventNormalizationMiddleware } from './genApiGatewayEventNormalizationMiddleware';
 
 describe('genApiGatewayEventNormalizationMiddleware', () => {
   const invokeMiddleware = async (

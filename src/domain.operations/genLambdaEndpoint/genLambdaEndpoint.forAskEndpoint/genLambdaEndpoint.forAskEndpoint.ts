@@ -4,13 +4,14 @@ import type { ContextLogTrail } from 'sdk-logs';
 import type { ZodSchema } from 'zod';
 
 import type { ContextAwsLambdaServer } from '../../../domain.objects/ContextAwsLambdaServer';
+import { asContextLogTrail } from '../asContextLogTrail';
 import { genConstraintErrorMiddleware } from '../middleware/genConstraintErrorMiddleware';
 import { genInternalServiceErrorMiddleware } from '../middleware/genInternalServiceErrorMiddleware';
 import { genIntrospectionMiddleware } from '../middleware/genIntrospectionMiddleware';
-import type { IoLogTranslate } from '../middleware/genIoLoggerMiddleware';
 import { genIoLoggerMiddleware } from '../middleware/genIoLoggerMiddleware';
 import { genTrailMiddleware } from '../middleware/genTrailMiddleware';
 import { getValidatedOutput } from '../middleware/getValidatedOutput';
+import type { TranslateLog } from '../TranslateLog';
 import { genZodEventValidationMiddleware } from './middleware/genZodEventValidationMiddleware';
 
 /**
@@ -55,7 +56,7 @@ export type GenLambdaEndpointInput<TInput, TOutput> = {
     output: ZodSchema<TOutput>;
   };
   invoke: EndpointOperation<TInput, TOutput>;
-  logTranslate?: IoLogTranslate;
+  logTranslate?: TranslateLog;
 };
 
 /**
@@ -67,28 +68,14 @@ export type GenLambdaEndpointContext = ContextAwsLambdaServer;
 
 /**
  * .what = generates a lambda handler with validation and trail context
- * .why = standardizes handler creation with schema validation and observability
- *
- * follows simple-lambda-handlers createStandardHandler pattern:
- * - uses middy middleware chain
- * - badRequestError middleware returns error object instead of throw
- * - internalServiceError middleware logs errors loudly
- * - ioLogger middleware logs input/output for debug
- * - validation middleware validates input against schema
- *
- * additions for sdk-aws-lambda:
- * - trail middleware injects log with trail context
- * - output validation via zod schema
+ * .why = standardizes handler creation with schema validation and observability. the chain:
+ *        constraint error (a caller fault becomes a response object, never a throw), internal
+ *        service error (logs loudly), io logger, trail, input + output validation
  */
 export const genLambdaEndpoint = <TInput, TOutput>(
-  input: {
-    schema: {
-      input: ZodSchema<TInput>;
-      output: ZodSchema<TOutput>;
-    };
-    invoke: EndpointOperation<TInput, TOutput>;
-    logTranslate?: IoLogTranslate;
-  },
+  // typed by the EXPORTED contract rather than an inline restatement — the two were hand-synced
+  // before, and a rename that reached only one of them would have compiled
+  input: GenLambdaEndpointInput<TInput, TOutput>,
   context?: ContextAwsLambdaServer,
 ): middy.MiddyfiedHandler<
   LambdaHandlerInput<TInput>,
@@ -101,8 +88,8 @@ export const genLambdaEndpoint = <TInput, TOutput>(
     event: TInput,
     lambdaContext: Context,
   ): Promise<TOutput> => {
-    // get log from lambda context (injected by trail middleware)
-    const log = (lambdaContext as unknown as ContextLogTrail).log;
+    // read the trail log `genTrailMiddleware` wrote; the cast lives in the shared reader
+    const { log } = asContextLogTrail({ context: lambdaContext });
 
     // invoke user handler
     const response = await input.invoke({ event }, { log });
@@ -118,11 +105,22 @@ export const genLambdaEndpoint = <TInput, TOutput>(
   // 4. introspection (onBefore) - intercepts introspect requests, returns schema
   // 5. validation (onBefore) - validates event against schema
   const middlewares = [
-    genConstraintErrorMiddleware(),
-    genInternalServiceErrorMiddleware(),
+    /**
+     * .note = this family's response IS its payload, so a caller fault renders as the body
+     *         itself — and a SERVER fault is declined (`false`), which lets the invocation FAIL
+     *         so cloudwatch records it and the caller may retry
+     */
+    genConstraintErrorMiddleware({ asOutputAfter: (body) => body }),
+    genInternalServiceErrorMiddleware({ asOutputAfter: false }),
     genTrailMiddleware(),
     genIoLoggerMiddleware({ logTranslate: input.logTranslate }),
-    genIntrospectionMiddleware({ schema: input.schema, env: context?.env }),
+    genIntrospectionMiddleware({
+      schema: input.schema,
+      env: context?.env,
+      // this family carries `inputAfter` at `event` itself, and its response IS its payload
+      asInputAfter: (request) => request.event,
+      asOutputAfter: (schema) => schema,
+    }),
     genZodEventValidationMiddleware({ schema: input.schema.input }),
   ];
 

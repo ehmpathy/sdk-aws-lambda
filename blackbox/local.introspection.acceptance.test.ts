@@ -14,6 +14,7 @@ import { getError } from 'test-fns';
 const { log } = genContextLogTrail({ trail: null, env: null });
 
 import {
+  asApiGatewayResponseSchema,
   forApiGateway,
   genIntrospectionMiddleware,
   genLambdaEndpoint,
@@ -25,6 +26,7 @@ import {
   LambdaFunctionNotFoundError,
   type LambdaEndpointSchema,
 } from '../src/index';
+import { asParsedResponseBody } from '../src/__test_assets__/asParsedResponseBody';
 import { createInProcessLambdaHarness } from '../src/__test_assets__/createInProcessLambdaHarness';
 import { invokeHandlerForTest } from '../src/__test_assets__/invokeHandlerForTest';
 
@@ -305,13 +307,15 @@ describe('introspection', () => {
   given('[case5] forApiGateway with introspection in prep env', () => {
     const schema = {
       input: z.object({ data: z.string() }),
-      output: z.object({ success: z.boolean() }),
+      output: asApiGatewayResponseSchema({
+        body: z.object({ success: z.boolean() }),
+      }),
     };
 
     const handler = forApiGateway(
       {
         schema,
-        invoke: async () => ({ success: true }),
+        invoke: async () => ({ body: { success: true } }),
       },
       { env: { access: 'prep' } },
     );
@@ -336,7 +340,7 @@ describe('introspection', () => {
       });
 
       then('body contains schema', () => {
-        const body = JSON.parse(result.body);
+        const body = asParsedResponseBody({ response: result });
         expect(body.input).toBeDefined();
         expect(body.output).toBeDefined();
       });
@@ -344,7 +348,7 @@ describe('introspection', () => {
       then('result matches snapshot', () => {
         // explicit assertion ensures shape check before snapshot
         expect(result.statusCode).toBe(200);
-        expect(JSON.parse(result.body).input).toBeDefined();
+        expect(asParsedResponseBody({ response: result }).input).toBeDefined();
         expect(result).toMatchSnapshot();
       });
     });

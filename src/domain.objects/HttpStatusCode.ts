@@ -15,6 +15,7 @@ export enum HttpStatusCode {
   MOVED_PERMANENTLY_301 = 301,
   FOUND_302 = 302,
   NOT_MODIFIED_304 = 304,
+  PERMANENT_REDIRECT_308 = 308,
 
   // caller error
   BAD_REQUEST_400 = 400,

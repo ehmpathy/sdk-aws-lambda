@@ -1,5 +1,6 @@
 import type middy from '@middy/core';
 
+import { asContextTrailed } from './asContextTrailed';
 import {
   getErrorResponseBodyAncient,
   getErrorResponseBodyContemp,
@@ -8,17 +9,16 @@ import {
 } from './getErrorResponseBody';
 import { getIsConstraintError } from './getIsConstraintError';
 
-export interface ApiGatewayResponse {
-  statusCode: number;
-  body: string;
-  headers?: Record<string, string>;
-}
-
 /**
  * .what = middleware that handles ConstraintError (and legacy BadRequestError)
- * .why = ConstraintError = caller fault, not server fault
- *        - for apiGateway: returns 400 response with error details
- *        - for standard: returns error response object (lambda succeeds)
+ * .why = ConstraintError = caller fault, not server fault, so the invocation SUCCEEDS either
+ *        way — a caller fault must not emit a cloudwatch error nor signal a retry
+ *        (invariant.badrequesterror-not-lambda-error)
+ *
+ * .note = this middleware does NOT know which families exist. it builds the error BODY and
+ *         hands it to the family's own `asOutputAfter`, so the wire shape is the family's to
+ *         state. a flag read here would fork one guarantee across two paths
+ *         (rule.forbid.parallel-codepaths)
  *
  * note: InternalServiceError is handled by genInternalServiceErrorMiddleware
  *
@@ -26,8 +26,19 @@ export interface ApiGatewayResponse {
  *                   flat errorType/errorMessage format
  *                   contemp callers receive nested { error: { _serde, class, message } }
  */
-export const genConstraintErrorMiddleware = (opts?: {
-  apiGateway?: boolean;
+export const genConstraintErrorMiddleware = (opts: {
+  /**
+   * .what = renders the error body as this family's `outputAfter`
+   * .why = the two families owe DIFFERENT shapes for the same fault: api-gateway owes a wire
+   *        payload with a 400 and a stringified body, while an ask-endpoint response IS its
+   *        payload. only the family knows which, so the family supplies it — never a flag read
+   *        here (rule.forbid.parallel-codepaths)
+   */
+  asOutputAfter: (
+    body:
+      | LambdaEndpointErrorResponseBodyContemp
+      | LambdaEndpointErrorResponseBodyAncient,
+  ) => unknown;
 }): {
   onError: middy.MiddlewareFn<any, any>;
 } => {
@@ -41,8 +52,9 @@ export const genConstraintErrorMiddleware = (opts?: {
     if (!isConstraintError) return;
 
     // detect if caller is contemp (sent wrapped payload) or ancient
-    const context = request.context as { isContempCaller?: boolean };
-    const isContempCaller = context.isContempCaller ?? false;
+    const { isContempCaller = false } = asContextTrailed({
+      context: request.context,
+    });
 
     // build error response body via transformer based on caller type
     const body:
@@ -51,25 +63,14 @@ export const genConstraintErrorMiddleware = (opts?: {
       ? getErrorResponseBodyContemp({ error, errorClass: 'ConstraintError' })
       : getErrorResponseBodyAncient({ error, errorType: 'BadRequestError' });
 
-    // for api gateway: return http response
-    if (opts?.apiGateway) {
-      /**
-       * .as = middy types request.response as unknown, but we set it to ApiGatewayResponse
-       * .removal = if middy gains typed response inference for API Gateway handlers, remove cast
-       */
-      request.response = {
-        statusCode: 400,
-        body: JSON.stringify(body),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      } as ApiGatewayResponse;
-      return;
-    }
-
-    // for standard handler: return error response object
-    // lambda invocation succeeds, caller detects error shape and throws
-    request.response = body;
+    /**
+     * .what = hand the wire whatever shape this family owes for a caller fault
+     * .why = the lambda invocation SUCCEEDS either way — a caller fault must not emit a
+     *        cloudwatch error nor signal a retry (invariant.badrequesterror-not-lambda-error)
+     *
+     * .note = DELIBERATE MUTATION — `request` is middy's only channel to hand a value onward
+     */
+    request.response = opts.asOutputAfter(body);
   };
   return { onError };
 };

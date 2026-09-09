@@ -1,4 +1,5 @@
 .build
+.claude/scheduled_tasks.lock
 *-debug.log
 *-error.log
 *.bak.*
