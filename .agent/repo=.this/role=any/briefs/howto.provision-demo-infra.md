@@ -62,13 +62,19 @@ npx declastruct apply --plan provision/aws.infra/account=demo/.temp/plan.json
 - **access must be a real tier.** the slug's access segment must be a valid
   `EnvironmentAccessTier` (`test | prep | prod`) — these tests use `prep`. do not
   invent envs like `demo`.
-- **`npx declastruct` is pre-approved** in the permission allowlist; `keyrack
-  unlock` is the only interactive (human-sso) step.
+- **`npx declastruct` is NOT in this repo's permission allowlist** — it prompts
+  for approval each run. `keyrack unlock` is the only human-sso step.
+- **the deployed acceptance suites do NOT need this.** they bundle, deploy, and
+  introspect their OWN handler every run, so a `declastruct apply` is a no-op for
+  them. reach for this wish only for the demo lambdas the INTEGRATION suite
+  invokes by name.
 - **the integration suite hits real cold-start lambdas** — expect it to be slow
   (~100s) on a fresh deploy.
 
 ## .see also
 
 - provision/aws.infra/account=demo/readme.md — the canonical plan/apply/verify ref
+- invariant.lambda-redeploy-waits-on-lastupdatestatus — a deploy is not done when
+  `State` says `Active`; a test that invokes after a deploy owes both waiters
 - define.lambda-endpoint-ubiqlang — slug = {service}-{access}-{function}
 - rule.require.env-access-in-context — access tiers
