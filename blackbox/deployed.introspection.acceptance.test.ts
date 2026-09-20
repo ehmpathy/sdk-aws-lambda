@@ -14,7 +14,11 @@ import * as esbuild from 'esbuild';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
-import { LambdaClient, waitUntilFunctionActiveV2 } from '@aws-sdk/client-lambda';
+import {
+  LambdaClient,
+  waitUntilFunctionActiveV2,
+  waitUntilFunctionUpdatedV2,
+} from '@aws-sdk/client-lambda';
 import {
   DeclaredAwsIamRole,
   DeclaredAwsLambda,
@@ -173,9 +177,20 @@ describe('e2e: deployed introspectable lambda', () => {
       },
     );
 
-    // wait for lambda to be active
+    // wait for the lambda to be active (covers the initial-create path)
     const sdkLambda = new LambdaClient({ region: 'us-east-1' });
     await waitUntilFunctionActiveV2(
+      { client: sdkLambda, maxWaitTime: 60 },
+      { FunctionName: LAMBDA_NAME },
+    );
+
+    // wait for the code UPDATE to fully propagate before the introspection call. on
+    // an update (vs a create), `State` stays `Active` throughout while
+    // `LastUpdateStatus` goes InProgress → Successful; without this wait the
+    // introspection can hit the STALE code + capture the prior schema (a real flake
+    // observed when the fixture's shape changed). waitUntilFunctionUpdatedV2 blocks
+    // on `LastUpdateStatus: Successful`, so the introspection always sees new code.
+    await waitUntilFunctionUpdatedV2(
       { client: sdkLambda, maxWaitTime: 60 },
       { FunctionName: LAMBDA_NAME },
     );
