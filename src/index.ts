@@ -7,6 +7,13 @@
 // re-export from helpful-errors for convenience
 export { BadRequestError } from 'helpful-errors';
 
+/**
+ * .what = releases every LambdaClient this sdk memoized on the caller's behalf
+ * .why = `askLambdaEndpoint` findserts a client per region and holds it for the process, so
+ *        its keep-alive agent can hold the event loop open in a cli or one-off command. a
+ *        library that makes process-lifetime state owes the caller a way to release it
+ */
+export { delLambdaSdks } from './access/sdks/lambda/genLambdaSdk';
 // domain objects
 export type { ApiGatewayRequestPayload } from './domain.objects/ApiGatewayRequestPayload';
 export type { ApiGatewayResponse } from './domain.objects/ApiGatewayResponse';
