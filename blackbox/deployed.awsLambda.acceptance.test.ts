@@ -15,6 +15,7 @@ import * as path from 'path';
 import {
   LambdaClient,
   waitUntilFunctionActiveV2,
+  waitUntilFunctionUpdatedV2,
 } from '@aws-sdk/client-lambda';
 import {
   DeclaredAwsIamRole,
@@ -203,7 +204,7 @@ describe('e2e: deployed goSurf lambda with trail propagation', () => {
     );
     console.log('lambda deployed:', lambdaDeployed.name);
 
-    // wait for lambda to be active
+    // wait for the lambda to be active (covers the initial-create path)
     console.log('wait for lambda to be active...');
     const sdkLambda = new LambdaClient({ region: 'us-east-1' });
     await waitUntilFunctionActiveV2(
@@ -211,6 +212,18 @@ describe('e2e: deployed goSurf lambda with trail propagation', () => {
       { FunctionName: LAMBDA_NAME },
     );
     console.log('lambda active');
+
+    // wait for the code UPDATE to fully propagate before any invoke. on an update
+    // (vs a create), `State` stays `Active` throughout while `LastUpdateStatus` goes
+    // InProgress → Successful; without this wait the invoke can hit the STALE code
+    // (a real flake observed when the fixture's shape changed). waitUntilFunctionUpdatedV2
+    // blocks on `LastUpdateStatus: Successful`, so the invoke always sees new code.
+    console.log('wait for lambda code update to propagate...');
+    await waitUntilFunctionUpdatedV2(
+      { client: sdkLambda, maxWaitTime: 60 },
+      { FunctionName: LAMBDA_NAME },
+    );
+    console.log('lambda updated');
 
     return { provider, context, roleDeployed, lambdaDeployed };
   });

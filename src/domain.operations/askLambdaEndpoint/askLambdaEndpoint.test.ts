@@ -2,6 +2,7 @@ import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 import { genContextLogTrail } from 'sdk-logs';
 import { getError, given, then, when } from 'test-fns';
 
+import { delLambdaSdks } from '../../access/sdks/lambda/genLambdaSdk';
 import { askLambdaEndpoint } from './askLambdaEndpoint';
 
 /**
@@ -39,6 +40,11 @@ const MockedInvokeCommand = InvokeCommand as jest.MockedClass<
 describe('askLambdaEndpoint', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // release the memoized LambdaClient, so each case constructs its OWN mock.
+    // `genLambdaSdk` findserts per region, so absent this reset every case after the
+    // first would reuse the first case's `send`
+    delLambdaSdks();
   });
 
   given('[case1] successful invocation', () => {
@@ -51,7 +57,8 @@ describe('askLambdaEndpoint', () => {
           Payload: Buffer.from(JSON.stringify(mockResponse)),
         });
         MockedLambdaSdk.mockImplementation(
-          () => ({ send: mockSend }) as unknown as LambdaClient,
+          () =>
+            ({ send: mockSend, destroy: jest.fn() }) as unknown as LambdaClient,
         );
 
         // act
@@ -91,7 +98,8 @@ describe('askLambdaEndpoint', () => {
           Payload: Buffer.from(JSON.stringify(errorPayload)),
         });
         MockedLambdaSdk.mockImplementation(
-          () => ({ send: mockSend }) as unknown as LambdaClient,
+          () =>
+            ({ send: mockSend, destroy: jest.fn() }) as unknown as LambdaClient,
         );
 
         // act
@@ -135,7 +143,8 @@ describe('askLambdaEndpoint', () => {
           Payload: Buffer.from(JSON.stringify({ success: true })),
         });
         MockedLambdaSdk.mockImplementation(
-          () => ({ send: mockSend }) as unknown as LambdaClient,
+          () =>
+            ({ send: mockSend, destroy: jest.fn() }) as unknown as LambdaClient,
         );
 
         const logWithTrail = genContextLogTrail({
@@ -214,7 +223,8 @@ describe('askLambdaEndpoint', () => {
           Payload: Buffer.from(JSON.stringify({ success: true })),
         });
         MockedLambdaSdk.mockImplementation(
-          () => ({ send: mockSend }) as unknown as LambdaClient,
+          () =>
+            ({ send: mockSend, destroy: jest.fn() }) as unknown as LambdaClient,
         );
 
         const testEvent = { userId: 'user-456', action: 'test' };
@@ -263,7 +273,8 @@ describe('askLambdaEndpoint', () => {
           Payload: Buffer.from(JSON.stringify({ success: true })),
         });
         MockedLambdaSdk.mockImplementation(
-          () => ({ send: mockSend }) as unknown as LambdaClient,
+          () =>
+            ({ send: mockSend, destroy: jest.fn() }) as unknown as LambdaClient,
         );
 
         const logWithTrail = genContextLogTrail({
@@ -317,7 +328,8 @@ describe('askLambdaEndpoint', () => {
           Payload: Buffer.from(JSON.stringify({})),
         });
         MockedLambdaSdk.mockImplementation(
-          () => ({ send: mockSend }) as unknown as LambdaClient,
+          () =>
+            ({ send: mockSend, destroy: jest.fn() }) as unknown as LambdaClient,
         );
 
         // act
@@ -358,7 +370,8 @@ describe('askLambdaEndpoint', () => {
           Payload: Buffer.from(''),
         });
         MockedLambdaSdk.mockImplementation(
-          () => ({ send: mockSend }) as unknown as LambdaClient,
+          () =>
+            ({ send: mockSend, destroy: jest.fn() }) as unknown as LambdaClient,
         );
 
         // act
@@ -402,7 +415,8 @@ describe('askLambdaEndpoint', () => {
           Payload: Buffer.from(''),
         });
         MockedLambdaSdk.mockImplementation(
-          () => ({ send: mockSend }) as unknown as LambdaClient,
+          () =>
+            ({ send: mockSend, destroy: jest.fn() }) as unknown as LambdaClient,
         );
 
         // act
@@ -445,7 +459,8 @@ describe('askLambdaEndpoint', () => {
           Payload: Buffer.from(''),
         });
         MockedLambdaSdk.mockImplementation(
-          () => ({ send: mockSend }) as unknown as LambdaClient,
+          () =>
+            ({ send: mockSend, destroy: jest.fn() }) as unknown as LambdaClient,
         );
 
         // act
@@ -488,7 +503,8 @@ describe('askLambdaEndpoint', () => {
           Payload: Buffer.from(''),
         });
         MockedLambdaSdk.mockImplementation(
-          () => ({ send: mockSend }) as unknown as LambdaClient,
+          () =>
+            ({ send: mockSend, destroy: jest.fn() }) as unknown as LambdaClient,
         );
 
         // act
@@ -531,7 +547,8 @@ describe('askLambdaEndpoint', () => {
           Payload: Buffer.from(''),
         });
         MockedLambdaSdk.mockImplementation(
-          () => ({ send: mockSend }) as unknown as LambdaClient,
+          () =>
+            ({ send: mockSend, destroy: jest.fn() }) as unknown as LambdaClient,
         );
 
         // act
