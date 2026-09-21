@@ -1,0 +1,39 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`getOneHandlerFromServerlessYml given: [case1] a project root with no serverless.yml at all when: [t0] the lookup runs then: the error names the sought path AND the way out 1`] = `
+{
+  "messageNamesAbsence": true,
+  "namesCloudFix": true,
+  "namesServerlessYml": true,
+}
+`;
+
+exports[`getOneHandlerFromServerlessYml given: [case2] a serverless.yml whose handler string is malformed when: [t0] the lookup runs then: the error shows what it found, so the typo is visible 1`] = `
+{
+  "messageNamesMalformed": true,
+  "namesExpectedShape": true,
+}
+`;
+
+exports[`getOneHandlerFromServerlessYml given: [case3] a handler file that exists and exports a different name when: [t0] the lookup runs then: the error lists what the file DOES export 1`] = `
+{
+  "listsRealExport": true,
+  "messageNamesStaleExport": true,
+}
+`;
+
+exports[`getOneHandlerFromServerlessYml given: [case5] a directory with no package.json in ANY ancestor when: [t0] the lookup runs from the filesystem root then: the error names the absent precondition 1`] = `
+{
+  "hintNamesFromPath": true,
+  "messageNamesAbsentRoot": true,
+  "namesAbsentFile": true,
+}
+`;
+
+exports[`getOneHandlerFromServerlessYml given: [case6] a handler file that exists but cannot be imported when: [t0] the module throws at import time then: the error names the sdk context AND keeps the original 1`] = `
+{
+  "causeNamesOriginal": true,
+  "messageNamesImportFailure": true,
+  "namesFaultLocation": true,
+}
+`;

@@ -67,6 +67,24 @@ const isConstraintError = (error: unknown): boolean =>
 /**
  * .what = map a thrown error to its semantic exit code
  * .why = constraint errors (caller must fix) exit 2; malfunctions exit 1
+ *
+ * ## 🔴 why an UNCLASSIFIED error exits 1, and must never exit 2
+ *
+ * exit 2 is a claim about WHOSE fault it is — `rule.require.exit-code-semantics`
+ * fixes it as *the caller must repair their own input*. so a default of 2 would
+ * send a developer to hunt through their own arguments for a fault this cli
+ * could not classify at all.
+ *
+ * ⇒ when the blame is unproven, 1 is the honest answer: it reports a
+ *   server-side malfunction, which is what an unrecognized throw IS from this
+ *   cli's vantage. the asymmetry is the point — a malfunction mislabelled a
+ *   constraint sends the caller on that hunt AND suppresses the retry a
+ *   transient fault deserves, where the reverse merely over-reports.
+ *
+ * .note = the two `1` arms are deliberately NOT collapsed. the
+ *   `MalfunctionError` arm states an intent (this IS a malfunction); the final
+ *   arm states a default (the class was unrecognized). to merge them would
+ *   erase which of the two a given exit came from.
  */
 const getExitForError = (input: { error: unknown }): number => {
   if (isConstraintError(input.error)) return 2;

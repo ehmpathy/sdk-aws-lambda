@@ -25,10 +25,11 @@ import {
   LambdaIntrospectionNotSupportedError,
   LambdaFunctionNotFoundError,
   type LambdaEndpointSchema,
+  asLambdaEndpointOutput,
+  runLambdaEndpoint,
 } from '../src/index';
 import { asParsedResponseBody } from '../src/__test_assets__/asParsedResponseBody';
 import { createInProcessLambdaHarness } from '../src/__test_assets__/createInProcessLambdaHarness';
-import { invokeHandlerForTest } from '../src/__test_assets__/invokeHandlerForTest';
 
 /**
  * .mock = in-process lambda transport (createInProcessLambdaHarness)
@@ -102,7 +103,7 @@ describe('introspection', () => {
 
     when('[t0] invoked with introspect payload', () => {
       const result = useThen('handler returns schema', async () =>
-        invokeHandlerForTest(handler, {
+        runLambdaEndpoint.onReferenced({ handler,
           event: { introspect: 'schema' } as any,
         }),
       ) as unknown as LambdaEndpointSchema;
@@ -129,11 +130,20 @@ describe('introspection', () => {
 
     when('[t1] invoked with normal payload', () => {
       const result = useThen('handler processes request', async () =>
-        invokeHandlerForTest(handler, { event: { name: 'World' } }),
+        asLambdaEndpointOutput(
+          await runLambdaEndpoint.onReferenced({
+            handler,
+            event: { name: 'World' },
+          }),
+        ),
       );
 
       then('returns salute', () => {
         expect(result.salute).toBe('Hello, World!');
+      });
+
+      then('the journey output matches snapshot', () => {
+        expect(result).toMatchSnapshot();
       });
     });
   });
@@ -395,7 +405,7 @@ describe('introspection', () => {
 
     when('[t0] invoked with introspect payload', () => {
       const result = useThen('handler returns schema', async () =>
-        invokeHandlerForTest(handler, {
+        runLambdaEndpoint.onReferenced({ handler,
           event: { introspect: 'schema' } as any,
         }),
       ) as unknown as LambdaEndpointSchema;
@@ -439,7 +449,7 @@ describe('introspection', () => {
 
     when('[t0] invoked with introspect payload', () => {
       const result = useThen('handler returns schema', async () =>
-        invokeHandlerForTest(handler, {
+        runLambdaEndpoint.onReferenced({ handler,
           event: { introspect: 'schema' } as any,
         }),
       ) as unknown as LambdaEndpointSchema;

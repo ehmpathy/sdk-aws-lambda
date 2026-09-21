@@ -8,6 +8,7 @@
 *.tsbuildinfo
 .artifact
 .env
+.radio
 .serverless
 .temp
 .terraform

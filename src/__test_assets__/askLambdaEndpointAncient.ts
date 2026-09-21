@@ -1,22 +1,27 @@
-import {
-  InvokeCommand,
-  type InvokeCommandOutput,
-  LambdaClient,
-} from '@aws-sdk/client-lambda';
-
+import { genLambdaSdk } from '../access/sdks/lambda/genLambdaSdk';
+import { sdkLambdaInvoke } from '../access/sdks/lambda/sdkLambdaInvoke';
 import { LambdaEndpointError } from '../domain.objects/LambdaEndpointError';
-import { getDecodedPayload } from '../domain.operations/askLambdaEndpoint/serde/getDecodedPayload';
-import { getParsedJson } from '../domain.operations/askLambdaEndpoint/serde/getParsedJson';
 import { asLambdaEndpoint } from '../domain.operations/asLambdaEndpoint/asLambdaEndpoint';
+import { getIsAncientErrorResponse } from '../domain.operations/lambdaEndpointWire/error/getIsLambdaErrorResponse';
+import { getDecodedPayload } from '../domain.operations/lambdaEndpointWire/serde/getDecodedPayload';
+import { getParsedJson } from '../domain.operations/lambdaEndpointWire/serde/getParsedJson';
 
 /**
- * .what = simulates ancient-caller invocation pattern (pre-sdk-aws-lambda)
- * .why = tests backwards compat with ancient callers (no trail wrapper)
+ * .what = simulates an ancient CALLER — one that predates this sdk — on the wire
+ * .why = tests backwards compat with ancient callers: raw event, no trail wrapper,
+ *   and the flat `errorMessage` response surfaced VERBATIM.
  *
- * key differences from askLambdaEndpoint:
- * - sends raw event (no { event, trail } wrapper)
- * - no trail injection
- * - handles flat errorMessage responses
+ * 🔴 .why not `runLambdaEndpoint.onSerialized` — the verbatim part. `getParsedResponse`
+ *    hydrates an ancient `BadRequestError` envelope into a `ConstraintError` and
+ *    drops `errorType`, and after that hydration an ancient and a contemp constraint
+ *    error are BOTH `ConstraintError`. so the one fact `[case2]` proves — *the
+ *    handler chose the ancient dialect because the payload arrived unwrapped* — is
+ *    no longer observable through the sdk's own caller.
+ *
+ * ⚠️ the sdk builder must stay `genLambdaSdk`. `[case9] [t3]` asserts one credential
+ *    chain by a walk of `runLambdaEndpoint.ts`'s import graph; this file is a peer
+ *    that graph never reaches, so a `new LambdaClient(…)` here sits outside it.
+ *    ⇒ fork the RESPONSE path only; any other fork is a second credential chain.
  */
 export const askLambdaEndpointAncient = async <TRequest, TResponse>(
   input: {
@@ -34,28 +39,24 @@ export const askLambdaEndpointAncient = async <TRequest, TResponse>(
     function: input.which.function,
   });
 
-  // create lambda sdk instance
-  const sdkLambda = new LambdaClient({ region: context.env.region });
-
-  // invoke lambda with raw event (no wrapper)
-  const response: InvokeCommandOutput = await sdkLambda.send(
-    new InvokeCommand({
-      FunctionName: endpoint.slug,
-      Payload: Buffer.from(JSON.stringify(input.event)),
-    }),
+  // the sdk's OWN builder + invoker, so this fixture and the runtime path
+  // authenticate identically and address the identical slug
+  const response = await sdkLambdaInvoke(
+    { slug: endpoint.slug, payload: input.event },
+    { sdkLambda: genLambdaSdk({ env: { region: context.env.region } }) },
   );
 
   // check for invocation error
-  if (response.StatusCode !== 200) {
+  if (response.statusCode !== 200) {
     throw new LambdaEndpointError('lambda invocation failed', {
       endpoint,
       exid: null,
-      statusCode: response.StatusCode,
+      statusCode: response.statusCode,
     });
   }
 
   // check for absent payload
-  if (!response.Payload) {
+  if (!response.payload) {
     throw new LambdaEndpointError('lambda returned no payload', {
       endpoint,
       exid: null,
@@ -63,7 +64,7 @@ export const askLambdaEndpointAncient = async <TRequest, TResponse>(
   }
 
   // decode payload
-  const payloadString = getDecodedPayload({ payload: response.Payload });
+  const payloadString = getDecodedPayload({ payload: response.payload });
   const parseResult = getParsedJson({ json: payloadString });
   if (!parseResult.success) {
     throw new LambdaEndpointError('lambda returned invalid json', {
@@ -74,25 +75,16 @@ export const askLambdaEndpointAncient = async <TRequest, TResponse>(
   }
   const parsed = parseResult.data;
 
-  // detect ancient error response (flat errorMessage format)
-  if (
-    typeof parsed === 'object' &&
-    parsed !== null &&
-    'errorMessage' in parsed
-  ) {
-    const errorResponse = parsed as {
-      errorMessage: string;
-      errorType?: string;
-      causeMessage?: string;
-      details?: unknown;
-    };
-
-    throw new LambdaEndpointError(errorResponse.errorMessage, {
+  // 🔴 the DETECTION is shared; only the REACTION is forked. an instrument that
+  //    disagrees with the sdk about what an ancient envelope IS reports on a wire
+  //    nobody speaks.
+  if (getIsAncientErrorResponse(parsed)) {
+    throw new LambdaEndpointError(parsed.errorMessage, {
       endpoint,
       exid: null,
-      errorType: errorResponse.errorType,
-      causeMessage: errorResponse.causeMessage,
-      details: errorResponse.details,
+      errorType: parsed.errorType,
+      causeMessage: parsed.causeMessage,
+      details: parsed.details,
     });
   }
 

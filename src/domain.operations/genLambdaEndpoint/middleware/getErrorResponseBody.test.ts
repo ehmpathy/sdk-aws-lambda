@@ -1,6 +1,7 @@
 import { BadRequestError } from 'helpful-errors';
 import { given, then, when } from 'test-fns';
 
+import { LAMBDA_ENDPOINT_ERROR_SERDE_CONTEMP } from '../../../domain.objects/LambdaEndpointErrorResponseBody';
 import {
   getErrorResponseBodyAncient,
   getErrorResponseBodyContemp,
@@ -121,7 +122,9 @@ describe('getErrorResponseBodyContemp', () => {
           errorClass: 'ConstraintError',
         });
 
-        expect(result.error._serde).toEqual('LambdaEndpointError::contemp');
+        expect(result.error._serde).toEqual(
+          LAMBDA_ENDPOINT_ERROR_SERDE_CONTEMP,
+        );
         expect(result.error.class).toEqual('ConstraintError');
         expect(result.error.cause).toEqual('original error');
         expect(result.error.message).toContain('validation failed');
@@ -159,7 +162,9 @@ describe('getErrorResponseBodyContemp', () => {
           errorClass: 'ConstraintError',
         });
 
-        expect(result.error._serde).toEqual('LambdaEndpointError::contemp');
+        expect(result.error._serde).toEqual(
+          LAMBDA_ENDPOINT_ERROR_SERDE_CONTEMP,
+        );
         expect(result.error.class).toEqual('ConstraintError');
         expect(result.error.cause).toBeUndefined();
         expect(result.error.message).toContain('validation failed');
@@ -184,7 +189,7 @@ describe('getErrorResponseBodyContemp', () => {
 
         expect(result).toEqual({
           error: {
-            _serde: 'LambdaEndpointError::contemp',
+            _serde: LAMBDA_ENDPOINT_ERROR_SERDE_CONTEMP,
             class: 'TestError',
             message: 'main error',
             cause: 'the cause',
@@ -206,7 +211,7 @@ describe('getErrorResponseBodyContemp', () => {
 
         expect(result).toEqual({
           error: {
-            _serde: 'LambdaEndpointError::contemp',
+            _serde: LAMBDA_ENDPOINT_ERROR_SERDE_CONTEMP,
             class: 'Error',
             message: 'simple error',
           },

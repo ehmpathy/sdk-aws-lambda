@@ -1,0 +1,151 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`getParsedResponse given: [case1] valid response payload when: [t0] parsed then: it should return parsed response 1`] = `
+{
+  "data": "hello",
+}
+`;
+
+exports[`getParsedResponse given: [case2] payload is undefined when: [t0] parsed then: it should match snapshot 1`] = `
+[LambdaEndpointError: LambdaEndpointError: lambda returned empty payload
+
+{
+  "endpoint": {
+    "service": "svc-orders",
+    "access": "prep",
+    "function": "getOrder",
+    "slug": "svc-orders-prep-getOrder"
+  },
+  "exid": "exid:abc123"
+}]
+`;
+
+exports[`getParsedResponse given: [case3] payload is invalid json when: [t0] parsed then: it should match snapshot 1`] = `
+[LambdaEndpointError: LambdaEndpointError: lambda returned invalid json
+
+{
+  "endpoint": {
+    "service": "svc-orders",
+    "access": "prep",
+    "function": "getOrder",
+    "slug": "svc-orders-prep-getOrder"
+  },
+  "exid": "exid:abc123"
+}]
+`;
+
+exports[`getParsedResponse given: [case4] payload contains error response when: [t0] parsed with errorMessage then: it should match snapshot 1`] = `
+[LambdaEndpointError: LambdaEndpointError: something went wrong
+
+{
+  "endpoint": {
+    "service": "svc-orders",
+    "access": "prep",
+    "function": "getOrder",
+    "slug": "svc-orders-prep-getOrder"
+  },
+  "exid": "exid:abc123",
+  "errorType": "ValidationError",
+  "stackTrace": "at handler\\nat process"
+}]
+`;
+
+exports[`getParsedResponse given: [case4] payload contains error response when: [t1] parsed with errorMessage only then: it should match snapshot 1`] = `
+[LambdaEndpointError: LambdaEndpointError: minimal error
+
+{
+  "endpoint": {
+    "service": "svc-orders",
+    "access": "prep",
+    "function": "getOrder",
+    "slug": "svc-orders-prep-getOrder"
+  },
+  "exid": null
+}]
+`;
+
+exports[`getParsedResponse given: [case5] complex nested response when: [t0] parsed then: it should preserve nested structure 1`] = `
+{
+  "items": [
+    "a",
+    "b",
+    "c",
+  ],
+  "user": {
+    "email": "test@example.com",
+    "id": "user-123",
+  },
+}
+`;
+
+exports[`getParsedResponse given: [case6] BadRequestError response with validation details when: [t0] parsed with errorType BadRequestError then: it should match snapshot 1`] = `
+[Error: ✋ ConstraintError: validation failed
+
+{
+  "endpoint": {
+    "service": "svc-users",
+    "access": "prep",
+    "function": "createUser",
+    "slug": "svc-users-prep-createUser"
+  },
+  "exid": "exid:abc123",
+  "stackTrace": "at handler",
+  "details": {
+    "issues": [
+      {
+        "path": "email",
+        "message": "invalid email",
+        "code": "invalid_string"
+      }
+    ]
+  },
+  "causeMessage": "zod validation failed"
+}]
+`;
+
+exports[`getParsedResponse given: [case7] LambdaEndpointError with details when: [t0] parsed with error details then: it should match snapshot 1`] = `
+[LambdaEndpointError: LambdaEndpointError: internal error
+
+{
+  "endpoint": {
+    "service": "svc-users",
+    "access": "prep",
+    "function": "createUser",
+    "slug": "svc-users-prep-createUser"
+  },
+  "exid": "exid:xyz789",
+  "errorType": "DatabaseError",
+  "stackTrace": "at query",
+  "details": {
+    "table": "users",
+    "operation": "insert"
+  },
+  "causeMessage": "connection timeout"
+}]
+`;
+
+exports[`getParsedResponse given: [case8] aws reported a function error when: [t0] the payload matches NEITHER error envelope then: it should match snapshot 1`] = `
+[LambdaEndpointError: LambdaEndpointError: aws reported a function error, and the payload matched neither error envelope — read details.payload for what the handler actually emitted
+
+{
+  "endpoint": {
+    "service": "svc-orders",
+    "access": "prep",
+    "function": "getOrder",
+    "slug": "svc-orders-prep-getOrder"
+  },
+  "exid": "exid:abc123",
+  "errorType": "Unhandled",
+  "details": {
+    "payload": {
+      "someOtherShape": true
+    }
+  }
+}]
+`;
+
+exports[`getParsedResponse given: [case9] aws reported NO function error — the local locus when: [t0] an unrecognized payload arrives with no verdict then: it returns as a success — the extant behavior, unchanged 1`] = `
+{
+  "someOtherShape": true,
+}
+`;

@@ -1,0 +1,246 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`public surface shapes given: [case2] onReferenced, on the ancient dialect when: [t0] the handler answers with a constraint envelope then: the envelope is RETURNED, in the ancient shape 1`] = `
+{
+  "errorMessage": "customer lacks phone",
+  "errorType": "BadRequestError",
+}
+`;
+
+exports[`public surface shapes given: [case2] onReferenced, on the ancient dialect when: [t1] the handler answers with a success then: the output is returned bare, in the ancient shape 1`] = `
+{
+  "delivered": true,
+}
+`;
+
+exports[`public surface shapes given: [case2] onReferenced, on the contemp dialect when: [t0] the handler answers with an output then: the success shape is the handler output, wire-stripped 1`] = `
+{
+  "found": true,
+  "slug": "surf-lesson",
+}
+`;
+
+exports[`public surface shapes given: [case2] onReferenced, on the contemp dialect when: [t1] the handler answers with a constraint envelope then: the envelope is RETURNED, in the contemp shape 1`] = `
+{
+  "error": {
+    "_serde": "LambdaEndpointError::contemp@v1",
+    "class": "ConstraintError",
+    "message": "serviceUuid must be a uuid",
+  },
+}
+`;
+
+exports[`public surface shapes given: [case4] the wire strip refuses what json cannot carry when: [t0] the refusal crosses each direction then: the two errors differ in class AND in message 1`] = `
+{
+  "onEvent": {
+    "class": "ConstraintError",
+    "message": "✋ ConstraintError: the event given cannot cross the wire — json refused to serialize it
+
+{
+  "hint": "a circular reference or a bigint cannot reach a lambda. check the event you passed. aws would refuse the same payload, so it refuses here rather than let a test pass on a value the wire could never deliver."
+}",
+  },
+  "onOutput": {
+    "class": "MalfunctionError",
+    "message": "💥 MalfunctionError: the handler returned a value that cannot cross the wire — json refused to serialize it
+
+{
+  "hint": "a circular reference or a bigint cannot leave a lambda. check the value your handler returned. aws would refuse the same response, so it refuses here rather than let a test assert on an output the wire could never deliver."
+}",
+  },
+}
+`;
+
+exports[`public surface shapes given: [case7] the framed payload the handler receives when: [t0] the dialect selects the frame then: contemp wraps the event, and ancient does not 1`] = `
+{
+  "ancient": {
+    "uuid": "a",
+  },
+  "contemp": {
+    "event": {
+      "uuid": "a",
+    },
+    "trail": {
+      "exid": "exid:00000000-0000-4000-8000-000000000000",
+    },
+  },
+}
+`;
+
+exports[`public surface shapes given: [case11] the five event factories when: [t0] each casts a payload into its aws envelope then: fromApiGateway carries requestContext and a string body 1`] = `
+{
+  "body": "{"slug":"surf-lesson"}",
+  "headers": {
+    "Accept": "application/json",
+    "Content-Type": "application/json",
+    "Host": "example-api.execute-api.us-east-1.amazonaws.com",
+    "User-Agent": "example-agent",
+  },
+  "httpMethod": "POST",
+  "isBase64Encoded": false,
+  "multiValueHeaders": {
+    "Accept": [
+      "application/json",
+    ],
+    "Content-Type": [
+      "application/json",
+    ],
+    "Host": [
+      "example-api.execute-api.us-east-1.amazonaws.com",
+    ],
+    "User-Agent": [
+      "example-agent",
+    ],
+  },
+  "multiValueQueryStringParameters": null,
+  "path": "/",
+  "pathParameters": null,
+  "queryStringParameters": null,
+  "requestContext": {
+    "accountId": "000000000000",
+    "apiId": "example-api",
+    "authorizer": null,
+    "extendedRequestId": "example-extended-request-id",
+    "httpMethod": "POST",
+    "identity": {
+      "accessKey": null,
+      "accountId": null,
+      "apiKey": null,
+      "apiKeyId": null,
+      "caller": null,
+      "clientCert": null,
+      "cognitoAuthenticationProvider": null,
+      "cognitoAuthenticationType": null,
+      "cognitoIdentityId": null,
+      "cognitoIdentityPoolId": null,
+      "principalOrgId": null,
+      "sourceIp": "127.0.0.1",
+      "user": null,
+      "userAgent": "example-agent",
+      "userArn": null,
+    },
+    "path": "/",
+    "protocol": "HTTP/1.1",
+    "requestId": "00000000-0000-4000-8000-000000000000",
+    "requestTime": "08/Sep/2025:00:00:00 +0000",
+    "requestTimeEpoch": 1757289600000,
+    "resourceId": "example-resource",
+    "resourcePath": "/",
+    "stage": "test",
+  },
+  "resource": "/",
+  "stageVariables": null,
+}
+`;
+
+exports[`public surface shapes given: [case11] the five event factories when: [t0] each casts a payload into its aws envelope then: fromKinesis base64-encodes the payload 1`] = `
+{
+  "Records": [
+    {
+      "awsRegion": "us-east-1",
+      "eventID": "shardId-000000000000:49590000000000000000000000000000000000000000000000000000",
+      "eventName": "aws:kinesis:record",
+      "eventSource": "aws:kinesis",
+      "eventSourceARN": "arn:aws:kinesis:us-east-1:000000000000:stream/example-stream",
+      "eventVersion": "1.0",
+      "invokeIdentityArn": "arn:aws:iam::000000000000:role/example-role",
+      "kinesis": {
+        "approximateArrivalTimestamp": 1757289600,
+        "data": "eyJraW5kIjoibWV0cmljIn0=",
+        "kinesisSchemaVersion": "1.0",
+        "partitionKey": "partition-0",
+        "sequenceNumber": "49590000000000000000000000000000000000000000000000000000",
+      },
+    },
+  ],
+}
+`;
+
+exports[`public surface shapes given: [case11] the five event factories when: [t0] each casts a payload into its aws envelope then: fromS3 carries a reference, never a payload 1`] = `
+{
+  "Records": [
+    {
+      "awsRegion": "us-east-1",
+      "eventName": "ObjectCreated:Put",
+      "eventSource": "aws:s3",
+      "eventTime": "2025-09-08T00:00:00.000Z",
+      "eventVersion": "2.1",
+      "requestParameters": {
+        "sourceIPAddress": "127.0.0.1",
+      },
+      "responseElements": {
+        "x-amz-id-2": "EXAMPLE0",
+        "x-amz-request-id": "EXAMPLE0",
+      },
+      "s3": {
+        "bucket": {
+          "arn": "arn:aws:s3:::photos",
+          "name": "photos",
+          "ownerIdentity": {
+            "principalId": "EXAMPLE",
+          },
+        },
+        "configurationId": "example-config",
+        "object": {
+          "eTag": "00000000000000000000000000000000",
+          "key": "a.jpg",
+          "sequencer": "0000000000000000000000",
+          "size": 1024,
+        },
+        "s3SchemaVersion": "1.0",
+      },
+      "userIdentity": {
+        "principalId": "EXAMPLE",
+      },
+    },
+  ],
+}
+`;
+
+exports[`public surface shapes given: [case11] the five event factories when: [t0] each casts a payload into its aws envelope then: fromSns puts the payload at Records[].Sns.Message 1`] = `
+{
+  "Records": [
+    {
+      "EventSource": "aws:sns",
+      "EventSubscriptionArn": "arn:aws:sns:us-east-1:000000000000:example-topic:beefbeef-0000-4000-8000-000000000000",
+      "EventVersion": "1.0",
+      "Sns": {
+        "Message": "{"kind":"alert"}",
+        "MessageAttributes": {},
+        "MessageId": "beefbeef-0000-4000-8000-000000000000",
+        "Signature": "EXAMPLE",
+        "SignatureVersion": "1",
+        "SigningCertUrl": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-example.pem",
+        "Subject": "",
+        "Timestamp": "2025-09-08T00:00:00.000Z",
+        "TopicArn": "arn:aws:sns:us-east-1:000000000000:example-topic",
+        "Type": "Notification",
+        "UnsubscribeUrl": "https://sns.us-east-1.amazonaws.com/?Action=Unsubscribe",
+      },
+    },
+  ],
+}
+`;
+
+exports[`public surface shapes given: [case11] the five event factories when: [t0] each casts a payload into its aws envelope then: fromSqs puts the payload at Records[].body 1`] = `
+{
+  "Records": [
+    {
+      "attributes": {
+        "ApproximateFirstReceiveTimestamp": "1757289600000",
+        "ApproximateReceiveCount": "1",
+        "SenderId": "AIDA00000000000000000",
+        "SentTimestamp": "1757289600000",
+      },
+      "awsRegion": "us-east-1",
+      "body": "{"kind":"notify"}",
+      "eventSource": "aws:sqs",
+      "eventSourceARN": "arn:aws:sqs:us-east-1:000000000000:example-queue",
+      "md5OfBody": "00000000000000000000000000000000",
+      "messageAttributes": {},
+      "messageId": "beefbeef-0000-4000-8000-000000000000",
+      "receiptHandle": "receipt-handle-0",
+    },
+  ],
+}
+`;

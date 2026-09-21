@@ -1,12 +1,12 @@
 import type { LambdaClient } from '@aws-sdk/client-lambda';
 
 import type { ContextAwsLambdaCaller } from '../../domain.objects/ContextAwsLambdaCaller';
-import { LambdaCredentialsAbsentError } from '../../domain.objects/LambdaCredentialsAbsentError';
 import type { LambdaEndpointSchema } from '../../domain.objects/LambdaEndpointSchema';
 import { LambdaIntrospectionBlockedError } from '../../domain.objects/LambdaIntrospectionBlockedError';
 import { LambdaServiceNotFoundError } from '../../domain.objects/LambdaServiceNotFoundError';
 import { asLambdaEndpoint } from '../asLambdaEndpoint/asLambdaEndpoint';
 import { getOneLambdaContract } from '../getOneLambdaContract/getOneLambdaContract';
+import { throwIfCredentialsError } from '../lambdaEndpointWire/error/throwIfCredentialsError';
 import { asContractRecord } from './lambdaContract/asContractRecord';
 import { getAllLambdaFunctionsByPrefix } from './lambdaFunction/getAllLambdaFunctionsByPrefix';
 
@@ -47,8 +47,15 @@ export const getAllLambdaContracts = async (
     );
   }
 
-  // build prefix from service + access
-  const prefix = `${input.which.service}-${context.env.access}-`;
+  // build prefix through asLambdaEndpoint — the SINGLE owner of the slug format
+  // (define.lambda-endpoint-ubiqlang). the prefix is the slug of an endpoint with
+  // an empty function: '{service}-{access}-'. a slug built through the owner cannot
+  // fork the join convention here (this was the 2nd hand-rolled speaker; now one).
+  const prefix = asLambdaEndpoint({
+    service: input.which.service,
+    access: context.env.access,
+    function: '',
+  }).slug;
 
   // get or create LambdaClient (genLambdaSdk always returns valid client)
   const sdkLambda: LambdaClient =
@@ -66,8 +73,12 @@ export const getAllLambdaContracts = async (
   ).catch((error: unknown) =>
     throwIfCredentialsError({
       error,
-      service: input.which.service,
+      message: 'aws credentials are absent or expired; cannot introspect',
       access: context.env.access,
+      metadata: {
+        service: input.which.service,
+        access: context.env.access,
+      },
     }),
   );
 
@@ -112,45 +123,6 @@ export const getAllLambdaContracts = async (
 
   // assemble record keyed by bare function name
   return asContractRecord(entries);
-};
-
-/**
- * .what = decide whether an error is an aws sdk credentials failure
- * .why = a creds failure is caller-must-fix (unlock + retry), not a malfunction —
- *        the discovery boundary maps it to a hinted LambdaCredentialsAbsentError
- */
-const getIsCredentialsError = (error: unknown): boolean => {
-  if (!(error instanceof Error)) return false;
-  const name = error.name.toLowerCase();
-  const message = error.message.toLowerCase();
-  return (
-    name.includes('credential') ||
-    message.includes('credential') ||
-    (message.includes('security token') && message.includes('expired'))
-  );
-};
-
-/**
- * .what = map an aws credentials failure to a hinted LambdaCredentialsAbsentError
- * .why = surface a creds failure with an unlock hint (caller-must-fix) rather than a
- *        raw aws error; any non-creds error rethrows unchanged. returns `never` — it
- *        always throws — so the caller keeps a non-null slug list.
- */
-const throwIfCredentialsError = (input: {
-  error: unknown;
-  service: string;
-  access: string;
-}): never => {
-  if (!getIsCredentialsError(input.error)) throw input.error;
-  throw new LambdaCredentialsAbsentError(
-    'aws credentials are absent or expired; cannot introspect',
-    {
-      service: input.service,
-      access: input.access,
-      hint: 'unlock prep creds (e.g. `rhx keyrack unlock --owner ehmpath --env prep`), then re-run',
-      cause: input.error instanceof Error ? input.error : undefined,
-    },
-  );
 };
 
 /**

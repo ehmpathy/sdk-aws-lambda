@@ -3,11 +3,11 @@ import type { SimpleCache } from 'with-simple-cache';
 
 import { genLambdaSdk } from '../../access/sdks/lambda/genLambdaSdk';
 import type { ContextAwsLambdaCaller } from '../../domain.objects/ContextAwsLambdaCaller';
+import type { LambdaEndpointDialect } from '../../domain.objects/LambdaEndpointDialect';
 import { asLambdaEndpoint } from '../asLambdaEndpoint/asLambdaEndpoint';
+import { getOneTrailExid } from '../lambdaEndpointWire/context/getOneTrailExid';
 import { asCachedExecutor } from './cache/asCachedExecutor';
 import { getAskLambdaCacheKey } from './cache/getAskLambdaCacheKey';
-import { getExidFromContext } from './context/getExidFromContext';
-import { getLogForExidExtraction } from './context/getLogForExidExtraction';
 import type {
   InvocationContext,
   InvocationInput,
@@ -38,7 +38,7 @@ export const askLambdaEndpoint = async <TRequest, TResponse>(
        * .why = ancient handlers don't understand wrapped { event, trail } structure
        * .default = 'contemp' (wrapped with trail)
        */
-      payload?: 'ancient' | 'contemp';
+      payload?: LambdaEndpointDialect;
     };
   },
   context: ContextAwsLambdaCaller & {
@@ -48,19 +48,11 @@ export const askLambdaEndpoint = async <TRequest, TResponse>(
     };
   },
 ): Promise<TResponse> => {
-  // extract or generate trail exid
-  const logForExidExtraction = getLogForExidExtraction({ log: context.log });
-  const { exid, source: exidSource } = getExidFromContext({
-    log: logForExidExtraction,
-  });
-
-  // log when trail exid was generated (indicates caller did not propagate trail)
-  if (exidSource === 'generated') {
-    context.log.debug('trail.exid.generated', {
-      exid,
-      note: 'no trail exid in context, generated new one',
-    });
-  }
+  // extract or generate the trail exid, and report the fallback if one was made.
+  // shared with `runLambdaEndpoint.onSerialized` so the two loci cannot diverge
+  // on the diagnostic — see `getOneTrailExid` for why that parity is structural
+  // rather than a comment.
+  const exid = getOneTrailExid({ log: context.log });
 
   // build the endpoint from the selector + ambient access (computes slug)
   const endpoint = asLambdaEndpoint({
@@ -69,12 +61,21 @@ export const askLambdaEndpoint = async <TRequest, TResponse>(
     function: input.which.function,
   });
 
-  // build payload (ancient handlers expect flat event, contemp expect wrapped)
+  // build payload — contemp wraps in `{ event, trail }`, ancient sends it flat
+  //
+  // 🔴 the branch tests for CONTEMP, so an unrecognized dialect falls to ANCIENT
+  //    (rule.require.contemp-must-self-identify). we author every contemp caller,
+  //    so a value we do not recognize was not written by one — and the fallback
+  //    must be the dialect that assumes less. a fall to contemp would wrap a
+  //    payload for a handler that never learned to unwrap it.
+  //
+  //    ⚠️ ABSENT is not unrecognized: it is the documented default, and it stays
+  //       contemp so trail propagation holds for every caller that omits `struct`.
   const structOfPayload = input.struct?.payload ?? 'contemp';
   const payload =
-    structOfPayload === 'ancient'
-      ? input.event
-      : getLambdaPayload({ event: input.event, trail: { exid } });
+    structOfPayload === 'contemp'
+      ? getLambdaPayload({ event: input.event, trail: { exid } })
+      : input.event;
 
   // get or create LambdaClient
   const sdkLambda = genLambdaSdk({

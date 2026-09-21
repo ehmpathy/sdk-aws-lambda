@@ -1,0 +1,25 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`asLambdaEndpointDialect given: [case2] a dialect the caller declared when: [t2] it is not one this util can send then: a CASED variant is refused rather than coerced 1`] = `
+{
+  "carriesDeclared": true,
+  "class": "ConstraintError",
+}
+`;
+
+exports[`asLambdaEndpointDialect given: [case2] a dialect the caller declared when: [t2] it is not one this util can send then: a non-string reaches the refusal rather than the branch 1`] = `
+{
+  "carriesDeclared": true,
+  "class": "ConstraintError",
+  "notStringCoerced": true,
+}
+`;
+
+exports[`asLambdaEndpointDialect given: [case2] a dialect the caller declared when: [t2] it is not one this util can send then: it reports the value it was given 1`] = `
+{
+  "carriesDeclared": true,
+  "class": "ConstraintError",
+  "messageNamesDialect": true,
+  "namesBothOptions": true,
+}
+`;

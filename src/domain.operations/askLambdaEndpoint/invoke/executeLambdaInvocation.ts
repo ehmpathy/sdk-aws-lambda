@@ -3,8 +3,8 @@ import type { LambdaClient } from '@aws-sdk/client-lambda';
 import { sdkLambdaInvoke } from '../../../access/sdks/lambda/sdkLambdaInvoke';
 import type { LambdaEndpoint } from '../../../domain.objects/LambdaEndpoint';
 import { LambdaEndpointError } from '../../../domain.objects/LambdaEndpointError';
+import { getParsedResponse } from '../../lambdaEndpointWire/getParsedResponse';
 import { getStatusCodeHint } from '../error/getStatusCodeHint';
-import { getParsedResponse } from '../serde/getParsedResponse';
 
 /**
  * .what = minimal log interface for lambda invocation

@@ -4,6 +4,7 @@ import type { ContextLogTrail } from 'sdk-logs';
 import type { ZodSchema } from 'zod';
 
 import type { ContextAwsLambdaServer } from '../../../domain.objects/ContextAwsLambdaServer';
+import type { WrappedPayload } from '../../lambdaEndpointWire/frame/getIsWrappedPayload';
 import { asContextLogTrail } from '../asContextLogTrail';
 import { genConstraintErrorMiddleware } from '../middleware/genConstraintErrorMiddleware';
 import { genInternalServiceErrorMiddleware } from '../middleware/genInternalServiceErrorMiddleware';
@@ -16,12 +17,15 @@ import { genZodEventValidationMiddleware } from './middleware/genZodEventValidat
 
 /**
  * .what = wrapped payload format: event nested under `event` key with trail
- * .why = askLambdaEndpoint sends this format for trail propagation
+ * .why = re-exported from its canonical owner (`lambdaEndpointWire/frame`) so the
+ *        public barrel surfaces the ONE declaration, never a structural twin.
+ *        F16 lifted this shape to the common ancestor of the three contexts that
+ *        touch the frame — askLambdaEndpoint emits it over the wire,
+ *        runLambdaEndpoint/serde emits it in-process, getUnwrappedEventWithExid
+ *        reads it. a second local declaration here would be the exact duplication
+ *        that lift removed (`rule.prefer.most-common-denominator`).
  */
-export type WrappedPayload<TInput> = {
-  event: TInput;
-  trail: { exid?: string };
-};
+export type { WrappedPayload };
 
 /**
  * .what = flat payload format: trail mixed into input

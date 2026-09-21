@@ -164,7 +164,9 @@ describe('e2e: deployed introspectable lambda', () => {
       tags: { managedBy: 'declastruct', purpose: 'e2e-acceptance-test' },
     });
 
-    // create/upsert lambda (with retry for IAM role propagation)
+    // create/upsert lambda (with retry for IAM role propagation, and for a
+    // ResourceConflictException raised when another deployed.*.acceptance.test.ts
+    // file's own setLambda call updates this account's lambda at the same moment)
     const lambdaDeployed = await withRetry(
       () => setLambda({ upsert: lambda }, context),
       {
@@ -173,13 +175,20 @@ describe('e2e: deployed introspectable lambda', () => {
         shouldRetry: (error) =>
           error.message.includes('role') ||
           error.message.includes('AssumeRole') ||
-          error.message.includes('cannot be assumed'),
+          error.message.includes('cannot be assumed') ||
+          error.name === 'ResourceConflictException' ||
+          error.message.includes('ResourceConflictException') ||
+          error.message.includes('update is in progress'),
       },
     );
 
     // wait for the lambda to be active (covers the initial-create path)
     const sdkLambda = new LambdaClient({ region: 'us-east-1' });
     await waitUntilFunctionActiveV2(
+      { client: sdkLambda, maxWaitTime: 60 },
+      { FunctionName: LAMBDA_NAME },
+    );
+    await waitUntilFunctionUpdatedV2(
       { client: sdkLambda, maxWaitTime: 60 },
       { FunctionName: LAMBDA_NAME },
     );

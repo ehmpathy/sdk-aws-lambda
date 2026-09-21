@@ -30,6 +30,7 @@ export { LambdaCredentialsAbsentError } from './domain.objects/LambdaCredentials
 export { LambdaDomainObjectNotCapturableError } from './domain.objects/LambdaDomainObjectNotCapturableError';
 export { LambdaDomainObjectRefUnbindableError } from './domain.objects/LambdaDomainObjectRefUnbindableError';
 export { LambdaEndpoint } from './domain.objects/LambdaEndpoint';
+export type { LambdaEndpointDialect } from './domain.objects/LambdaEndpointDialect';
 export { LambdaEndpointError } from './domain.objects/LambdaEndpointError';
 export type { LambdaEndpointSchema } from './domain.objects/LambdaEndpointSchema';
 // contract discovery errors
@@ -47,6 +48,8 @@ export { asCacheWithoutSet } from './domain.operations/askLambdaEndpoint/cache/a
 export { getAskLambdaCacheKey } from './domain.operations/askLambdaEndpoint/cache/getAskLambdaCacheKey';
 // transformers
 export { asLambdaEndpoint } from './domain.operations/asLambdaEndpoint/asLambdaEndpoint';
+// test utils — the event source axis (construct the envelope a source delivers)
+export { asLambdaEvent } from './domain.operations/asLambdaEvent/asLambdaEvent';
 export { asApiGatewayResponseSchema } from './domain.operations/genLambdaEndpoint/genLambdaEndpoint.forApiGateway/asApiGatewayResponseSchema';
 export type {
   CorsConfig,
@@ -120,3 +123,28 @@ export {
   type GetOneLambdaContractInput,
   getOneLambdaContract,
 } from './domain.operations/getOneLambdaContract/getOneLambdaContract';
+// test utils — the run boundary axis (run an endpoint by reference, or by slug)
+export { asLambdaContext } from './domain.operations/runLambdaEndpoint/context/asLambdaContext';
+// the narrows the union needs — a field read on `TOutput | Envelope` does not
+// compile on EITHER arm, and an `as` cast is the only other way through.
+// ⚠️ the success-side narrow was absent until self-review r6. the vision named
+//    only the error one, so the MAJORITY case — a read on the handler's own
+//    output — had no supported form at all.
+export { asLambdaEndpointOutput } from './domain.operations/runLambdaEndpoint/dialect/asLambdaEndpointOutput';
+// the envelope narrows, one per dialect (F22). contemp reads the codec-versioned
+// tag (EXACT); ancient reads the flat shape (ambiguous by the wire). the caller
+// names the dialect by WHICH function they call — so F9 (dialect-in-the-type)
+// holds with no runtime dialect argument.
+export {
+  asLambdaEndpointErrorEnvelopeAncient,
+  asLambdaEndpointErrorEnvelopeContemp,
+  isLambdaEndpointErrorEnvelopeAncient,
+  isLambdaEndpointErrorEnvelopeContemp,
+} from './domain.operations/runLambdaEndpoint/dialect/isLambdaEndpointErrorEnvelope';
+export type {
+  LambdaEndpointErrorEnvelope,
+  LambdaEndpointRunOutput,
+} from './domain.operations/runLambdaEndpoint/dialect/LambdaEndpointRunOutput';
+export { runLambdaEndpoint } from './domain.operations/runLambdaEndpoint/runLambdaEndpoint';
+export type { LambdaEndpointHandlerReferenced } from './domain.operations/runLambdaEndpoint/runLambdaEndpoint.onReferenced';
+export type { LambdaEndpointLocus } from './domain.operations/runLambdaEndpoint/runLambdaEndpoint.onSerialized';

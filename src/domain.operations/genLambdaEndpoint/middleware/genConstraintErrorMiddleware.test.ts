@@ -1,6 +1,7 @@
 import { BadRequestError, ConstraintError } from 'helpful-errors';
 import { given, then, when } from 'test-fns';
 
+import { LAMBDA_ENDPOINT_ERROR_SERDE_CONTEMP } from '../../../domain.objects/LambdaEndpointErrorResponseBody';
 import { genConstraintErrorMiddleware } from './genConstraintErrorMiddleware';
 
 describe('genConstraintErrorMiddleware', () => {
@@ -375,7 +376,7 @@ describe('genConstraintErrorMiddleware', () => {
           // contemp callers receive contemp format with ConstraintError class
           expect(request.response).toEqual({
             error: {
-              _serde: 'LambdaEndpointError::contemp',
+              _serde: LAMBDA_ENDPOINT_ERROR_SERDE_CONTEMP,
               class: 'ConstraintError',
               message: error.message,
             },
@@ -406,7 +407,7 @@ describe('genConstraintErrorMiddleware', () => {
           // contemp callers receive contemp format with ConstraintError even for legacy BadRequestError
           expect(request.response).toEqual({
             error: {
-              _serde: 'LambdaEndpointError::contemp',
+              _serde: LAMBDA_ENDPOINT_ERROR_SERDE_CONTEMP,
               class: 'ConstraintError',
               message: error.message,
             },
@@ -437,7 +438,7 @@ describe('genConstraintErrorMiddleware', () => {
           statusCode: 400,
           body: JSON.stringify({
             error: {
-              _serde: 'LambdaEndpointError::contemp',
+              _serde: LAMBDA_ENDPOINT_ERROR_SERDE_CONTEMP,
               class: 'ConstraintError',
               message: error.message,
             },

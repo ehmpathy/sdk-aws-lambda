@@ -5,11 +5,12 @@ import type { AddressInfo } from 'node:net';
 import { text } from 'node:stream/consumers';
 import type { ApiGatewayRequestPayload } from '../domain.objects/ApiGatewayRequestPayload';
 import type { ApiGatewayResponsePayload } from '../domain.objects/ApiGatewayResponsePayload';
+import { asLambdaEndpointOutput } from '../domain.operations/runLambdaEndpoint/dialect/asLambdaEndpointOutput';
+import { runLambdaEndpoint } from '../domain.operations/runLambdaEndpoint/runLambdaEndpoint';
 import {
   type ApiGatewayPayloadVersion,
   asApiGatewayRequestPayload,
 } from './asApiGatewayRequestPayload';
-import { invokeHandlerForTest } from './invokeHandlerForTest';
 
 /**
  * .what = the handler shape this harness fronts
@@ -139,12 +140,24 @@ export const genApiGatewayProxyHarness = async (input: {
 
         // tags a throw that came from the HANDLER, so the outer catch can allowlist it. every
         // other throw in this listener is a harness defect, and the two must not report alike
-        const response = await HandlerEscapedError.tag(() =>
-          invokeHandlerForTest(input.handler, {
+        //
+        // 🔴 `payload: 'ancient'` frames the event RAW. an api-gateway handler reads
+        //    `httpMethod`/`requestContext` off the event itself, so the contemp default —
+        //    which wraps it as `{ event, trail }` — would hand it a shape aws never sends
+        //    (`define.lambda-endpoint-run-boundary`).
+        const answered = await HandlerEscapedError.tag(() =>
+          runLambdaEndpoint.onReferenced({
             event: payload,
+            handler: input.handler,
+            struct: { payload: 'ancient' },
             context: { functionName: 'svc-test-prep-harness' },
           }),
         );
+
+        // `forApiGateway` converts every fault into a `{ statusCode }` response, so an error
+        // envelope on this path is a contract breach — the narrow throws rather than hands
+        // back an envelope typed as a response (`rule.forbid.failhide`)
+        const response = asLambdaEndpointOutput(answered);
 
         /**
          * .what = apply aws's documented proxy map: statusCode + headers + body -> the wire
