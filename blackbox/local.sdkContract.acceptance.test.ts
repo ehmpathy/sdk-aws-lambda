@@ -1,5 +1,5 @@
 import type { APIGatewayProxyEvent, Context } from 'aws-lambda';
-import { ConstraintError } from 'helpful-errors';
+import { ConstraintError, MalfunctionError } from 'helpful-errors';
 import { genContextLogTrail } from 'sdk-logs';
 import { genTempDir, getError, given, then, useThen, when } from 'test-fns';
 import { z } from 'zod';
@@ -778,13 +778,28 @@ describe('sdk-aws-lambda', () => {
    * this block's real subject. `[case20]` is a free feature-wide number
    * (`rule.require.experience-catalog-evolution`).
    */
+  /**
+   * .what = reads the wire body as a string, and refuses an absent one
+   * .why = `ApiGatewayResponse.body` is OPTIONAL — a handler may answer with a status
+   *   alone — so the wire type is `string | undefined`. every assertion in `[case20]`
+   *   is about a response that carries one, so an absent body is a defect to surface
+   *   rather than a case to coalesce away (`rule.forbid.failhide`).
+   */
+  const asWireBody = (response: { body?: string }): string =>
+    response.body ??
+    MalfunctionError.throw('the response carries no body', { response });
+
   given('[case20] an api-gateway event, built by the factory and RUN', () => {
     const handler = forApiGateway({
       schema: {
         input: z.object({ slug: z.string().min(1) }),
-        output: z.object({ slug: z.string(), found: z.boolean() }),
+        output: asApiGatewayResponseSchema({
+          body: z.object({ slug: z.string(), found: z.boolean() }),
+        }),
       },
-      invoke: async ({ event }) => ({ slug: event.slug, found: true }),
+      invoke: async ({ event }) => ({
+        body: { slug: event.slug, found: true },
+      }),
     });
 
     when('[t0] the factory-built event crosses the referenced boundary', () => {
@@ -820,7 +835,7 @@ describe('sdk-aws-lambda', () => {
       // ⇒ the composition claim: every field the factory emits must survive the
       //   json strip, or the handler sees a different event than the unit test did.
       then('the body survives the strip and reaches the handler', () => {
-        expect(JSON.parse(result.body)).toEqual({
+        expect(JSON.parse(asWireBody(result))).toEqual({
           slug: 'surf-lesson',
           found: true,
         });
@@ -836,7 +851,7 @@ describe('sdk-aws-lambda', () => {
       then('the journey output matches snapshot', () => {
         expect({
           statusCode: result.statusCode,
-          body: JSON.parse(result.body),
+          body: JSON.parse(asWireBody(result)),
         }).toMatchSnapshot();
       });
     });
@@ -864,7 +879,9 @@ describe('sdk-aws-lambda', () => {
       // masked to statusCode + errorType — no exid is pinned on this call, so
       // the raw error message would carry a freshly-generated one and permadiff
       then('the negative-path journey output matches snapshot', () => {
-        const errorBody = JSON.parse(result.body) as { errorType?: string };
+        const errorBody = JSON.parse(asWireBody(result)) as {
+          errorType?: string;
+        };
         expect({
           statusCode: result.statusCode,
           errorType: errorBody.errorType,

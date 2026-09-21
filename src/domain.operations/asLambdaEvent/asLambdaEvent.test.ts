@@ -2,6 +2,7 @@ import { MalfunctionError } from 'helpful-errors';
 import { given, then, useThen, when } from 'test-fns';
 import { z } from 'zod';
 
+import { asApiGatewayResponseSchema } from '../genLambdaEndpoint/genLambdaEndpoint.forApiGateway/asApiGatewayResponseSchema';
 import { forApiGateway } from '../genLambdaEndpoint/genLambdaEndpoint.forApiGateway/genLambdaEndpoint.forApiGateway';
 import { asLambdaContext } from '../runLambdaEndpoint/context/asLambdaContext';
 import { asLambdaEvent } from './asLambdaEvent';
@@ -30,9 +31,13 @@ describe('asLambdaEvent', () => {
       const handler = forApiGateway({
         schema: {
           input: z.object({ slug: z.string().min(1) }),
-          output: z.object({ slug: z.string(), found: z.boolean() }),
+          output: asApiGatewayResponseSchema({
+            body: z.object({ slug: z.string(), found: z.boolean() }),
+          }),
         },
-        invoke: async ({ event }) => ({ slug: event.slug, found: true }),
+        invoke: async ({ event }) => ({
+          body: { slug: event.slug, found: true },
+        }),
       });
 
       const run = async (event: unknown) =>
@@ -279,7 +284,9 @@ describe('asLambdaEvent', () => {
         const brokenHandler = forApiGateway({
           schema: {
             input: z.object({ slug: z.string() }),
-            output: z.object({ slug: z.string() }),
+            output: asApiGatewayResponseSchema({
+              body: z.object({ slug: z.string() }),
+            }),
           },
           invoke: async () => {
             throw new MalfunctionError('the database is on fire');
@@ -571,7 +578,9 @@ describe('asLambdaEvent', () => {
       then('fromSqs emits a stable whole shape', () => {
         expect(
           asSnapshottable(
-            asLambdaEvent.fromSqs({ messages: [JSON.stringify({ task: 'a' })] }),
+            asLambdaEvent.fromSqs({
+              messages: [JSON.stringify({ task: 'a' })],
+            }),
           ),
         ).toMatchSnapshot();
       });
