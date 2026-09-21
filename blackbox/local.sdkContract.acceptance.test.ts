@@ -67,6 +67,52 @@ import {
  *      surprise the next editor.
  */
 
+/**
+ * .what = replaces each synthetic per-record uuid with a stable, index-keyed placeholder
+ * .why = `asExampleUuid` keeps real v4 entropy on purpose — its own docblock says
+ *   *"NOT deterministic"* (`asLambdaEvent.asExampleUuid.ts:7`) — so a whole-shape
+ *   snapshot of an sqs or sns journey churns on every run and can never go red for
+ *   a real reason (`rule.forbid.failhide`).
+ *
+ * ⇒ the `beefbeef` marker is KEPT, so the snapshot still pins that the id is
+ *   synthetic and v4-shaped. only the entropy is masked, never the shape.
+ *
+ * 🔴 the placeholder is INDEX-KEYED, where the single-id twins in
+ *   `asLambdaEvent.test.ts` and `publicSurfaceShapes.test.ts` collapse to one
+ *   literal. `[case19][t1]` snapshots a TWO-record batch, and a mask that gave both
+ *   records the same placeholder would pin two identical ids where the real output
+ *   carries two distinct ones — a snapshot that lies about the shape it exists to
+ *   pin. the adjacent `new Set(...).size` assertion proves the distinctness; this
+ *   keeps the snapshot honest about it too.
+ *
+ * .why not lifted = the three copies sit in two trees, and this one is in an
+ *   acceptance suite that imports only `../src/index` on purpose
+ *   (`rule.require.acceptance.blackbox`). a shared helper would be a private-path
+ *   import into a file whose header documents the repair of exactly that.
+ */
+const asSnapshottable = <T>(journey: T): T => {
+  const maskByUuid = new Map<string, string>();
+
+  const asMasked = (uuid: string): string => {
+    const maskedBefore = maskByUuid.get(uuid);
+    if (maskedBefore) return maskedBefore;
+
+    const masked = `beefbeef-0000-4000-8000-${String(maskByUuid.size).padStart(
+      12,
+      '0',
+    )}`;
+    maskByUuid.set(uuid, masked);
+    return masked;
+  };
+
+  return JSON.parse(
+    JSON.stringify(journey).replace(
+      /beefbeef-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/g,
+      asMasked,
+    ),
+  );
+};
+
 describe('sdk-aws-lambda', () => {
   given('[case1] public exports', () => {
     when('[t0] imports evaluated', () => {
@@ -705,10 +751,10 @@ describe('sdk-aws-lambda', () => {
         expect(typeof result.messageIds[0]).toEqual('string');
       });
 
-      // the factory's messageId is index-derived (`asExampleUuid`), never
-      // random, so the whole journey output is deterministic and snap-safe
+      // the factory's messageId carries real v4 entropy, so the journey is
+      // masked before it is pinned — see `asSnapshottable` above
       then('the journey output matches snapshot', () => {
-        expect(result).toMatchSnapshot();
+        expect(asSnapshottable(result)).toMatchSnapshot();
       });
     });
 
@@ -739,8 +785,9 @@ describe('sdk-aws-lambda', () => {
         expect(new Set(result.messageIds).size).toEqual(2);
       });
 
+      // the mask is index-keyed, so the two ids stay distinct in the snapshot
       then('the journey output matches snapshot', () => {
-        expect(result).toMatchSnapshot();
+        expect(asSnapshottable(result)).toMatchSnapshot();
       });
     });
   });
@@ -1300,10 +1347,10 @@ describe('sdk-aws-lambda', () => {
         expect(typeof result.ids[0]).toEqual('string');
       });
 
-      // the factory's MessageId is index-derived (`asExampleUuid`), so the
-      // whole journey output is deterministic and snap-safe
+      // the factory's MessageId carries real v4 entropy, so the journey is
+      // masked before it is pinned — see `asSnapshottable` above
       then('the journey output matches snapshot', () => {
-        expect(result).toMatchSnapshot();
+        expect(asSnapshottable(result)).toMatchSnapshot();
       });
     });
 
