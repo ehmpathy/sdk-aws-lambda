@@ -6,7 +6,10 @@
  *   - scope: test asset only (__test_assets__), not production code
  */
 import type { Context } from 'aws-lambda';
+import { UnexpectedCodePathError } from 'helpful-errors';
 
+import type { LambdaEndpoint } from '../domain.objects/LambdaEndpoint';
+import { asLambdaEndpoint } from '../domain.operations/asLambdaEndpoint/asLambdaEndpoint';
 import { createTestContext } from './createTestContext';
 
 /**
@@ -123,22 +126,31 @@ export const createInProcessLambdaHarness = (
       }) => {
         const fnName = command.input.FunctionName;
 
-        // parse function name: {service}-{access}-{function}
-        // where service follows svc-$noun pattern (e.g., svc-user)
-        const parts = fnName.split('-');
-        if (parts.length < 4) {
-          // aws sdk throws ResourceNotFoundException for absent functions
-          // (Invoke on an absent function rejects; it does not return a body)
-          throw genResourceNotFoundError({ functionName: fnName });
-        }
+        // 🔴 the slug is parsed by the CANONICAL transformer, never re-derived
+        //    here. a hand-rolled copy of `{service}-{access}-{function}` is a
+        //    second speaker of one convention, and the two drift the moment the
+        //    shape changes — this harness's own copy had already drifted, in the
+        //    direction that matters: it omitted the `svc-` prefix check, so it
+        //    admitted a slug `asLambdaEndpoint` refuses.
+        //
+        //    ⇒ a simulator that accepts a name the real address space rejects
+        //      lets a test pass on an endpoint aws could never route to.
+        //
+        // .note = the catch is NARROW and converts rather than swallows. an
+        //   unparseable name is exactly what aws answers with
+        //   `ResourceNotFoundException`, so the conversion is what makes this
+        //   simulator faithful. every other error class propagates untouched
+        //   (`rule.forbid.failhide`).
+        const endpoint = ((): LambdaEndpoint => {
+          try {
+            return asLambdaEndpoint({ slug: fnName });
+          } catch (error) {
+            if (!(error instanceof UnexpectedCodePathError)) throw error;
+            throw genResourceNotFoundError({ functionName: fnName });
+          }
+        })();
 
-        // service is first two parts (svc-$noun pattern)
-        const service = `${parts[0]}-${parts[1]}`;
-        // access is third part (e.g., prep, prod)
-        // function is rest of parts joined (handle function names with dashes)
-        const fn = parts.slice(3).join('-');
-
-        const handler = handlers[service ?? '']?.[fn ?? ''];
+        const handler = handlers[endpoint.service]?.[endpoint.function];
         if (!handler) {
           // aws sdk throws ResourceNotFoundException for absent functions
           throw genResourceNotFoundError({ functionName: fnName });

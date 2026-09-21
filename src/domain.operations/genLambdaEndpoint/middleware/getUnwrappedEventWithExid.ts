@@ -1,7 +1,7 @@
 import {
   getIsWrappedPayload,
   type WrappedPayload,
-} from './getIsWrappedPayload';
+} from '../../lambdaEndpointWire/frame/getIsWrappedPayload';
 
 /**
  * .what = extracts exid and unwrapped event from payload, detects caller version

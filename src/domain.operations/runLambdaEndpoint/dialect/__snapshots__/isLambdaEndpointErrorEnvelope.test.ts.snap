@@ -1,0 +1,30 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`isLambdaEndpointErrorEnvelope given: [case2] the CONTEMP envelope arm of the union when: [t1] a plain handler output is checked then: the message names what to do instead 1`] = `
+{
+  "class": "ConstraintError",
+  "hintNamesAssertOnOutput": true,
+  "hintNamesSendARefusedEvent": true,
+}
+`;
+
+exports[`isLambdaEndpointErrorEnvelope given: [case16] a value whose dialect does NOT match the narrow when: [t0] a contemp assert meets an ancient value then: it THROWS loudly — the failhide the split closes 1`] = `
+{
+  "class": "ConstraintError",
+}
+`;
+
+exports[`isLambdaEndpointErrorEnvelope given: [case16] a value whose dialect does NOT match the narrow when: [t1] a contemp assert meets a HYBRID value then: the plain \`error\` field does not fool the tag check 1`] = `
+{
+  "ancientSaysEnvelope": true,
+  "contempAssertClass": "ConstraintError",
+  "contempSaysEnvelope": false,
+}
+`;
+
+exports[`isLambdaEndpointErrorEnvelope given: [case16] a value whose dialect does NOT match the narrow when: [t2] an ancient assert meets the same hybrid value then: it matches by the flat pair — the wire ambiguity that STAYS (F19) 1`] = `
+{
+  "ancientMatchesByFlatPair": true,
+  "knownLimit": "F19 — the ancient wire carries no tag to read",
+}
+`;

@@ -192,7 +192,7 @@ exports[`codegen (local) given: [case3] cli post-AWS error paths when: [t3] abse
 {
   "service": "svc-jobs",
   "access": "prep",
-  "hint": "unlock prep creds (e.g. \`rhx keyrack unlock --owner ehmpath --env prep\`), then re-run"
+  "hint": "unlock aws creds (e.g. \`rhx keyrack unlock --owner ehmpath --env prep\`), then re-run"
 }",
 }
 `;

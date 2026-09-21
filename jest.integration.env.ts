@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import util from 'util';
 
-import { keyrack } from 'rhachet/keyrack';
+import { useKeyrack } from './src/__test_assets__/useKeyrack';
 
 // eslint-disable-next-line no-undef
 jest.setTimeout(90000); // since we are invoking downstream apis
@@ -33,12 +33,12 @@ if (
   throw new Error(`integration.test is not targeting stage 'test'`);
 
 /**
- * .what = source aws profile from keyrack if available
- * .why = keyrack manages which profile to use per environment
+ * .what = source aws credentials from keyrack and export them to process.env in one call
+ * .why = useKeyrack sources the tier's profile AND splices static creds + drops AWS_PROFILE —
+ *        the v3 sdk's default credential provider otherwise resolves AWS_PROFILE through the
+ *        ambient grove EC2 instance's own credentials rather than the chained target account.
  */
-const keyrackYmlPath = join(process.cwd(), '.agent/keyrack.yml');
-if (existsSync(keyrackYmlPath) && !process.env.CI)
-  keyrack.source({ env: 'test', owner: 'ehmpath', mode: 'lenient' });
+useKeyrack({ env: 'test' });
 
 /**
  * .what = verify that the env has sufficient auth to run the tests if aws is used; otherwise, fail fast

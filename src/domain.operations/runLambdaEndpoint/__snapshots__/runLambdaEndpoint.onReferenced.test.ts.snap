@@ -1,0 +1,358 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`runLambdaEndpoint.onReferenced given: [case2] an endpoint that rejects a malformed uuid when: [t0] a valid event is run then: the whole success shape is pinned 1`] = `
+{
+  "seenAt": "2026-09-08T00:00:00.000Z",
+  "uuid": "11111111-1111-4111-8111-111111111111",
+}
+`;
+
+exports[`runLambdaEndpoint.onReferenced given: [case2] an endpoint that rejects a malformed uuid when: [t1] a caller-fault event is run then: the whole envelope is pinned, message and all 1`] = `
+{
+  "error": {
+    "_serde": "LambdaEndpointError::contemp@v1",
+    "class": "ConstraintError",
+    "details": {
+      "issues": [
+        {
+          "code": "invalid_format",
+          "message": "Invalid UUID",
+          "path": "uuid",
+        },
+      ],
+    },
+    "message": "✋ ConstraintError: validation failed: uuid: Invalid UUID
+
+{
+  "issues": [
+    {
+      "path": "uuid",
+      "message": "Invalid UUID",
+      "code": "invalid_format"
+    }
+  ]
+}",
+  },
+}
+`;
+
+exports[`runLambdaEndpoint.onReferenced given: [case3] an endpoint whose handler raises a malfunction when: [t0] the endpoint is run then: it THROWS — the util adds no catch 1`] = `
+{
+  "class": "MalfunctionError",
+  "message": "💥 MalfunctionError: the database is on fire",
+}
+`;
+
+exports[`runLambdaEndpoint.onReferenced given: [case3] an endpoint whose handler raises a malfunction when: [t1] the ancient dialect is declared then: it THROWS on that dialect too — the frame is inert here 1`] = `
+{
+  "class": "MalfunctionError",
+  "message": "💥 MalfunctionError: the database is on fire",
+}
+`;
+
+exports[`runLambdaEndpoint.onReferenced given: [case4] an endpoint given a wire-hostile event when: [t0] the event carries a Date then: the handler receives a STRING, as the wire would deliver 1`] = `
+{
+  "event": {
+    "at": "2026-09-08T00:00:00.000Z",
+  },
+  "trail": {},
+}
+`;
+
+exports[`runLambdaEndpoint.onReferenced given: [case4] an endpoint given a wire-hostile event when: [t1] the event carries an undefined field then: the field is dropped, as json drops it 1`] = `
+{
+  "event": {
+    "kept": "yes",
+  },
+  "trail": {},
+}
+`;
+
+exports[`runLambdaEndpoint.onReferenced given: [case4] an endpoint given a wire-hostile event when: [t3] the author reuses their event object after the run then: the strip COPIES — the author input is not mutated 1`] = `
+{
+  "authorInputStillADate": true,
+  "authorInputValue": "2026-09-08T00:00:00.000Z",
+}
+`;
+
+exports[`runLambdaEndpoint.onReferenced given: [case4] an endpoint given a wire-hostile event when: [t4] the whole event is undefined then: a named ConstraintError names the util and the fix 1`] = `
+{
+  "class": "ConstraintError",
+  "messageNamesFix": true,
+  "messageNamesNoEvent": true,
+}
+`;
+
+exports[`runLambdaEndpoint.onReferenced given: [case4] an endpoint given a wire-hostile event when: [t4] the whole event is undefined then: an EMPTY event is allowed — \`{}\` is the convention 1`] = `
+{
+  "ok": true,
+}
+`;
+
+exports[`runLambdaEndpoint.onReferenced given: [case4] an endpoint given a wire-hostile event when: [t4] the whole event is undefined then: the handler is never reached 1`] = `
+{
+  "handlerInvocations": 0,
+}
+`;
+
+exports[`runLambdaEndpoint.onReferenced given: [case4] an endpoint given a wire-hostile event when: [t5] the HANDLER returns a wire-hostile output then: the output is stripped too — the guard is two-directional 1`] = `
+{
+  "at": "2026-09-08T00:00:00.000Z",
+}
+`;
+
+exports[`runLambdaEndpoint.onReferenced given: [case4] an endpoint given a wire-hostile event when: [t6] the handler returns no value then: the referenced boundary answers undefined, never null 1`] = `
+{
+  "answer": "undefined",
+  "isNull": false,
+}
+`;
+
+exports[`runLambdaEndpoint.onReferenced given: [case5] an endpoint whose caller declares the ancient dialect when: [t0] no struct is declared then: the contemp shape is pinned 1`] = `
+{
+  "error": {
+    "_serde": "LambdaEndpointError::contemp@v1",
+    "class": "ConstraintError",
+    "details": {
+      "issues": [
+        {
+          "code": "invalid_format",
+          "message": "Invalid UUID",
+          "path": "uuid",
+        },
+      ],
+    },
+    "message": "✋ ConstraintError: validation failed: uuid: Invalid UUID
+
+{
+  "issues": [
+    {
+      "path": "uuid",
+      "message": "Invalid UUID",
+      "code": "invalid_format"
+    }
+  ]
+}",
+  },
+}
+`;
+
+exports[`runLambdaEndpoint.onReferenced given: [case5] an endpoint whose caller declares the ancient dialect when: [t1] struct.payload is ancient then: the ancient shape is pinned, beside its contemp peer 1`] = `
+{
+  "details": {
+    "issues": [
+      {
+        "code": "invalid_format",
+        "message": "Invalid UUID",
+        "path": "uuid",
+      },
+    ],
+  },
+  "errorMessage": "✋ ConstraintError: validation failed: uuid: Invalid UUID
+
+{
+  "issues": [
+    {
+      "path": "uuid",
+      "message": "Invalid UUID",
+      "code": "invalid_format"
+    }
+  ]
+}",
+  "errorType": "BadRequestError",
+}
+`;
+
+exports[`runLambdaEndpoint.onReferenced given: [case5] an endpoint whose caller declares the ancient dialect when: [t1b] an ancient declaration is paired with a trail then: and the shape is byte-identical to the trail-less one 1`] = `
+{
+  "details": {
+    "issues": [
+      {
+        "code": "invalid_format",
+        "message": "Invalid UUID",
+        "path": "uuid",
+      },
+    ],
+  },
+  "errorMessage": "✋ ConstraintError: validation failed: uuid: Invalid UUID
+
+{
+  "issues": [
+    {
+      "path": "uuid",
+      "message": "Invalid UUID",
+      "code": "invalid_format"
+    }
+  ]
+}",
+  "errorType": "BadRequestError",
+}
+`;
+
+exports[`runLambdaEndpoint.onReferenced given: [case5] an endpoint whose caller declares the ancient dialect when: [t2] a contemp declaration is paired with a trail then: the trail does not leak into the envelope 1`] = `
+{
+  "error": {
+    "_serde": "LambdaEndpointError::contemp@v1",
+    "class": "ConstraintError",
+    "details": {
+      "issues": [
+        {
+          "code": "invalid_format",
+          "message": "Invalid UUID",
+          "path": "uuid",
+        },
+      ],
+    },
+    "message": "✋ ConstraintError: validation failed: uuid: Invalid UUID
+
+{
+  "issues": [
+    {
+      "path": "uuid",
+      "message": "Invalid UUID",
+      "code": "invalid_format"
+    }
+  ]
+}",
+  },
+}
+`;
+
+exports[`runLambdaEndpoint.onReferenced given: [case5] an endpoint whose caller declares the ancient dialect when: [t5] the util builds a wrapped payload then: the wrapper carries exactly event and trail — no third key 1`] = `
+{
+  "event": {
+    "uuid": "11111111-1111-4111-8111-111111111111",
+  },
+  "trail": {
+    "exid": "exid:test-5",
+  },
+}
+`;
+
+exports[`runLambdaEndpoint.onReferenced given: [case7] a legacy handler, never migrated to genLambdaEndpoint when: [t0] the author declares the ancient dialect then: a plain handler runs — no endpoint type is demanded 1`] = `
+{
+  "uuid": "11111111-1111-4111-8111-111111111111",
+}
+`;
+
+exports[`runLambdaEndpoint.onReferenced given: [case7] a legacy handler, never migrated to genLambdaEndpoint when: [t1] the author swaps ONLY the import, as case=7 demos it then: so a legacy handler finds its fields absent 1`] = `
+{
+  "uuid": null,
+}
+`;
+
+exports[`runLambdaEndpoint.onReferenced given: [case7] a legacy handler, never migrated to genLambdaEndpoint when: [t1] the author swaps ONLY the import, as case=7 demos it then: the ancient declaration is what makes it work 1`] = `
+{
+  "uuid": "11111111-1111-4111-8111-111111111111",
+}
+`;
+
+exports[`runLambdaEndpoint.onReferenced given: [case7] a legacy handler, never migrated to genLambdaEndpoint when: [t1] the author swaps ONLY the import, as case=7 demos it then: the contemp default wraps her event — the swap is 2 lines 1`] = `
+{
+  "event": {
+    "uuid": "11111111-1111-4111-8111-111111111111",
+  },
+  "trail": {},
+}
+`;
+
+exports[`runLambdaEndpoint.onReferenced given: [case7] a legacy handler, never migrated to genLambdaEndpoint when: [t2] a plain handler THROWS then: a plain Error survives too — the util owns no taxonomy 1`] = `
+{
+  "class": "Error",
+  "message": "a bare legacy error",
+}
+`;
+
+exports[`runLambdaEndpoint.onReferenced given: [case7] a legacy handler, never migrated to genLambdaEndpoint when: [t2] a plain handler THROWS then: the ERROR CLASS survives, never a re-wrap 1`] = `
+{
+  "class": "MalfunctionError",
+  "message": "💥 MalfunctionError: the legacy database is on fire",
+}
+`;
+
+exports[`runLambdaEndpoint.onReferenced given: [case7] a legacy handler, never migrated to genLambdaEndpoint when: [t2] a plain handler THROWS then: the throw crosses untouched — no envelope, no catch 1`] = `
+{
+  "class": "MalfunctionError",
+  "message": "💥 MalfunctionError: the legacy database is on fire",
+}
+`;
+
+exports[`runLambdaEndpoint.onReferenced given: [case7] a legacy handler, never migrated to genLambdaEndpoint when: [t4] a plain function is handed to the util then: it runs — no genLambdaEndpoint type is demanded 1`] = `
+{
+  "b": 1,
+}
+`;
+
+exports[`runLambdaEndpoint.onReferenced given: [case12] the handler is not a function — a bad import when: [t0] the handler is undefined then: it throws a named ConstraintError, not a bare TypeError 1`] = `
+{
+  "class": "ConstraintError",
+  "messageNamesNotAFunction": true,
+}
+`;
+
+exports[`runLambdaEndpoint.onReferenced given: [case12] the handler is not a function — a bad import when: [t0] the handler is undefined then: the error names the fix 1`] = `
+{
+  "class": "ConstraintError",
+  "messageNamesTheImport": true,
+}
+`;
+
+exports[`runLambdaEndpoint.onReferenced given: [case12] the handler is not a function — a bad import when: [t1] the whole module was passed instead of the handler then: it throws, rather than call an object 1`] = `
+{
+  "class": "ConstraintError",
+  "messageNamesModuleSlip": true,
+}
+`;
+
+exports[`runLambdaEndpoint.onReferenced given: [case13] a callback-style handler, from the incumbent when: [t0] the handler declares a third parameter then: it throws a named ConstraintError rather than answer undefined 1`] = `
+{
+  "class": "ConstraintError",
+  "messageNamesCallbackStyle": true,
+}
+`;
+
+exports[`runLambdaEndpoint.onReferenced given: [case13] a callback-style handler, from the incumbent when: [t0] the handler declares a third parameter then: the error names BOTH the fix and its escape 1`] = `
+{
+  "messageNamesEscape": true,
+  "messageNamesFix": true,
+}
+`;
+
+exports[`runLambdaEndpoint.onReferenced given: [case13] a callback-style handler, from the incumbent when: [t1] the handler declares two parameters then: it runs — the guard discriminates by arity, never by shape 1`] = `
+{
+  "found": true,
+}
+`;
+
+exports[`runLambdaEndpoint.onReferenced given: [case13] a callback-style handler, from the incumbent when: [t2] a middy-wrapped endpoint is given then: it is NOT caught by the arity guard 1`] = `
+{
+  "seenAt": "2026-09-08T00:00:00.000Z",
+  "uuid": "11111111-1111-4111-8111-111111111111",
+}
+`;
+
+exports[`runLambdaEndpoint.onReferenced given: [case14] a caller who must pin the lambda identity itself when: [t0] a context override is supplied then: a field left unstated still gets its default 1`] = `
+{
+  "awsRequestId": "00000000-0000-4000-8000-000000000000",
+}
+`;
+
+exports[`runLambdaEndpoint.onReferenced given: [case14] a caller who must pin the lambda identity itself when: [t0] a context override is supplied then: the handler sees the FORGED identity, not the default 1`] = `
+{
+  "awsRequestId": "00000000-0000-4000-8000-000000000000",
+  "functionName": "whatever-you-need",
+  "invokedFunctionArn": "arn:aws:lambda:us-east-1:000000000000:function:run-lambda-endpoint",
+  "logGroupName": "/aws/lambda/run-lambda-endpoint",
+  "memoryLimitInMB": "512",
+}
+`;
+
+exports[`runLambdaEndpoint.onReferenced given: [edge] an endpoint whose caller sends a constraint error natively when: [t0] the handler raises a constraint error itself then: the author message survives the boundary 1`] = `
+{
+  "error": {
+    "_serde": "LambdaEndpointError::contemp@v1",
+    "class": "ConstraintError",
+    "message": "✋ ConstraintError: the uuid names no known surfer",
+  },
+}
+`;

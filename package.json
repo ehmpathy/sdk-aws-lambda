@@ -75,6 +75,7 @@
     "simple-in-memory-cache": "0.4.0",
     "type-fns": "1.21.4",
     "with-simple-cache": "0.15.3",
+    "yaml": "2.9.0",
     "zod": "4.4.3"
   },
   "devDependencies": {

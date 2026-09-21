@@ -1,0 +1,179 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`asLambdaEvent given: [E7] the shape of every factory, pinned when: [t0] each factory is cast with its minimal input then: fromApiGateway emits a stable whole shape 1`] = `
+{
+  "body": "{"slug":"surf-lesson"}",
+  "headers": {
+    "Accept": "application/json",
+    "Content-Type": "application/json",
+    "Host": "example-api.execute-api.us-east-1.amazonaws.com",
+    "User-Agent": "example-agent",
+  },
+  "httpMethod": "POST",
+  "isBase64Encoded": false,
+  "multiValueHeaders": {
+    "Accept": [
+      "application/json",
+    ],
+    "Content-Type": [
+      "application/json",
+    ],
+    "Host": [
+      "example-api.execute-api.us-east-1.amazonaws.com",
+    ],
+    "User-Agent": [
+      "example-agent",
+    ],
+  },
+  "multiValueQueryStringParameters": null,
+  "path": "/",
+  "pathParameters": null,
+  "queryStringParameters": null,
+  "requestContext": {
+    "accountId": "000000000000",
+    "apiId": "example-api",
+    "authorizer": null,
+    "extendedRequestId": "example-extended-request-id",
+    "httpMethod": "POST",
+    "identity": {
+      "accessKey": null,
+      "accountId": null,
+      "apiKey": null,
+      "apiKeyId": null,
+      "caller": null,
+      "clientCert": null,
+      "cognitoAuthenticationProvider": null,
+      "cognitoAuthenticationType": null,
+      "cognitoIdentityId": null,
+      "cognitoIdentityPoolId": null,
+      "principalOrgId": null,
+      "sourceIp": "127.0.0.1",
+      "user": null,
+      "userAgent": "example-agent",
+      "userArn": null,
+    },
+    "path": "/",
+    "protocol": "HTTP/1.1",
+    "requestId": "00000000-0000-4000-8000-000000000000",
+    "requestTime": "08/Sep/2025:00:00:00 +0000",
+    "requestTimeEpoch": 1757289600000,
+    "resourceId": "example-resource",
+    "resourcePath": "/",
+    "stage": "test",
+  },
+  "resource": "/",
+  "stageVariables": null,
+}
+`;
+
+exports[`asLambdaEvent given: [E7] the shape of every factory, pinned when: [t0] each factory is cast with its minimal input then: fromKinesis emits a stable whole shape 1`] = `
+{
+  "Records": [
+    {
+      "awsRegion": "us-east-1",
+      "eventID": "shardId-000000000000:49590000000000000000000000000000000000000000000000000000",
+      "eventName": "aws:kinesis:record",
+      "eventSource": "aws:kinesis",
+      "eventSourceARN": "arn:aws:kinesis:us-east-1:000000000000:stream/example-stream",
+      "eventVersion": "1.0",
+      "invokeIdentityArn": "arn:aws:iam::000000000000:role/example-role",
+      "kinesis": {
+        "approximateArrivalTimestamp": 1757289600,
+        "data": "aGVsbG8=",
+        "kinesisSchemaVersion": "1.0",
+        "partitionKey": "partition-0",
+        "sequenceNumber": "49590000000000000000000000000000000000000000000000000000",
+      },
+    },
+  ],
+}
+`;
+
+exports[`asLambdaEvent given: [E7] the shape of every factory, pinned when: [t0] each factory is cast with its minimal input then: fromS3 emits a stable whole shape 1`] = `
+{
+  "Records": [
+    {
+      "awsRegion": "us-east-1",
+      "eventName": "ObjectCreated:Put",
+      "eventSource": "aws:s3",
+      "eventTime": "2025-09-08T00:00:00.000Z",
+      "eventVersion": "2.1",
+      "requestParameters": {
+        "sourceIPAddress": "127.0.0.1",
+      },
+      "responseElements": {
+        "x-amz-id-2": "EXAMPLE0",
+        "x-amz-request-id": "EXAMPLE0",
+      },
+      "s3": {
+        "bucket": {
+          "arn": "arn:aws:s3:::surf-reports",
+          "name": "surf-reports",
+          "ownerIdentity": {
+            "principalId": "EXAMPLE",
+          },
+        },
+        "configurationId": "example-config",
+        "object": {
+          "eTag": "00000000000000000000000000000000",
+          "key": "pipeline.json",
+          "sequencer": "0000000000000000000000",
+          "size": 1024,
+        },
+        "s3SchemaVersion": "1.0",
+      },
+      "userIdentity": {
+        "principalId": "EXAMPLE",
+      },
+    },
+  ],
+}
+`;
+
+exports[`asLambdaEvent given: [E7] the shape of every factory, pinned when: [t0] each factory is cast with its minimal input then: fromSns emits a stable whole shape 1`] = `
+{
+  "Records": [
+    {
+      "EventSource": "aws:sns",
+      "EventSubscriptionArn": "arn:aws:sns:us-east-1:000000000000:example-topic:beefbeef-0000-4000-8000-000000000000",
+      "EventVersion": "1.0",
+      "Sns": {
+        "Message": "hello",
+        "MessageAttributes": {},
+        "MessageId": "beefbeef-0000-4000-8000-000000000000",
+        "Signature": "EXAMPLE",
+        "SignatureVersion": "1",
+        "SigningCertUrl": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-example.pem",
+        "Subject": "",
+        "Timestamp": "2025-09-08T00:00:00.000Z",
+        "TopicArn": "arn:aws:sns:us-east-1:000000000000:example-topic",
+        "Type": "Notification",
+        "UnsubscribeUrl": "https://sns.us-east-1.amazonaws.com/?Action=Unsubscribe",
+      },
+    },
+  ],
+}
+`;
+
+exports[`asLambdaEvent given: [E7] the shape of every factory, pinned when: [t0] each factory is cast with its minimal input then: fromSqs emits a stable whole shape 1`] = `
+{
+  "Records": [
+    {
+      "attributes": {
+        "ApproximateFirstReceiveTimestamp": "1757289600000",
+        "ApproximateReceiveCount": "1",
+        "SenderId": "AIDA00000000000000000",
+        "SentTimestamp": "1757289600000",
+      },
+      "awsRegion": "us-east-1",
+      "body": "{"task":"a"}",
+      "eventSource": "aws:sqs",
+      "eventSourceARN": "arn:aws:sqs:us-east-1:000000000000:example-queue",
+      "md5OfBody": "00000000000000000000000000000000",
+      "messageAttributes": {},
+      "messageId": "beefbeef-0000-4000-8000-000000000000",
+      "receiptHandle": "receipt-handle-0",
+    },
+  ],
+}
+`;

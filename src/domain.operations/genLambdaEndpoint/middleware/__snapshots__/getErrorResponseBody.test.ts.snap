@@ -24,7 +24,7 @@ exports[`getErrorResponseBodyAncient given: [case1] error with metadata and caus
 exports[`getErrorResponseBodyContemp given: [case1] error with metadata and cause when: [t0] body is constructed then: snapshot for contract visibility 1`] = `
 {
   "error": {
-    "_serde": "LambdaEndpointError::contemp",
+    "_serde": "LambdaEndpointError::contemp@v1",
     "cause": "original error",
     "class": "ConstraintError",
     "details": {
@@ -48,7 +48,7 @@ exports[`getErrorResponseBodyContemp given: [case1] error with metadata and caus
 exports[`getErrorResponseBodyContemp given: [case4] plain error when: [t0] body is constructed then: snapshot for contract visibility 1`] = `
 {
   "error": {
-    "_serde": "LambdaEndpointError::contemp",
+    "_serde": "LambdaEndpointError::contemp@v1",
     "class": "Error",
     "message": "simple error",
   },

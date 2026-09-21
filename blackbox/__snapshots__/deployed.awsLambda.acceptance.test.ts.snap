@@ -63,7 +63,29 @@ exports[`e2e: deployed goSurf lambda with trail propagation given: [case1] deplo
 }
 `;
 
-exports[`e2e: deployed goSurf lambda with trail propagation given: [case1] deployed goSurf lambda via declastruct when: [t3] invoked with non-existent function then: handler returns function not found error 1`] = `
+exports[`e2e: deployed goSurf lambda with trail propagation given: [case1] deployed goSurf lambda via declastruct when: [t3] invoked with a slug that was never deployed then: handler returns function not found error 1`] = `
+{
+  "messageContainsNotFound": true,
+  "name": "LambdaEndpointError",
+}
+`;
+
+exports[`e2e: deployed goSurf lambda with trail propagation given: [case22] the same deployed lambda, through runLambdaEndpoint.onSerialized when: [t4] run at the cloud locus with a valid event then: the cloud-locus output matches snapshot 1`] = `
+{
+  "comment": "caught a bodyboard wave in the pacific",
+  "success": true,
+  "trailExid": "exid:onserialized-cloud-t4",
+}
+`;
+
+exports[`e2e: deployed goSurf lambda with trail propagation given: [case22] the same deployed lambda, through runLambdaEndpoint.onSerialized when: [t5] the deployed handler rejects the event then: the constraint fault is THROWN, never returned 1`] = `
+{
+  "messageContainsValidation": true,
+  "name": "Error",
+}
+`;
+
+exports[`e2e: deployed goSurf lambda with trail propagation given: [case22] the same deployed lambda, through runLambdaEndpoint.onSerialized when: [t6] the slug names a function that was never deployed then: it throws, rather than answers 1`] = `
 {
   "messageContainsNotFound": true,
   "name": "LambdaEndpointError",

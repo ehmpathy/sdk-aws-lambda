@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import util from 'util';
 
-import { keyrack } from 'rhachet/keyrack';
+import { useKeyrack } from './src/__test_assets__/useKeyrack';
 
 // eslint-disable-next-line no-undef
 jest.setTimeout(90000); // tests call downstream apis
@@ -18,24 +18,23 @@ if (!existsSync(join(process.cwd(), 'package.json')))
   throw new Error('no package.json found in cwd. are you @gitroot?');
 
 /**
- * .what = source credentials from keyrack for test env
+ * .what = source credentials from keyrack for test env, via useKeyrack
  * .why =
  *   - auto-inject keys into process.env
- *   - fail fast with helpful error if keyrack locked or keys absent
+ *   - fail fast with a helpful error if keyrack is locked or keys are absent
+ *   - splice static creds + drop AWS_PROFILE, so the v3 sdk resolves the chained target
+ *     account rather than the ambient grove EC2 instance's own credentials
  * .note
  *   - use lenient mode if aws credentials already present (e.g., ci oidc)
  *   - keyrack lists AWS_PROFILE but ci uses oidc which sets ACCESS_KEY_ID
  */
-const keyrackYmlPath = join(process.cwd(), '.agent/keyrack.yml');
 const hasAwsCredentials = !!(
   process.env.AWS_ACCESS_KEY_ID || process.env.AWS_PROFILE
 );
-if (existsSync(keyrackYmlPath))
-  keyrack.source({
-    env: 'test',
-    owner: 'ehmpath',
-    mode: hasAwsCredentials ? 'lenient' : 'strict',
-  });
+useKeyrack({
+  env: 'test',
+  mode: hasAwsCredentials ? 'lenient' : 'strict',
+});
 
 /**
  * .what = verify that the env has sufficient auth to run the tests if aws is used; otherwise, fail fast

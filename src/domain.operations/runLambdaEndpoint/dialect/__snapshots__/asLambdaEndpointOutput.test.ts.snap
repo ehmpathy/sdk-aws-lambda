@@ -1,0 +1,15 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`asLambdaEndpointOutput given: [case2] the endpoint answered with a CONTEMP envelope when: [t0] the envelope is narrowed as an output then: it throws rather than hand back an envelope 1`] = `
+{
+  "class": "ConstraintError",
+  "messageNamesNeverOutput": true,
+}
+`;
+
+exports[`asLambdaEndpointOutput given: [case3] the endpoint answered with an ANCIENT envelope when: [t0] the envelope is narrowed as an output then: it throws, exactly as the contemp arm does 1`] = `
+{
+  "class": "ConstraintError",
+  "messageNamesNeverOutput": true,
+}
+`;

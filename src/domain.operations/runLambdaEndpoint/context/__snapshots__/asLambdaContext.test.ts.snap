@@ -1,0 +1,59 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`asLambdaContext given: [case1] no overrides when: [t0] a context is cast then: every field the aws Context declares is present 1`] = `
+{
+  "awsRequestId": "00000000-0000-4000-8000-000000000000",
+  "callbackWaitsForEmptyEventLoop": true,
+  "done": [Function],
+  "fail": [Function],
+  "functionName": "run-lambda-endpoint",
+  "functionVersion": "1",
+  "getRemainingTimeInMillis": [Function],
+  "invokedFunctionArn": "arn:aws:lambda:us-east-1:000000000000:function:run-lambda-endpoint",
+  "logGroupName": "/aws/lambda/run-lambda-endpoint",
+  "logStreamName": "run-lambda-endpoint",
+  "memoryLimitInMB": "128",
+  "succeed": [Function],
+}
+`;
+
+exports[`asLambdaContext given: [case2] an override when: [t0] one field is overridden then: the override wins and the rest keep their defaults 1`] = `
+{
+  "awsRequestId": "00000000-0000-4000-8000-000000000000",
+  "callbackWaitsForEmptyEventLoop": true,
+  "done": [Function],
+  "fail": [Function],
+  "functionName": "svc-surf-getWave",
+  "functionVersion": "1",
+  "getRemainingTimeInMillis": [Function],
+  "invokedFunctionArn": "arn:aws:lambda:us-east-1:000000000000:function:run-lambda-endpoint",
+  "logGroupName": "/aws/lambda/run-lambda-endpoint",
+  "logStreamName": "run-lambda-endpoint",
+  "memoryLimitInMB": "128",
+  "succeed": [Function],
+}
+`;
+
+exports[`asLambdaContext given: [case3] a handler that signals through the legacy callback api when: [t0] it calls context.fail then: the fault is thrown, never swallowed 1`] = `
+{
+  "class": "ConstraintError",
+  "hintNamesReturnAPromise": true,
+  "messageNamesLegacyCallbackApi": true,
+}
+`;
+
+exports[`asLambdaContext given: [case3] a handler that signals through the legacy callback api when: [t1] it calls context.done with an error then: the fault is thrown 1`] = `
+{
+  "class": "ConstraintError",
+  "hintNamesReturnAPromise": true,
+  "messageNamesLegacyCallbackApi": true,
+}
+`;
+
+exports[`asLambdaContext given: [case3] a handler that signals through the legacy callback api when: [t2] it calls context.succeed with a result then: the dropped output is surfaced as a throw 1`] = `
+{
+  "class": "ConstraintError",
+  "hintNamesReturnAPromise": true,
+  "messageNamesLegacyCallbackApi": true,
+}
+`;

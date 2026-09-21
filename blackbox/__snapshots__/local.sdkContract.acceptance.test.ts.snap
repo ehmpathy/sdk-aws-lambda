@@ -175,3 +175,129 @@ exports[`sdk-aws-lambda given: [case9] payload format - extra keys beyond event 
   ],
 }
 `;
+
+exports[`sdk-aws-lambda given: [case11] a handler this util cannot run, met at the LOCAL locus when: [t0] the serverless.yml points at a CALLBACK-style handler then: the error never passed through the wire-error cast 1`] = `
+{
+  "class": "ConstraintError",
+  "hintPresent": true,
+  "messageNamesCallbackStyle": true,
+  "stackTraceAbsent": true,
+}
+`;
+
+exports[`sdk-aws-lambda given: [case11] a handler this util cannot run, met at the LOCAL locus when: [t1] the serverless.yml names an export that is absent then: its hint survives as a structured field too 1`] = `
+{
+  "class": "ConstraintError",
+  "hintPresent": true,
+  "messageNamesAbsentExport": true,
+  "stackTraceAbsent": true,
+}
+`;
+
+exports[`sdk-aws-lambda given: [case13] a caller who MISDECLARES the dialect on the narrow when: [t0] the run rejects, and the caller picks the WRONG dialect narrow then: and the ENVELOPE itself is intact — the narrow refused, the run did not 1`] = `
+{
+  "ancientNarrowThrows": true,
+  "class": "ConstraintError",
+}
+`;
+
+exports[`sdk-aws-lambda given: [case15] a handler behind a spread-relay wrapper when: [t0] the wrapped handler answers with a value then: the journey output matches snapshot 1`] = `
+{
+  "swell": "pipeline:6ft",
+}
+`;
+
+exports[`sdk-aws-lambda given: [case15] a handler behind a spread-relay wrapper when: [t1] the wrapped handler rejects its input then: the journey error class matches snapshot 1`] = `
+{
+  "class": "ConstraintError",
+}
+`;
+
+exports[`sdk-aws-lambda given: [case19] an sqs event, built by the factory and run through the endpoint when: [t0] the factory-built event crosses the referenced boundary then: the journey output matches snapshot 1`] = `
+{
+  "bodies": [
+    {
+      "jobUuid": "job-abc",
+      "kind": "notify",
+    },
+  ],
+  "count": 1,
+  "messageIds": [
+    "00000000-0000-4000-8000-000000000000",
+  ],
+}
+`;
+
+exports[`sdk-aws-lambda given: [case19] an sqs event, built by the factory and run through the endpoint when: [t1] the factory builds a batch then: the journey output matches snapshot 1`] = `
+{
+  "bodies": [
+    {
+      "jobUuid": "job-abc",
+      "kind": "notify",
+    },
+    {
+      "jobUuid": "job-abc",
+      "kind": "digest",
+    },
+  ],
+  "count": 2,
+  "messageIds": [
+    "00000000-0000-4000-8000-000000000000",
+    "00000000-0000-4000-8000-000000000001",
+  ],
+}
+`;
+
+exports[`sdk-aws-lambda given: [case20] an api-gateway event, built by the factory and RUN when: [t0] the factory-built event crosses the referenced boundary then: the journey output matches snapshot 1`] = `
+{
+  "body": {
+    "found": true,
+    "slug": "surf-lesson",
+  },
+  "statusCode": 200,
+}
+`;
+
+exports[`sdk-aws-lambda given: [case20] an api-gateway event, built by the factory and RUN when: [t1] the body fails the schema then: the negative-path journey output matches snapshot 1`] = `
+{
+  "errorType": "BadRequestError",
+  "statusCode": 400,
+}
+`;
+
+exports[`sdk-aws-lambda given: [case21] the sns, kinesis, and s3 factories when: [t0] an sns event crosses the referenced boundary then: the journey output matches snapshot 1`] = `
+{
+  "ids": [
+    "00000000-0000-4000-8000-000000000000",
+  ],
+  "messages": [
+    {
+      "notice": "swell inbound",
+    },
+  ],
+}
+`;
+
+exports[`sdk-aws-lambda given: [case21] the sns, kinesis, and s3 factories when: [t1] a kinesis event crosses the referenced boundary then: the journey output matches snapshot 1`] = `
+{
+  "data": [
+    {
+      "datum": 42,
+    },
+  ],
+  "sequences": [
+    "49590000000000000000000000000000000000000000000000000000",
+  ],
+}
+`;
+
+exports[`sdk-aws-lambda given: [case21] the sns, kinesis, and s3 factories when: [t2] an s3 event crosses the referenced boundary then: the journey output matches snapshot 1`] = `
+{
+  "refs": [
+    {
+      "bucket": "surf-photos",
+      "key": "pipeline/a.jpg",
+    },
+  ],
+}
+`;

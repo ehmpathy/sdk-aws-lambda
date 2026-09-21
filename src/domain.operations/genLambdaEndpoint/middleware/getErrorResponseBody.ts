@@ -1,25 +1,19 @@
-/**
- * ancient error response body (flat format, backwards compat)
- */
-export interface LambdaEndpointErrorResponseBodyAncient {
-  errorMessage: string;
-  errorType: string;
-  causeMessage?: string;
-  details?: unknown;
-}
+import {
+  LAMBDA_ENDPOINT_ERROR_SERDE_CONTEMP,
+  type LambdaEndpointErrorResponseBodyAncient,
+  type LambdaEndpointErrorResponseBodyContemp,
+} from '../../../domain.objects/LambdaEndpointErrorResponseBody';
 
 /**
- * contemp error response body (nested under error with explicit serde tag)
+ * .what = re-exports the envelope shapes this module WRITES
+ * .why = they are DECLARED in `domain.objects/`, because a peer operation types
+ *   its public return against them. this module is their producer, never their
+ *   owner — the re-export keeps its own consumers on one import.
  */
-export interface LambdaEndpointErrorResponseBodyContemp {
-  error: {
-    _serde: 'LambdaEndpointError::contemp';
-    class: string;
-    message: string;
-    cause?: string;
-    details?: unknown;
-  };
-}
+export type {
+  LambdaEndpointErrorResponseBodyAncient,
+  LambdaEndpointErrorResponseBodyContemp,
+};
 
 /**
  * .what = extracts cause message from error if error has error cause
@@ -76,7 +70,11 @@ export const getErrorResponseBodyContemp = (input: {
 
   return {
     error: {
-      _serde: 'LambdaEndpointError::contemp',
+      // the tag is the whole discriminator, so it has ONE writer — a producer
+      // that spells it by hand can fork from the detectors, and that fork fails
+      // silent: the envelope stops to be recognized and a caller fault reads as
+      // a success payload.
+      _serde: LAMBDA_ENDPOINT_ERROR_SERDE_CONTEMP,
       class: input.errorClass,
       message: input.error.message,
       ...(cause !== undefined ? { cause } : {}),

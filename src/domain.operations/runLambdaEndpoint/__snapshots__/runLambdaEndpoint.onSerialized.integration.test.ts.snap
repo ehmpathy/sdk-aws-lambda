@@ -1,0 +1,140 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`runLambdaEndpoint.onSerialized given: [case8] one handler, met from both sides of the boundary when: [t4] the handler MALFUNCTIONS on the local locus then: it carries the endpoint, as the wire hydration does 1`] = `
+{
+  "carriesEndpoint": true,
+  "isConstraintError": false,
+  "messageNamesFault": true,
+}
+`;
+
+exports[`runLambdaEndpoint.onSerialized given: [case8] one handler, met from both sides of the boundary when: [t6] the whole event is undefined then: the CLOUD locus refuses without a wire trip 1`] = `
+{
+  "class": "ConstraintError",
+  "messageNamesNoEvent": true,
+}
+`;
+
+exports[`runLambdaEndpoint.onSerialized given: [case8] one handler, met from both sides of the boundary when: [t6] the whole event is undefined then: the LOCAL locus refuses with the hint intact 1`] = `
+{
+  "class": "ConstraintError",
+  "hintNamesEmptyEvent": true,
+}
+`;
+
+exports[`runLambdaEndpoint.onSerialized given: [case8] one handler, met from both sides of the boundary when: [t7] the locus is not one this util runs then: an unknown \`at\` is refused by name 1`] = `
+{
+  "class": "ConstraintError",
+  "namesBothLoci": true,
+}
+`;
+
+exports[`runLambdaEndpoint.onSerialized given: [case8] one handler, met from both sides of the boundary when: [t8] the shapes this boundary answers with are pinned then: a caller fault is a THROWN error, whose shape is pinned 1`] = `
+{
+  "class": "ConstraintError",
+  "message": "✋ ConstraintError: slug is required
+
+{
+  "endpoint": {
+    "service": "svc-example",
+    "access": "test",
+    "function": "getServiceBySlug",
+    "slug": "svc-example-test-getServiceBySlug"
+  },
+  "exid": "exid:pinned-for-snapshot"
+}",
+}
+`;
+
+exports[`runLambdaEndpoint.onSerialized given: [case8] one handler, met from both sides of the boundary when: [t8] the shapes this boundary answers with are pinned then: a success is the handler output, hydrated 1`] = `
+{
+  "found": true,
+  "slug": "surf-lesson",
+}
+`;
+
+exports[`runLambdaEndpoint.onSerialized given: [case8] one handler, met from both sides of the boundary when: [t8] the shapes this boundary answers with are pinned then: the ancient dialect hydrates to the SAME class 1`] = `
+{
+  "class": "ConstraintError",
+  "message": "✋ ConstraintError: slug is required
+
+{
+  "endpoint": {
+    "service": "svc-example",
+    "access": "test",
+    "function": "getServiceBySlug",
+    "slug": "svc-example-test-getServiceBySlug"
+  },
+  "exid": "exid:pinned-for-snapshot"
+}",
+}
+`;
+
+exports[`runLambdaEndpoint.onSerialized given: [case8] one handler, met from both sides of the boundary when: [t9] the local locus stands in for the wire then: the caller trail exid crosses the boundary 1`] = `
+{
+  "exidCarriesPrefix": true,
+  "exidPresent": true,
+}
+`;
+
+exports[`runLambdaEndpoint.onSerialized given: [case8] one handler, met from both sides of the boundary when: [t9] the local locus stands in for the wire then: the handler sees the endpoint SLUG as its functionName 1`] = `
+{
+  "functionName": "svc-example-test-getServiceBySlug",
+  "logGroupName": "/aws/lambda/svc-example-test-getServiceBySlug",
+}
+`;
+
+exports[`runLambdaEndpoint.onSerialized given: [case10] a serverless.yml whose handler path is stale when: [t0] the handler file does not exist then: the error blames the CONFIG, never the handler 1`] = `
+{
+  "messageBlamesConfig": true,
+  "namesServerlessYml": true,
+}
+`;
+
+exports[`runLambdaEndpoint.onSerialized given: [case10] a serverless.yml whose handler path is stale when: [t1] the serverless.yml names a different service then: the error names both, so the mismatch is visible 1`] = `
+{
+  "messageNamesMismatch": true,
+  "namesBothServices": true,
+}
+`;
+
+exports[`runLambdaEndpoint.onSerialized given: [case10] a serverless.yml whose handler path is stale when: [t2] the function is absent from serverless.yml then: the error lists what IS declared 1`] = `
+{
+  "listsValidFunctions": true,
+  "messageNamesAbsence": true,
+}
+`;
+
+exports[`runLambdaEndpoint.onSerialized given: [case17] the caller holds no aws credentials when: [t0] a cloud invoke is attempted then: it rejects with an error that NAMES THE FIX 1`] = `
+{
+  "at": "cloud",
+  "class": "LambdaCredentialsAbsentError",
+  "hintNamesKeyrackUnlock": true,
+}
+`;
+
+exports[`runLambdaEndpoint.onSerialized given: [case17] the caller holds no aws credentials when: [t1] the sdk fails for a reason that is NOT credentials then: the error passes through untouched 1`] = `
+{
+  "hintAbsent": true,
+  "messageContainsRateExceeded": true,
+  "name": "LambdaEndpointError",
+}
+`;
+
+exports[`runLambdaEndpoint.onSerialized given: [case18] a callback-style handler, on each boundary when: [t0] the SERIALIZED boundary loads it from serverless.yml then: the error keeps its hint, so the fix is one step away 1`] = `
+{
+  "class": "ConstraintError",
+  "declaredParameters": 3,
+  "hintNamesFix": true,
+  "messageNamesCallbackStyle": true,
+}
+`;
+
+exports[`runLambdaEndpoint.onSerialized given: [case18] a callback-style handler, on each boundary when: [t1] the REFERENCED boundary is handed it directly then: the two loci agree, which is the whole point 1`] = `
+{
+  "class": "ConstraintError",
+  "declaredParameters": 3,
+  "hintNamesFix": true,
+  "messageNamesCallbackStyle": true,
+}
+`;

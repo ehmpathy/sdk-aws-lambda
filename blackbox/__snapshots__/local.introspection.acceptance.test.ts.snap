@@ -31,6 +31,12 @@ exports[`introspection given: [case2] genLambdaEndpoint with introspection in pr
 }
 `;
 
+exports[`introspection given: [case2] genLambdaEndpoint with introspection in prep env when: [t1] invoked with normal payload then: the journey output matches snapshot 1`] = `
+{
+  "salute": "Hello, World!",
+}
+`;
+
 exports[`introspection given: [case3] genLambdaEndpoint with introspection in prod env (ancient caller) when: [t0] invoked with introspect payload (flat/ancient format) then: result matches snapshot 1`] = `
 {
   "details": {
@@ -54,7 +60,7 @@ exports[`introspection given: [case3] genLambdaEndpoint with introspection in pr
 exports[`introspection given: [case3b] genLambdaEndpoint with introspection in prod env (contemp caller) when: [t0] invoked with introspect payload (wrapped/contemp format) then: result matches snapshot 1`] = `
 {
   "error": {
-    "_serde": "LambdaEndpointError::contemp",
+    "_serde": "LambdaEndpointError::contemp@v1",
     "class": "ConstraintError",
     "details": {
       "access": "prod",
@@ -91,7 +97,7 @@ exports[`introspection given: [case4] genLambdaEndpoint without env config (anci
 exports[`introspection given: [case4b] genLambdaEndpoint without env config (contemp caller) when: [t0] invoked with introspect payload (wrapped/contemp format) then: result matches snapshot 1`] = `
 {
   "error": {
-    "_serde": "LambdaEndpointError::contemp",
+    "_serde": "LambdaEndpointError::contemp@v1",
     "class": "ConstraintError",
     "details": {
       "hint": "pass env config to genLambdaEndpoint",
