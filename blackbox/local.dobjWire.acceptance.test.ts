@@ -35,12 +35,12 @@
  */
 import { given, then, useThen, when } from 'test-fns';
 
+import { runLambdaEndpoint } from '../src/index';
 import {
   handler,
   SeaturtleSurfboard,
   surfboardContractSchema,
 } from './__test_assets__/surfboardContractHandler';
-import { invokeHandlerForTest } from '../src/__test_assets__/invokeHandlerForTest';
 
 /** .what = the prop bag this fixture returned before the migration to an instance */
 const surfboardBag = {
@@ -58,9 +58,15 @@ describe('a domain object at the output border reaches the wire as a plain bag',
        *         hands back a PROXY, and a proxy over a primitive string fails deep equality —
        *         jest reads it as an indexed object (`{"0":"{","1":"\"", …}`). so the shared
        *         value must stay an object, and the stringify has to sit at the assertion
+       *
+       * .note = `onReferenced` json-strips its OUTPUT (`asWireStripped`), so the value asserted
+       *         here is the stripped one rather than the instance `invoke` returned. the clamp
+       *         still bites: the strip is `JSON.parse(JSON.stringify(x))`, so it reproduces the
+       *         exact bytes this case measures — a handler whose instance did NOT serialize to
+       *         the bag would move both sides together and the equality would still go red
        */
       const result = useThen('it resolves', async () =>
-        invokeHandlerForTest(handler, { event: { uuid: 'u-1' } }),
+        runLambdaEndpoint.onReferenced({ handler, event: { uuid: 'u-1' } }),
       );
 
       when('[t0] the handler is invoked and its return is serialized', () => {

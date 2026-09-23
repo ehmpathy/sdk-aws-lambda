@@ -13,6 +13,7 @@ exports[`runLambdaEndpoint.onReferenced given: [case2] an endpoint that rejects 
     "_serde": "LambdaEndpointError::contemp@v1",
     "class": "ConstraintError",
     "details": {
+      "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`",
       "issues": [
         {
           "code": "invalid_format",
@@ -30,7 +31,8 @@ exports[`runLambdaEndpoint.onReferenced given: [case2] an endpoint that rejects 
       "message": "Invalid UUID",
       "code": "invalid_format"
     }
-  ]
+  ],
+  "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
 }",
   },
 }
@@ -114,6 +116,7 @@ exports[`runLambdaEndpoint.onReferenced given: [case5] an endpoint whose caller 
     "_serde": "LambdaEndpointError::contemp@v1",
     "class": "ConstraintError",
     "details": {
+      "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`",
       "issues": [
         {
           "code": "invalid_format",
@@ -131,7 +134,8 @@ exports[`runLambdaEndpoint.onReferenced given: [case5] an endpoint whose caller 
       "message": "Invalid UUID",
       "code": "invalid_format"
     }
-  ]
+  ],
+  "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
 }",
   },
 }
@@ -140,6 +144,7 @@ exports[`runLambdaEndpoint.onReferenced given: [case5] an endpoint whose caller 
 exports[`runLambdaEndpoint.onReferenced given: [case5] an endpoint whose caller declares the ancient dialect when: [t1] struct.payload is ancient then: the ancient shape is pinned, beside its contemp peer 1`] = `
 {
   "details": {
+    "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`",
     "issues": [
       {
         "code": "invalid_format",
@@ -157,7 +162,8 @@ exports[`runLambdaEndpoint.onReferenced given: [case5] an endpoint whose caller 
       "message": "Invalid UUID",
       "code": "invalid_format"
     }
-  ]
+  ],
+  "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
 }",
   "errorType": "BadRequestError",
 }
@@ -166,6 +172,7 @@ exports[`runLambdaEndpoint.onReferenced given: [case5] an endpoint whose caller 
 exports[`runLambdaEndpoint.onReferenced given: [case5] an endpoint whose caller declares the ancient dialect when: [t1b] an ancient declaration is paired with a trail then: and the shape is byte-identical to the trail-less one 1`] = `
 {
   "details": {
+    "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`",
     "issues": [
       {
         "code": "invalid_format",
@@ -183,7 +190,8 @@ exports[`runLambdaEndpoint.onReferenced given: [case5] an endpoint whose caller 
       "message": "Invalid UUID",
       "code": "invalid_format"
     }
-  ]
+  ],
+  "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
 }",
   "errorType": "BadRequestError",
 }
@@ -195,6 +203,7 @@ exports[`runLambdaEndpoint.onReferenced given: [case5] an endpoint whose caller 
     "_serde": "LambdaEndpointError::contemp@v1",
     "class": "ConstraintError",
     "details": {
+      "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`",
       "issues": [
         {
           "code": "invalid_format",
@@ -212,7 +221,8 @@ exports[`runLambdaEndpoint.onReferenced given: [case5] an endpoint whose caller 
       "message": "Invalid UUID",
       "code": "invalid_format"
     }
-  ]
+  ],
+  "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
 }",
   },
 }

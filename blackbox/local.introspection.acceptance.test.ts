@@ -889,7 +889,8 @@ describe('introspection', () => {
       const result = useThen(
         'handler returns schema rather than throws',
         async () =>
-          invokeHandlerForTest(handler, {
+          runLambdaEndpoint.onReferenced({
+            handler,
             event: { introspect: 'schema' } as any,
           }),
       ) as unknown as LambdaEndpointSchema;
@@ -973,7 +974,8 @@ describe('introspection', () => {
       const result = useThen(
         'handler returns schema rather than throws',
         async () =>
-          invokeHandlerForTest(handler, {
+          runLambdaEndpoint.onReferenced({
+            handler,
             event: { introspect: 'schema' } as any,
           }),
       ) as unknown as LambdaEndpointSchema;
@@ -1053,7 +1055,8 @@ describe('introspection', () => {
         },
         { env: { access: 'prep' } },
       );
-      const result = (await invokeHandlerForTest(handler, {
+      const result = (await runLambdaEndpoint.onReferenced({
+        handler,
         event: { introspect: 'schema' } as any,
       })) as unknown as LambdaEndpointSchema;
       return result.output;

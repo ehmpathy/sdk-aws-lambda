@@ -48,11 +48,11 @@
  */
 import { given, then, useThen, when } from 'test-fns';
 
+import { asLambdaEndpointOutput, runLambdaEndpoint } from '../src/index';
 import {
   dobjInputContractSchema,
   handler,
 } from './__test_assets__/dobjInputHandler';
-import { invokeHandlerForTest } from '../src/__test_assets__/invokeHandlerForTest';
 
 /** .what = the wire shape a caller sends — plain objects, at every depth */
 const payloadOnWire = {
@@ -74,24 +74,32 @@ const payloadOnWire = {
 describe('a domain object at the input border arrives coerced, or is refused loud', () => {
   given('[case1] the wire shape a caller actually sends', () => {
     const result = useThen('the handler answers', async () =>
-      invokeHandlerForTest(handler, { event: payloadOnWire }),
+      runLambdaEndpoint.onReferenced({ handler, event: payloadOnWire }),
     );
 
     when('[t0] the handler is invoked through its public contract', () => {
       then('the depth-0 position arrived as a real instance', () => {
-        expect(result.arrivedAs.surfer).toEqual('Surfer');
+        expect(asLambdaEndpointOutput(result).arrivedAs.surfer).toEqual(
+          'Surfer',
+        );
       });
 
       then('the nested literal arrived as an instance too', () => {
-        expect(result.arrivedAs.surferHome).toEqual('SurfSpot');
+        expect(asLambdaEndpointOutput(result).arrivedAs.surferHome).toEqual(
+          'SurfSpot',
+        );
       });
 
       then('every element of the array arrived as an instance', () => {
-        expect(result.arrivedAs.crewFirst).toEqual('Surfer');
+        expect(asLambdaEndpointOutput(result).arrivedAs.crewFirst).toEqual(
+          'Surfer',
+        );
       });
 
       then('a dobj under a PLAIN wrapper arrived as an instance', () => {
-        expect(result.arrivedAs.signupSpot).toEqual('SurfSpot');
+        expect(asLambdaEndpointOutput(result).arrivedAs.signupSpot).toEqual(
+          'SurfSpot',
+        );
       });
 
       /**
@@ -101,7 +109,7 @@ describe('a domain object at the input border arrives coerced, or is refused lou
        *    values that were never declared as domain objects
        */
       then('and the plain peer beside it stayed plain', () => {
-        expect(result.arrivedAs.note).toEqual('String');
+        expect(asLambdaEndpointOutput(result).arrivedAs.note).toEqual('String');
       });
 
       /**
@@ -139,9 +147,26 @@ describe('a domain object at the input border arrives coerced, or is refused lou
       }),
     );
 
+    /**
+     * ⚠️ .why the ANCIENT dialect is declared = the three assertions below name the flat
+     *    `{ details, errorMessage, errorType }` envelope, and they are grounded in
+     *    `forAskEndpoint.test.ts [case11][t1]`'s recorded snapshot — which is the ancient shape.
+     *    `onReferenced` frames contemp by default, and a contemp frame answers the NESTED
+     *    `{ error: { class } }` envelope instead, so an undeclared dialect would silently move
+     *    every expected value off the run that grounds them
+     *
+     *  .note = this is not a claim that ancient is the right default for a consumer
+     *    (`rule.require.contemp-contracts-default` settles that, and says contemp). it declares
+     *    WHICH dialect this case drives, so the assertion and its evidence stay one run
+     */
     const result = useThen(
       'the handler answers — it does NOT throw',
-      async () => invokeHandlerForTest(handler, { event: payloadMalformed }),
+      async () =>
+        runLambdaEndpoint.onReferenced({
+          handler,
+          event: payloadMalformed,
+          struct: { payload: 'ancient' },
+        }),
     );
 
     when('[t0] the handler is invoked through its public contract', () => {

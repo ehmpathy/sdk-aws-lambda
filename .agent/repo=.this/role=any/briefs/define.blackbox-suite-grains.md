@@ -37,6 +37,11 @@ it twice with an argument about a convention **nobody had written down** — and
 convention is an assertion, never a thing a reviewer can defer to
 (`rule.require.reread-the-subject-a-repeated-find-names`).
 
+🟡 **that util no longer exists.** `src/__test_assets__/invokeHandlerForTest` was retired at `#41`
+in favor of `runLambdaEndpoint.onReferenced`, which `src/index` **exports**. the misread it drew is
+kept on record because the shape of the misread is what this brief exists to close — and it is
+cheaper to close now, since the invoker is itself a public export.
+
 ## .the boundary, precisely
 
 ```ts
@@ -48,8 +53,10 @@ export const handler = genLambdaEndpoint({ schema, invoke }, { env: { access: 'p
 
 ```ts
 // blackbox/local.dobjWire.acceptance.test.ts
-invokeHandlerForTest(handler, { event: { uuid: 'u-1' } });
-//                   ^ calls handler(event, context) — the signature AWS itself calls
+import { runLambdaEndpoint } from '../src/index';     // <-- ALSO a public export
+
+runLambdaEndpoint.onReferenced({ handler, event: { uuid: 'u-1' } });
+//                ^ calls handler(event, context) — the signature AWS itself calls
 ```
 
 a consumer of this sdk writes **exactly** those two lines: they call `genLambdaEndpoint`, export
@@ -97,7 +104,8 @@ when you add a suite to `blackbox/`, answer both:
 
 ## .the test — for the reviewer
 
-do not read `invokeHandlerForTest(...)` as an internal call. **follow the handler to its origin.**
+do not read `runLambdaEndpoint.onReferenced(...)` as an internal call — it is an `src/index` export.
+then **follow the handler to its origin**, which is the half the invoker cannot settle for you.
 
 - it came from `genLambdaEndpoint` / `forApiGateway` / `genServiceSdk` — an `src/index` export →
   the boundary is crossed, and this brief is the specialization to defer to
@@ -115,9 +123,11 @@ the tells that a `local.*` suite is genuinely mis-graded:
 
 - **this brief moves no severity.** a `local.*` suite that claims a transport property with no twin
   is still a blocker — under this brief, for a sharper reason than the generic rule could give.
-- **`src/__test_assets__/` is a harness, not a subject.** `invokeHandlerForTest` supplies the lambda
-  `Context` a real invocation would; `rule.require.acceptance.blackbox`'s own summary table permits
-  internals in **setup** and **verify**, and this is setup.
+- **`src/__test_assets__/` is a harness, not a subject.** a fixture there supplies what a real
+  invocation would — an `asApiGatewayRequestPayload`, a `createTestContext`;
+  `rule.require.acceptance.blackbox`'s own summary table permits internals in **setup** and
+  **verify**, and that is setup. 🟡 the invoker itself is no longer among them:
+  `runLambdaEndpoint.onReferenced` is a public export, so it needs no such carve-out.
 - **the two dreamed defects are not exceptions.** when they close, this brief's `local.*` row
   changes and the bound narrows. until then the row is honest about what it does not prove.
 
