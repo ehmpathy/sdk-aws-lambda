@@ -101,6 +101,34 @@ export type {
   LambdaEndpointErrorResponseBodyContemp,
 } from './domain.operations/genLambdaEndpoint/middleware/getErrorResponseBody';
 /**
+ * .what = the two ROOT primitives a consumer needs to validate a border in a chain of their own
+ * .why = the advanced-use exports above are middlewares, and the one on the OUTPUT side —
+ *        `genZodOutputValidationMiddleware` — is positionally ambiguous by its own admission
+ *        (F33). so a consumer who wanted to validate output safely had exactly one public tool,
+ *        and it was the foot-gun: the atom was hidden and the risky composite was public
+ *
+ *        these two are unambiguous by construction — each takes the value it validates as an
+ *        argument rather than reads it out of a slot whose type depends on registration order.
+ *        so a consumer builds their own correctly-ordered step and the ambiguity never reaches it
+ *
+ * .note = this does NOT settle F33. that fulcrum asks whether the middleware should keep its
+ *         export at all, and it belongs to the bound that shipped it
+ *         (`.behavior/v2026_08_03.feat-apigateway-wire-response/`). what this changes is that the
+ *         ambiguous export is no longer the ONLY option — which is the half that needed no
+ *         wisher call, because it breaks no consumer (rule.always.fix-forward-under-scouts-honor)
+ *
+ * .note = each metadata type rides along for the same reason `LambdaEndpointErrorResponseBody*`
+ *         does — a consumer who catches the throw must be able to NAME what `.metadata` holds,
+ *         or they reach for an `as`-cast at the public boundary (rule.forbid.as-cast)
+ */
+export { getValidatedInput } from './domain.operations/genLambdaEndpoint/middleware/getValidatedInput';
+export {
+  getValidatedOutput,
+  type OutputValidationErrorMetadata,
+} from './domain.operations/genLambdaEndpoint/middleware/getValidatedOutput';
+export type { ValidationErrorMetadata } from './domain.operations/genLambdaEndpoint/middleware/getValidationError';
+export type { ZodIssueSummary } from './domain.operations/genLambdaEndpoint/middleware/getZodIssuesSummary';
+/**
  * .note = `TranslateLog` is public because `logTranslate` accepts it, and it replaces the
  *         formerly-public `IoLogTranslate`. its three designed peers — `Translate<TShapes>`,
  *         `LambdaEndpointShapes`, `Translator<TFrom, TInto>` — are DELETED rather than

@@ -1,0 +1,31 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`getValidatedOutput given: [case2] a response the schema refuses when: [t0] the response is validated then: and the whole surface a handler author meets is snapped 1`] = `
+"💥 MalfunctionError: output validation failed: balance: Invalid input: expected number, received undefined
+
+{
+  "issues": [
+    {
+      "path": "balance",
+      "message": "Invalid input: expected number, received undefined",
+      "code": "invalid_type"
+    }
+  ],
+  "hint": "the handler returned a value its own declared output schema refuses — correct each path named in \`issues\`. ⚠️ a plain object is NOT the cause: \`X.contract()\` coerces, so a bag whose fields are correct parses here. \`new X({ … })\` is the TYPE-level contract, and it checks these same paths at construction instead"
+}"
+`;
+
+exports[`getValidatedOutput given: [case4] a ROOT-level fault, where zod reports an EMPTY path when: [t0] the response is a whole wrong-shaped value then: and the whole root-fault surface is snapped 1`] = `
+"💥 MalfunctionError: output validation failed: (root): Invalid input: expected string, received object
+
+{
+  "issues": [
+    {
+      "path": "(root)",
+      "message": "Invalid input: expected string, received object",
+      "code": "invalid_type"
+    }
+  ],
+  "hint": "the handler returned a value its own declared output schema refuses — correct each path named in \`issues\`. ⚠️ a plain object is NOT the cause: \`X.contract()\` coerces, so a bag whose fields are correct parses here. \`new X({ … })\` is the TYPE-level contract, and it checks these same paths at construction instead"
+}"
+`;

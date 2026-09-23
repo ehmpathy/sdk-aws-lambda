@@ -63,7 +63,7 @@ class HandlerEscapedError extends Error {
  * .what = writes the wire response for a throw that reached the request listener, and tells the
  *         TWO subjects apart: a handler that escaped its chain, and a defect in the harness
  * .why = a throw cannot leave the listener — it would become an unhandled rejection AND leave
- *        `res` open, so the client hangs until the test times out with no clue why. so the two
+ *        `res` open, so the caller hangs until the test times out with no clue why. so the two
  *        subjects are told apart HERE (rule.forbid.failhide, rule.require.failloud)
  *
  * .note = both branches emit the whole value, stack and all, so a real defect always reaches

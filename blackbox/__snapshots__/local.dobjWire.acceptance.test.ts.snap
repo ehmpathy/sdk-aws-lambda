@@ -1,0 +1,3 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`a domain object at the output border reaches the wire as a plain bag given: [case1] the DEPLOYED fixture, whose invoke now hands back an instance when: [t0] the handler is invoked and its return is serialized then: and the whole payload a caller receives is snapped 1`] = `"{"surfboard":{"uuid":"u-1","brand":"seaturtle","length":{"inches":108}}}"`;

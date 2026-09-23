@@ -2,6 +2,7 @@ import type { DomainObjectPragmaRef } from 'domain-objects';
 
 import { LambdaDomainObjectRefUnbindableError } from '../../../domain.objects/LambdaDomainObjectRefUnbindableError';
 import type { LambdaEndpointSchema } from '../../../domain.objects/LambdaEndpointSchema';
+import { getAllJsonSchemaNodes } from '../getAllJsonSchemaNodes';
 
 /**
  * .what = verify every `x-domain-object-ref` across a service's contracts names a
@@ -20,10 +21,14 @@ export const assertAllDomainObjectRefsBind = (input: {
   const referencedNames = new Set<string>();
 
   // walk each endpoint's input + output schema trees for ref-pragma names
-  for (const schema of Object.values(input.contracts)) {
-    collectRefNames({ node: schema.input, into: referencedNames });
-    collectRefNames({ node: schema.output, into: referencedNames });
-  }
+  for (const schema of Object.values(input.contracts))
+    for (const root of [schema.input, schema.output])
+      for (const node of getAllJsonSchemaNodes({ root })) {
+        const ref = (node as { 'x-domain-object-ref'?: DomainObjectPragmaRef })[
+          'x-domain-object-ref'
+        ];
+        if (ref?.of) referencedNames.add(ref.of);
+      }
 
   // every referenced name must be captured in full; else the ref cannot bind
   const unbound = [...referencedNames]
@@ -34,26 +39,7 @@ export const assertAllDomainObjectRefsBind = (input: {
       `domain-object reference(s) cannot bind: ${unbound.join(', ')} — referenced by key but captured by no endpoint`,
       {
         unbound,
-        hint: 'surface each referenced domain-object in full on some endpoint of this service (return it whole via `.contract`) so the codegen can declare its resource',
+        hint: 'surface each referenced domain-object in full on some endpoint of this service (return it whole via `X.contract()`) so the codegen can declare its resource',
       },
     );
-};
-
-/**
- * .what = recursively read every `x-domain-object-ref` name in a schema tree
- */
-const collectRefNames = (input: { node: unknown; into: Set<string> }): void => {
-  const { node, into } = input;
-  if (typeof node !== 'object' || node === null) return;
-
-  const ref = (node as { 'x-domain-object-ref'?: DomainObjectPragmaRef })[
-    'x-domain-object-ref'
-  ];
-  if (ref?.of) into.add(ref.of);
-
-  for (const value of Object.values(node as Record<string, unknown>)) {
-    if (Array.isArray(value))
-      for (const item of value) collectRefNames({ node: item, into });
-    else collectRefNames({ node: value, into });
-  }
 };

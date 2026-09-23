@@ -53,10 +53,35 @@ export type EndpointOperation<TInput, TOutput> = (
 /**
  * .what = sdk contract type for genLambdaEndpoint input
  * .why = exported for consumer type inference
+ *
+ * ⚠️ .why `TInputBefore` exists = a zod schema is a CODEC, so it holds two faces, and they
+ *         differ the moment a `.transform()` or an `X.contract()` sits in it. `ZodSchema<T>`
+ *         is `ZodType<Output, Input>` with `Input` left at `unknown` — so one parameter named
+ *         only the face the HANDLER sees, and the face the CALLER sends had no name at all
+ *
+ *   - `TInput`        = `inputAfter`  — what `invoke` receives. an `X.contract()` position
+ *                                       yields `WithImmute<Surfer>` here
+ *   - `TInputBefore`  = the WIRE face — what a caller puts on the wire. the same position
+ *                                       yields the plain `Surfer` shape here
+ *
+ *   ⇒ this is the TYPE-side twin of the `{ io: 'input' }` publish repair: both say the wire
+ *     face is what crosses the border, and both were wrong in the same direction before.
+ *     measured — a `[case11]` payload of plain objects failed to compile against a schema
+ *     with three `X.contract()` positions, because the handler's own parameter demanded the
+ *     instance face it is the codec's job to PRODUCE
+ *
+ * .note = it defaults to `TInput`, so every schema with no codec in it binds both to one type
+ *         and no extant consumer sees a change (rule.require.retest-the-model-on-every-family
+ *         — the pair collapses per-consumer here, which that rule names as the legitimate case)
+ *
+ * .note = the names trace to this repo's extant position vocabulary — `inputBefore` /
+ *         `inputAfter`, as `genZodBodyValidationMiddleware`'s F31 `.removal` uses them. the
+ *         rename of `TInput` to `TInputAfter` belongs with F31, which collapses both families'
+ *         validators at their common ancestor (rule.prefer.names-by-position-over-claim)
  */
-export type GenLambdaEndpointInput<TInput, TOutput> = {
+export type GenLambdaEndpointInput<TInput, TOutput, TInputBefore = TInput> = {
   schema: {
-    input: ZodSchema<TInput>;
+    input: ZodSchema<TInput, TInputBefore>;
     output: ZodSchema<TOutput>;
   };
   invoke: EndpointOperation<TInput, TOutput>;
@@ -76,13 +101,15 @@ export type GenLambdaEndpointContext = ContextAwsLambdaServer;
  *        constraint error (a caller fault becomes a response object, never a throw), internal
  *        service error (logs loudly), io logger, trail, input + output validation
  */
-export const genLambdaEndpoint = <TInput, TOutput>(
+export const genLambdaEndpoint = <TInput, TOutput, TInputBefore = TInput>(
   // typed by the EXPORTED contract rather than an inline restatement — the two were hand-synced
   // before, and a rename that reached only one of them would have compiled
-  input: GenLambdaEndpointInput<TInput, TOutput>,
+  input: GenLambdaEndpointInput<TInput, TOutput, TInputBefore>,
   context?: ContextAwsLambdaServer,
 ): middy.MiddyfiedHandler<
-  LambdaHandlerInput<TInput>,
+  // the returned handler takes the WIRE face — that is what a caller puts on the wire, and
+  // what aws hands us. `invoke` takes `TInput`; the codec between them is the whole point
+  LambdaHandlerInput<TInputBefore>,
   TOutput,
   Error,
   Context
@@ -129,13 +156,14 @@ export const genLambdaEndpoint = <TInput, TOutput>(
   ];
 
   /**
-   * .as = assertion needed because middleware transforms LambdaHandlerInput<TInput> to TInput
-   *       before logic runs, but typescript cannot track this transformation through middy
+   * .as = assertion needed because middleware transforms LambdaHandlerInput<TInputBefore> into
+   *       TInput before logic runs — it unwraps the envelope AND runs the codec — but
+   *       typescript cannot track either transformation through middy
    * .removal = if middy gains typed middleware inference, remove cast
    */
   return middy(
     logic as (
-      event: LambdaHandlerInput<TInput>,
+      event: LambdaHandlerInput<TInputBefore>,
       context: Context,
     ) => Promise<TOutput>,
   ).use(middlewares);

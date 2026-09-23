@@ -42,7 +42,7 @@ describe('an api-gateway handler owns its own wire response', () => {
     const handler = forApiGateway({
       schema: {
         input: z.any(),
-        output: asApiGatewayResponseSchema({ body: z.undefined() }),
+        output: asApiGatewayResponseSchema({ body: z.never() }),
       },
       invoke: async ({ event }) => {
         bodyReceived = event;
@@ -96,7 +96,7 @@ describe('an api-gateway handler owns its own wire response', () => {
     const handler = forApiGateway({
       schema: {
         input: z.any(),
-        output: asApiGatewayResponseSchema({ body: z.undefined() }),
+        output: asApiGatewayResponseSchema({ body: z.never() }),
       },
       invoke: async () => ({
         // the enum, never the literal — a public export owes a consumer in its own repo
@@ -328,7 +328,7 @@ describe('an api-gateway handler owns its own wire response', () => {
       });
 
       then('the wire leaks NO internal detail — not the message, not the secret', () => {
-        // every byte a client can read, body AND headers, keys included — a leak hides in a
+        // every byte a caller can read, body AND headers, keys included — a leak hides in a
         // key as easily as in a value, and a body-only check covers one channel of two
         // (rule.require.snapshots-deny-volatile-not-allow-expected)
         const surface = [
@@ -746,7 +746,7 @@ describe('an api-gateway handler owns its own wire response', () => {
     const handler = forApiGateway({
       schema: {
         input: z.any(),
-        output: asApiGatewayResponseSchema({ body: z.undefined() }),
+        output: asApiGatewayResponseSchema({ body: z.never() }),
       },
       invoke: async ({ event }) => {
         eventSeen = event;
@@ -799,7 +799,7 @@ describe('an api-gateway handler owns its own wire response', () => {
     const handler = forApiGateway({
       schema: {
         input: z.any(),
-        output: asApiGatewayResponseSchema({ body: z.undefined() }),
+        output: asApiGatewayResponseSchema({ body: z.never() }),
       },
       invoke: async () => ({
         status: HttpStatusCode.PERMANENT_REDIRECT_308,

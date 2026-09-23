@@ -132,3 +132,118 @@ export class SvcTrophySurfTrophy
 }
 "
 `;
+
+exports[`e2e: deployed codegen refs (real fidelity) given: [case2] a direct consumer introspects the deployed trophy when: [t0] getOneLambdaContract is called against the live getTrophy then: the published payload matches snapshot 1`] = `
+{
+  "input": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "properties": {
+      "uuid": {
+        "type": "string",
+      },
+    },
+    "required": [
+      "uuid",
+    ],
+    "type": "object",
+  },
+  "output": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "properties": {
+      "trophy": {
+        "properties": {
+          "board": {
+            "properties": {
+              "brand": {
+                "type": "string",
+              },
+              "lengthInInches": {
+                "type": "number",
+              },
+            },
+            "required": [
+              "brand",
+              "lengthInInches",
+            ],
+            "type": "object",
+            "x-domain-object-ref": {
+              "by": "unique",
+              "of": "Surfboard",
+            },
+          },
+          "rider": {
+            "properties": {
+              "uuid": {
+                "type": "string",
+              },
+            },
+            "required": [
+              "uuid",
+            ],
+            "type": "object",
+            "x-domain-object-ref": {
+              "by": "primary",
+              "of": "Seaturtle",
+            },
+          },
+          "sponsor": {
+            "anyOf": [
+              {
+                "properties": {
+                  "uuid": {
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "uuid",
+                ],
+                "type": "object",
+              },
+              {
+                "properties": {
+                  "handle": {
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "handle",
+                ],
+                "type": "object",
+              },
+            ],
+            "x-domain-object-ref": {
+              "by": "ref",
+              "of": "Sponsor",
+            },
+          },
+          "uuid": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "uuid",
+          "rider",
+          "board",
+          "sponsor",
+        ],
+        "type": "object",
+        "x-domain-object": {
+          "alias": {
+            "plural": "trophies",
+            "singular": "trophy",
+          },
+          "kind": "entity",
+          "name": "SurfTrophy",
+          "primary": [
+            "uuid",
+          ],
+        },
+      },
+    },
+    "required": [
+      "trophy",
+    ],
+    "type": "object",
+  },
+}
+`;

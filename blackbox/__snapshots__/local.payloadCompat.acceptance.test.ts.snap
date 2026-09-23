@@ -19,7 +19,7 @@ exports[`user journey: api gateway handler given: [case1] developer creates api 
 
 exports[`user journey: api gateway handler given: [case1] developer creates api gateway handler when: [t1] receives invalid request then: it returns 400 with error response 1`] = `
 {
-  "body": "{"errorMessage":"✋ ConstraintError: validation failed: quantity: Too small: expected number to be >0\\n\\n{\\n  \\"issues\\": [\\n    {\\n      \\"path\\": \\"quantity\\",\\n      \\"message\\": \\"Too small: expected number to be >0\\",\\n      \\"code\\": \\"too_small\\"\\n    }\\n  ]\\n}","errorType":"BadRequestError","details":{"issues":[{"path":"quantity","message":"Too small: expected number to be >0","code":"too_small"}]}}",
+  "body": "{"errorMessage":"✋ ConstraintError: validation failed: quantity: Too small: expected number to be >0\\n\\n{\\n  \\"issues\\": [\\n    {\\n      \\"path\\": \\"quantity\\",\\n      \\"message\\": \\"Too small: expected number to be >0\\",\\n      \\"code\\": \\"too_small\\"\\n    }\\n  ],\\n  \\"hint\\": \\"send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`\\"\\n}","errorType":"BadRequestError","details":{"issues":[{"path":"quantity","message":"Too small: expected number to be >0","code":"too_small"}],"hint":"send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"}}",
   "headers": {
     "Content-Type": "application/json",
   },
@@ -39,6 +39,7 @@ exports[`user journey: basic lambda endpoint given: [case1] developer creates a 
 exports[`user journey: basic lambda endpoint given: [case1] developer creates a simple handler when: [t1] handler receives invalid request then: response matches snapshot 1`] = `
 {
   "details": {
+    "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`",
     "issues": [
       {
         "code": "invalid_format",
@@ -66,7 +67,8 @@ exports[`user journey: basic lambda endpoint given: [case1] developer creates a 
       "message": "Invalid option: expected one of \\"read\\"|\\"write\\"|\\"delete\\"",
       "code": "invalid_value"
     }
-  ]
+  ],
+  "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
 }",
   "errorType": "BadRequestError",
 }

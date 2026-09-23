@@ -8,25 +8,9 @@
  * 3. invokes it via askLambdaEndpoint
  * 4. verifies trail propagation from caller to handler
  */
-import * as esbuild from 'esbuild';
-import * as fs from 'fs/promises';
 import * as path from 'path';
 
-import {
-  LambdaClient,
-  waitUntilFunctionActiveV2,
-  waitUntilFunctionUpdatedV2,
-} from '@aws-sdk/client-lambda';
-import {
-  DeclaredAwsIamRole,
-  DeclaredAwsLambda,
-  genDeclaredAwsLambdaCode,
-  getDeclastructAwsProvider,
-  setIamRole,
-  setLambda,
-} from 'declastruct-aws';
-import { RefByUnique } from 'domain-objects';
-import { ConstraintError } from 'helpful-errors';
+import { DeclaredAwsLambda, genDeclaredAwsLambdaCode } from 'declastruct-aws';
 import { genContextLogTrail } from 'sdk-logs';
 import { getError, given, then, useBeforeAll, useThen, when } from 'test-fns';
 import { z } from 'zod';
@@ -42,35 +26,13 @@ const genTestLog = (trail?: { exid: string; stack?: string[] }) =>
   });
 
 import { askLambdaEndpoint, runLambdaEndpoint } from '../src/index';
-
-/**
- * .what = retry async operation with exponential backoff
- * .why = handles AWS eventual consistency (e.g., IAM role propagation)
- */
-const withRetry = async <T>(
-  operation: () => Promise<T>,
-  options: {
-    maxAttempts: number;
-    backoffMs: number;
-    shouldRetry: (error: Error) => boolean;
-  },
-): Promise<T> => {
-  const attempt = async (n: number): Promise<T> => {
-    try {
-      return await operation();
-    } catch (error) {
-      if (!(error instanceof Error)) throw error;
-      if (!options.shouldRetry(error)) throw error;
-      if (n >= options.maxAttempts) throw error;
-      console.log(
-        `attempt ${n}/${options.maxAttempts} failed, retry in ${options.backoffMs * n}ms...`,
-      );
-      await new Promise((r) => setTimeout(r, options.backoffMs * n));
-      return attempt(n + 1);
-    }
-  };
-  return attempt(1);
-};
+import { getOneDeployContext } from './__test_assets__/getOneDeployContext';
+import {
+  LAMBDA_DEPLOY_HOOK_BUDGET_MS,
+  setLambdaLive,
+} from './__test_assets__/setLambdaLive';
+import { setLambdaRole } from './__test_assets__/setLambdaRole';
+import { setLambdaZip } from './__test_assets__/setLambdaZip';
 
 // handler path relative to this test file
 const HANDLER_SOURCE = path.resolve(
@@ -78,12 +40,15 @@ const HANDLER_SOURCE = path.resolve(
   './__test_assets__/seaTurtleHandler.ts',
 );
 const BUILD_DIR = path.resolve(__dirname, '../.build');
-const BUNDLE_PATH = path.join(BUILD_DIR, 'seaTurtleHandler.js');
-const ZIP_PATH = path.join(BUILD_DIR, 'seaTurtleHandler.zip');
+const BUNDLE_NAME = 'seaTurtleHandler';
 
 // resource names
 const ROLE_NAME = 'sdk-aws-lambda-e2e-seaturtle-role';
 const LAMBDA_NAME = 'svc-seaturtle-prod-goSurf';
+const REGION = 'us-east-1';
+
+// this suite deploys one lambda, so its hook needs one deploy budget plus headroom
+jest.setTimeout(LAMBDA_DEPLOY_HOOK_BUDGET_MS);
 
 // schema for type inference (matches handler)
 const goSurfSchema = {
@@ -98,134 +63,52 @@ const goSurfSchema = {
   }),
 };
 
-/**
- * bundle handler to js via esbuild
- */
-const bundleHandler = async (): Promise<void> => {
-  await fs.mkdir(BUILD_DIR, { recursive: true });
-  await esbuild.build({
-    entryPoints: [HANDLER_SOURCE],
-    bundle: true,
-    platform: 'node',
-    target: 'node20',
-    outfile: BUNDLE_PATH,
-    external: ['@aws-sdk/*'],
-  });
-};
-
-/**
- * create zip from bundled js
- */
-const createZip = async (): Promise<void> => {
-  const output = (await import('fs')).createWriteStream(ZIP_PATH);
-  // archiver v8 is ESM and exports ZipArchive class directly
-  const { ZipArchive } = await import('archiver') as unknown as {
-    ZipArchive: new (options: { zlib: { level: number } }) => import('archiver').Archiver;
-  };
-  const archive = new ZipArchive({ zlib: { level: 9 } });
-
-  return new Promise((done, reject) => {
-    output.on('close', () => done());
-    archive.on('error', reject);
-    archive.pipe(output);
-    archive.file(BUNDLE_PATH, { name: 'seaTurtleHandler.js' });
-    archive.finalize();
-  });
-};
-
 describe('e2e: deployed goSurf lambda with trail propagation', () => {
   // deploy infrastructure before all tests
-  const infra = useBeforeAll(async () => {
-    // validate credentials (either profile or access keys)
-    const hasProfile = !!process.env.AWS_PROFILE;
-    const hasKeys =
-      !!process.env.AWS_ACCESS_KEY_ID && !!process.env.AWS_SECRET_ACCESS_KEY;
-    if (!hasProfile && !hasKeys) {
-      throw new ConstraintError('AWS credentials required for e2e test', {
-        hint: 'run: rhx keyrack unlock --owner ehmpath --env prep',
-      });
-    }
-
+  useBeforeAll(async () => {
     // bundle and zip handler
     console.log('bundle handler...');
-    await bundleHandler();
-    await createZip();
-    console.log('handler bundled to:', ZIP_PATH);
-
-    // get declastruct aws provider (resolves credentials)
-    const provider = await getDeclastructAwsProvider({}, { log: console });
-    const context = provider.context;
-
-    // declare iam role
-    const role = DeclaredAwsIamRole.as({
-      name: ROLE_NAME,
-      path: '/',
-      description: 'role for sdk-aws-lambda e2e acceptance test',
-      policies: [
-        {
-          effect: 'Allow',
-          principal: { service: 'lambda.amazonaws.com' },
-          action: 'sts:AssumeRole',
-        },
-      ],
-      tags: { managedBy: 'declastruct', purpose: 'e2e-acceptance-test' },
+    const { zipPath } = await setLambdaZip({
+      handlerSource: HANDLER_SOURCE,
+      buildDir: BUILD_DIR,
+      bundleName: BUNDLE_NAME,
     });
+    console.log('handler bundled to:', zipPath);
 
-    // create/upsert role
+    // credentials, then the shared iam role the lambda below assumes
+    const { context } = await getOneDeployContext();
     console.log('deploy iam role...');
-    const roleDeployed = await setIamRole({ upsert: role }, context);
-    console.log('role deployed:', roleDeployed.name);
+    const { ref: roleRef } = await setLambdaRole(
+      {
+        name: ROLE_NAME,
+        description: 'role for sdk-aws-lambda e2e acceptance test',
+      },
+      context,
+    );
+    console.log('role deployed:', ROLE_NAME);
 
     // declare lambda
     const lambda = DeclaredAwsLambda.as({
       name: LAMBDA_NAME,
       runtime: 'nodejs20.x',
-      handler: 'seaTurtleHandler.handler',
+      handler: `${BUNDLE_NAME}.handler`,
       timeout: 30,
       memory: 128,
-      role: RefByUnique.as<typeof DeclaredAwsIamRole>({ name: ROLE_NAME }),
+      role: roleRef,
       envars: { NODE_ENV: 'test' },
-      code: genDeclaredAwsLambdaCode({ zipUri: ZIP_PATH }),
+      code: genDeclaredAwsLambdaCode({ zipUri: zipPath }),
       tags: { managedBy: 'declastruct', purpose: 'e2e-acceptance-test' },
     });
 
-    // create/upsert lambda (with retry for IAM role propagation)
+    // upsert it and block until the code the next invoke reads is THIS code
     console.log('deploy lambda...');
-    const lambdaDeployed = await withRetry(
-      () => setLambda({ upsert: lambda }, context),
-      {
-        maxAttempts: 5,
-        backoffMs: 3000,
-        shouldRetry: (error) =>
-          error.message.includes('role') ||
-          error.message.includes('AssumeRole') ||
-          error.message.includes('cannot be assumed'),
-      },
-    );
-    console.log('lambda deployed:', lambdaDeployed.name);
+    const lambdaDeployed = await setLambdaLive({ lambda, region: REGION }, context);
+    console.log('lambda live:', lambdaDeployed.name);
 
-    // wait for the lambda to be active (covers the initial-create path)
-    console.log('wait for lambda to be active...');
-    const sdkLambda = new LambdaClient({ region: 'us-east-1' });
-    await waitUntilFunctionActiveV2(
-      { client: sdkLambda, maxWaitTime: 60 },
-      { FunctionName: LAMBDA_NAME },
-    );
-    console.log('lambda active');
-
-    // wait for the code UPDATE to fully propagate before any invoke. on an update
-    // (vs a create), `State` stays `Active` throughout while `LastUpdateStatus` goes
-    // InProgress → Successful; without this wait the invoke can hit the STALE code
-    // (a real flake observed when the fixture's shape changed). waitUntilFunctionUpdatedV2
-    // blocks on `LastUpdateStatus: Successful`, so the invoke always sees new code.
-    console.log('wait for lambda code update to propagate...');
-    await waitUntilFunctionUpdatedV2(
-      { client: sdkLambda, maxWaitTime: 60 },
-      { FunctionName: LAMBDA_NAME },
-    );
-    console.log('lambda updated');
-
-    return { provider, context, roleDeployed, lambdaDeployed };
+    // .note = the two active/updated waiters main had inline here now live INSIDE
+    //         `setLambdaLive`, so the upsert itself blocks until the code the next
+    //         invoke reads is THIS code. one waiter pair, one home, both suites
+    return { lambdaDeployed };
   });
 
   given('[case1] deployed goSurf lambda via declastruct', () => {
@@ -249,7 +132,7 @@ describe('e2e: deployed goSurf lambda with trail propagation', () => {
           },
           {
             ...genTestLog({ exid: trailExid }),
-            env: { access: 'prod', region: 'us-east-1' },
+            env: { access: 'prod', region: REGION },
           },
         ),
       );
@@ -289,7 +172,7 @@ describe('e2e: deployed goSurf lambda with trail propagation', () => {
           },
           {
             ...genTestLog(),
-            env: { access: 'prod', region: 'us-east-1' },
+            env: { access: 'prod', region: REGION },
           },
         ),
       );
@@ -329,7 +212,7 @@ describe('e2e: deployed goSurf lambda with trail propagation', () => {
                 // pin a fixed exid so the error snapshot is stable; a generated
                 // exid would land in the error message + metadata and permadiff
                 ...genTestLog({ exid: 'exid:fixed-t2-validation' }),
-                env: { access: 'prod', region: 'us-east-1' },
+                env: { access: 'prod', region: REGION },
               },
             ),
         );
@@ -384,7 +267,7 @@ describe('e2e: deployed goSurf lambda with trail propagation', () => {
               },
               {
                 ...genTestLog(),
-                env: { access: 'prod', region: 'us-east-1' },
+                env: { access: 'prod', region: REGION },
               },
             ),
         );

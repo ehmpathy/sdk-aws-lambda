@@ -1,0 +1,9 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`genInternalServiceErrorMiddleware given: [case1] a server fault, on an endpoint aws named when: [t0] the middleware handles it then: the log names WHICH endpoint raised it 1`] = `
+{
+  "endpoint": "svc-surf-prep-getWaveReport",
+  "errorMessage": "Void cannot be represented in JSON Schema",
+  "stackTrace": "[masked]",
+}
+`;

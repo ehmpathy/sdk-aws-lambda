@@ -33,8 +33,8 @@ importers:
         specifier: 4.7.0
         version: 4.7.0
       domain-objects:
-        specifier: 0.33.0
-        version: 0.33.0
+        specifier: 0.34.0
+        version: 0.34.0
       helpful-errors:
         specifier: 1.7.3
         version: 1.7.3
@@ -104,7 +104,7 @@ importers:
         version: 0.49.4(declapract@0.13.18)
       declastruct:
         specifier: 1.7.3
-        version: 1.7.3(domain-objects@0.33.0)
+        version: 1.7.3(domain-objects@0.34.0)
       declastruct-aws:
         specifier: ^1.5.2
         version: 1.5.2(@huggingface/transformers@4.0.0)(@tensorflow/tfjs@4.22.0(seedrandom@3.0.5))(zod@4.4.3)
@@ -145,8 +145,8 @@ importers:
         specifier: 0.21.36
         version: 0.21.36(b7e207cf6775ad918a81ac3bb7472ab5)
       rhachet-roles-ehmpathy:
-        specifier: 1.38.12
-        version: 1.38.12(@huggingface/transformers@4.0.0)(@tensorflow/tfjs@4.22.0(seedrandom@3.0.5))
+        specifier: 1.39.0
+        version: 1.39.0(@huggingface/transformers@4.0.0)(@tensorflow/tfjs@4.22.0(seedrandom@3.0.5))
       rhachet-roles-rhachet:
         specifier: 0.1.7
         version: 0.1.7(rhachet@1.47.5(declastruct-aws@1.5.2(@huggingface/transformers@4.0.0)(@tensorflow/tfjs@4.22.0(seedrandom@3.0.5))(zod@4.4.3))(zod@4.4.3))
@@ -3532,6 +3532,10 @@ packages:
     resolution: {integrity: sha512-8LALb1ryycDu7cqHCevHBiphc/anOKcJonaPMvSNFjuJMi70Zd9ojP4lW1TadsFinnGxfUYHl3g9VsOK/PPvhA==}
     engines: {node: '>=8.0.0'}
 
+  domain-objects@0.34.0:
+    resolution: {integrity: sha512-2/57t27EkwPPOI9LyCif/K4JpPxoiQ5nk4jbIfmkYJ5QAGFEy8iUGxBYvoQnw6ZEgGH5T7avimIQoJyGLMGXBg==}
+    engines: {node: '>=8.0.0'}
+
   dot-case@3.0.4:
     resolution: {integrity: sha512-Kv5nKlh6yRrdrGvxeJ2e5y2eRUpkUosIW4A2AS38zwSz27zu7ufDwQPi5Jhs3XAlGNetl3bmnGhQsMtkKJnj3w==}
 
@@ -5024,8 +5028,8 @@ packages:
       rhachet-brains-xai: '>=0.3.3'
       rhachet-roles-bhrain: '>=0.30.4'
 
-  rhachet-roles-ehmpathy@1.38.12:
-    resolution: {integrity: sha512-sxQUTVTxPRP5ePMCGKhx1wGGomqzHarRFakNf45p6CzhOhpFXt7Ztg7+/d0hb73JmY35GjmGJH51dtin4uPXJA==}
+  rhachet-roles-ehmpathy@1.39.0:
+    resolution: {integrity: sha512-wX3bVNzrvctCOSh7CVAGRGOV54YNI82UCBiJYJw97MkFi8qbGmRBIMb5BMssL6lWgcfzaQwSUhALjkshg36CoA==}
     engines: {node: '>=8.0.0'}
 
   rhachet-roles-rhachet@0.1.7:
@@ -10875,12 +10879,12 @@ snapshots:
       - declastruct-aws
       - zod
 
-  declastruct@1.7.3(domain-objects@0.33.0):
+  declastruct@1.7.3(domain-objects@0.34.0):
     dependencies:
       bottleneck: 2.19.5
       chalk: 5.4.1
       commander: 14.0.2
-      domain-objects: 0.33.0
+      domain-objects: 0.34.0
       helpful-errors: 1.5.3
       jest-diff: 30.0.2
       rhachet-artifact-git: 1.1.3
@@ -11024,7 +11028,7 @@ snapshots:
       helpful-errors: 1.5.3
       joi: 17.4.0
       rhachet: 1.47.5(declastruct-aws@1.5.2(@huggingface/transformers@4.0.0)(@tensorflow/tfjs@4.22.0(seedrandom@3.0.5))(zod@4.4.3))(zod@4.3.4)
-      rhachet-roles-ehmpathy: 1.38.12(@huggingface/transformers@4.0.0)(@tensorflow/tfjs@4.22.0(seedrandom@3.0.5))
+      rhachet-roles-ehmpathy: 1.39.0(@huggingface/transformers@4.0.0)(@tensorflow/tfjs@4.22.0(seedrandom@3.0.5))
       type-fns: 1.21.0
       uuid-fns: 1.1.3
     transitivePeerDependencies:
@@ -11041,7 +11045,7 @@ snapshots:
       helpful-errors: 1.5.3
       joi: 17.4.0
       rhachet: 1.47.5(declastruct-aws@1.5.2(@huggingface/transformers@4.0.0)(@tensorflow/tfjs@4.22.0(seedrandom@3.0.5))(zod@4.4.3))(zod@4.4.3)
-      rhachet-roles-ehmpathy: 1.38.12(@huggingface/transformers@4.0.0)(@tensorflow/tfjs@4.22.0(seedrandom@3.0.5))
+      rhachet-roles-ehmpathy: 1.39.0(@huggingface/transformers@4.0.0)(@tensorflow/tfjs@4.22.0(seedrandom@3.0.5))
       type-fns: 1.21.0
       uuid-fns: 1.1.3
     transitivePeerDependencies:
@@ -11059,6 +11063,13 @@ snapshots:
       uuid-fns: 1.1.3
 
   domain-objects@0.33.0:
+    dependencies:
+      change-case: 4.1.2
+      helpful-errors: 1.7.3
+      type-fns: 1.21.2
+      uuid-fns: 1.1.3
+
+  domain-objects@0.34.0:
     dependencies:
       change-case: 4.1.2
       helpful-errors: 1.7.3
@@ -12851,7 +12862,7 @@ snapshots:
       - aws-crt
       - declastruct-aws
 
-  rhachet-roles-ehmpathy@1.38.12(@huggingface/transformers@4.0.0)(@tensorflow/tfjs@4.22.0(seedrandom@3.0.5)):
+  rhachet-roles-ehmpathy@1.39.0(@huggingface/transformers@4.0.0)(@tensorflow/tfjs@4.22.0(seedrandom@3.0.5)):
     dependencies:
       '@atjsh/llmlingua-2': 2.0.3(@huggingface/transformers@4.0.0)(@tensorflow/tfjs@4.22.0(seedrandom@3.0.5))(js-tiktoken@1.0.21)
       '@ehmpathy/as-command': 1.0.5

@@ -180,6 +180,45 @@ and it costs more than no block at all: it tells the next reader their check is 
    ── axis 2: `before`            — FORWARD array order ──   [rule + producers]
 ```
 
+## ⚠️ .the third trap — a sweep bounded to the PLACE YOUR CURSOR SAT
+
+the two traps above narrow the **pattern** and the **dimension**. this one narrows the **location**,
+and it is the cheapest of the three to fall into, because the sweep never feels like a sweep at all:
+you are not on a hunt, you are mid-correction of one file, and you fix the claim where your cursor
+already sits.
+
+> **a falsified claim is a defect class whose corpus is every line that carries it — and that
+> corpus includes the lines inside the very file you correct.**
+
+measured on the stone that produced this brief: one dream asserted *"rung 3 mints a test genre with
+no precedent."* the claim was false. I corrected it in **two** places — a `⚠️` header at the top and
+the `CLEAN?` grade cell — marked the dream ✅ **CLOSED**, and left a third line, 16 lines below the
+header, that still read *"the one this repo has **no pavement for**."*
+
+⇒ the close-out was **more** dangerous than no close-out. a reader who scrolled past the header met
+a live false claim inside a document stamped resolved, so the ✅ vouched for the error.
+
+⚠️ **and this is `rule.require.deferred-defect-records-lead-with-status` run in reverse.** that rule
+guards the case where a repair is described well and its unapplied status is buried. this guards the
+mirror: the **status** is corrected prominently and the **prose it falsifies** is left live. both
+produce one outcome — a record whose headline and whose body disagree.
+
+### .the test
+
+after you strike a claim, ask: **"how many lines in this repo carry this claim, and did I read all
+of them?"**
+
+- grep the claim's **subject** across the whole repo, never only the file you opened
+- inside that file, grep it again — a long document states a claim it leans on more than once
+- a ✅ / RESOLVED / CLOSED stamp is a **promise the body is clean**. do not write it until it is
+
+### .the tell, for a reviewer
+
+a correction header near the top of a document, and the document runs more than a screen. read the
+body for the struck claim before you accept the stamp. the correction's own quality is the
+camouflage: a well-argued `⚠️` header reads as a thorough pass, and a thorough pass is exactly what
+stops anyone from a re-read of the pages beneath it.
+
 ## .the test — for the reviewer
 
 for each fix in the diff, read its `.why` and ask: **"is this cause specific to this line, or general
@@ -260,6 +299,10 @@ measured: one wire test with a cors-configured handler on BOTH paths. the succes
   auditable and the class is still open — measured 4 times on one branch)
 - an invariant block that documents **one axis** of a multi-axis rule = **blocker** (a false
   completeness signal costs more than no block at all: it tells the next reader their check is done)
+- a claim struck in a document's **header** and left live in its **body** = **blocker** (the ✅ then
+  vouches for the error; measured on this stone, 16 lines apart in one file)
+- a ✅ / RESOLVED / CLOSED stamp written before the body was grepped for the struck claim =
+  **blocker** (the stamp is a promise about the body, so an ungrepped body makes it a false one)
 - a sweep recorded as *"I grepped X and fixed the hits"* rather than as a family count with a stated
   membership rule = **nitpick** (it records the pattern, so no reviewer can audit the class)
 - a fix in a list/array/registry where the peer entries were not checked = **blocker**

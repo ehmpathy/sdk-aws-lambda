@@ -9,58 +9,32 @@
  * 2. deploys it to AWS via declastruct-aws imperative operations
  * 3. introspects it via getOneLambdaContract and getAllLambdaContracts
  * 4. verifies the returned json schemas match the declared zod schemas
+ *
+ * .note = the handler here declares a PLAIN zod schema, so no `x-domain-object` /
+ *         `x-domain-object-ref` marker appears in its payload. that is the shape
+ *         under test, never a gap: the deployed DOBJ payload is pinned byte-exact at
+ *         `deployed.codegen.refs.acceptance.test.ts` `[case2]`, against the live
+ *         `svc-trophy-prep-getTrophy` — the one deployed endpoint that carries every
+ *         marker shape at once. it lives there because that suite's hook already
+ *         deploys the dobj lambdas, so a fifth deploy here would buy no coverage and
+ *         would charge the cold budget `F34` measured as insufficient
  */
-import * as esbuild from 'esbuild';
-import * as fs from 'fs/promises';
 import * as path from 'path';
 
-import {
-  LambdaClient,
-  waitUntilFunctionActiveV2,
-  waitUntilFunctionUpdatedV2,
-} from '@aws-sdk/client-lambda';
-import {
-  DeclaredAwsIamRole,
-  DeclaredAwsLambda,
-  genDeclaredAwsLambdaCode,
-  getDeclastructAwsProvider,
-  setIamRole,
-  setLambda,
-} from 'declastruct-aws';
-import { RefByUnique } from 'domain-objects';
-import { ConstraintError } from 'helpful-errors';
+import { DeclaredAwsLambda, genDeclaredAwsLambdaCode } from 'declastruct-aws';
 import { genContextLogTrail } from 'sdk-logs';
 import { given, then, useBeforeAll, useThen, when } from 'test-fns';
 
 import { getAllLambdaContracts, getOneLambdaContract } from '../src/index';
+import { getOneDeployContext } from './__test_assets__/getOneDeployContext';
+import {
+  LAMBDA_DEPLOY_HOOK_BUDGET_MS,
+  setLambdaLive,
+} from './__test_assets__/setLambdaLive';
+import { setLambdaRole } from './__test_assets__/setLambdaRole';
+import { setLambdaZip } from './__test_assets__/setLambdaZip';
 
 const { log } = genContextLogTrail({ trail: null, env: null });
-
-/**
- * .what = retry async operation with exponential backoff
- * .why = handles AWS eventual consistency (e.g., IAM role propagation)
- */
-const withRetry = async <T>(
-  operation: () => Promise<T>,
-  options: {
-    maxAttempts: number;
-    backoffMs: number;
-    shouldRetry: (error: Error) => boolean;
-  },
-): Promise<T> => {
-  const attempt = async (n: number): Promise<T> => {
-    try {
-      return await operation();
-    } catch (error) {
-      if (!(error instanceof Error)) throw error;
-      if (!options.shouldRetry(error)) throw error;
-      if (n >= options.maxAttempts) throw error;
-      await new Promise((r) => setTimeout(r, options.backoffMs * n));
-      return attempt(n + 1);
-    }
-  };
-  return attempt(1);
-};
 
 // handler path relative to this test file
 const HANDLER_SOURCE = path.resolve(
@@ -68,140 +42,59 @@ const HANDLER_SOURCE = path.resolve(
   './__test_assets__/shellContractHandler.ts',
 );
 const BUILD_DIR = path.resolve(__dirname, '../.build');
-const BUNDLE_PATH = path.join(BUILD_DIR, 'shellContractHandler.js');
-const ZIP_PATH = path.join(BUILD_DIR, 'shellContractHandler.zip');
+const BUNDLE_NAME = 'shellContractHandler';
 
 // resource names: function name follows {service}-{access}-{function}
 const ROLE_NAME = 'sdk-aws-lambda-e2e-seaturtle-role';
 const SERVICE = 'svc-seaturtle';
 const FUNCTION = 'checkContract';
 const LAMBDA_NAME = `${SERVICE}-prep-${FUNCTION}`;
+const REGION = 'us-east-1';
 
-/**
- * bundle handler to js via esbuild
- */
-const bundleHandler = async (): Promise<void> => {
-  await fs.mkdir(BUILD_DIR, { recursive: true });
-  await esbuild.build({
-    entryPoints: [HANDLER_SOURCE],
-    bundle: true,
-    platform: 'node',
-    target: 'node20',
-    outfile: BUNDLE_PATH,
-    external: ['@aws-sdk/*'],
-  });
-};
-
-/**
- * create zip from bundled js
- */
-const createZip = async (): Promise<void> => {
-  const output = (await import('fs')).createWriteStream(ZIP_PATH);
-  // archiver v8 is ESM and exports ZipArchive class directly
-  const { ZipArchive } = (await import('archiver')) as unknown as {
-    ZipArchive: new (options: {
-      zlib: { level: number };
-    }) => import('archiver').Archiver;
-  };
-  const archive = new ZipArchive({ zlib: { level: 9 } });
-
-  return new Promise((done, reject) => {
-    output.on('close', () => done());
-    archive.on('error', reject);
-    archive.pipe(output);
-    archive.file(BUNDLE_PATH, { name: 'shellContractHandler.js' });
-    archive.finalize();
-  });
-};
+// this suite deploys ONE lambda, so its hook takes the whole-hook budget — the preflight
+// (bundle + creds + iam role) plus the one `setLambdaLive` that follows it
+jest.setTimeout(LAMBDA_DEPLOY_HOOK_BUDGET_MS);
 
 describe('e2e: deployed introspectable lambda', () => {
   // deploy infrastructure before all tests
   useBeforeAll(async () => {
-    // validate credentials (either profile or access keys)
-    const hasProfile = !!process.env.AWS_PROFILE;
-    const hasKeys =
-      !!process.env.AWS_ACCESS_KEY_ID && !!process.env.AWS_SECRET_ACCESS_KEY;
-    if (!hasProfile && !hasKeys) {
-      throw new ConstraintError('AWS credentials required for e2e test', {
-        hint: 'run: rhx keyrack unlock --owner ehmpath --env prep',
-      });
-    }
-
     // bundle and zip handler
-    await bundleHandler();
-    await createZip();
-
-    // get declastruct aws provider (sources credentials)
-    const provider = await getDeclastructAwsProvider({}, { log: console });
-    const context = provider.context;
-
-    // declare iam role (shared with the goSurf e2e lambda)
-    const role = DeclaredAwsIamRole.as({
-      name: ROLE_NAME,
-      path: '/',
-      description: 'role for sdk-aws-lambda e2e acceptance test',
-      policies: [
-        {
-          effect: 'Allow',
-          principal: { service: 'lambda.amazonaws.com' },
-          action: 'sts:AssumeRole',
-        },
-      ],
-      tags: { managedBy: 'declastruct', purpose: 'e2e-acceptance-test' },
+    const { zipPath } = await setLambdaZip({
+      handlerSource: HANDLER_SOURCE,
+      buildDir: BUILD_DIR,
+      bundleName: BUNDLE_NAME,
     });
-    await setIamRole({ upsert: role }, context);
+
+    // credentials, then the iam role (shared with the goSurf e2e lambda)
+    const { context } = await getOneDeployContext();
+    const { ref: roleRef } = await setLambdaRole(
+      {
+        name: ROLE_NAME,
+        description: 'role for sdk-aws-lambda e2e acceptance test',
+      },
+      context,
+    );
 
     // declare lambda (introspection-enabled: handler uses env.access = prep)
     const lambda = DeclaredAwsLambda.as({
       name: LAMBDA_NAME,
       runtime: 'nodejs20.x',
-      handler: 'shellContractHandler.handler',
+      handler: `${BUNDLE_NAME}.handler`,
       timeout: 30,
       memory: 128,
-      role: RefByUnique.as<typeof DeclaredAwsIamRole>({ name: ROLE_NAME }),
+      role: roleRef,
       envars: { NODE_ENV: 'test' },
-      code: genDeclaredAwsLambdaCode({ zipUri: ZIP_PATH }),
+      code: genDeclaredAwsLambdaCode({ zipUri: zipPath }),
       tags: { managedBy: 'declastruct', purpose: 'e2e-acceptance-test' },
     });
 
-    // create/upsert lambda (with retry for IAM role propagation, and for a
-    // ResourceConflictException raised when another deployed.*.acceptance.test.ts
-    // file's own setLambda call updates this account's lambda at the same moment)
-    const lambdaDeployed = await withRetry(
-      () => setLambda({ upsert: lambda }, context),
-      {
-        maxAttempts: 5,
-        backoffMs: 3000,
-        shouldRetry: (error) =>
-          error.message.includes('role') ||
-          error.message.includes('AssumeRole') ||
-          error.message.includes('cannot be assumed') ||
-          error.name === 'ResourceConflictException' ||
-          error.message.includes('ResourceConflictException') ||
-          error.message.includes('update is in progress'),
-      },
-    );
-
-    // wait for the lambda to be active (covers the initial-create path)
-    const sdkLambda = new LambdaClient({ region: 'us-east-1' });
-    await waitUntilFunctionActiveV2(
-      { client: sdkLambda, maxWaitTime: 60 },
-      { FunctionName: LAMBDA_NAME },
-    );
-    await waitUntilFunctionUpdatedV2(
-      { client: sdkLambda, maxWaitTime: 60 },
-      { FunctionName: LAMBDA_NAME },
-    );
-
-    // wait for the code UPDATE to fully propagate before the introspection call. on
-    // an update (vs a create), `State` stays `Active` throughout while
-    // `LastUpdateStatus` goes InProgress → Successful; without this wait the
-    // introspection can hit the STALE code + capture the prior schema (a real flake
-    // observed when the fixture's shape changed). waitUntilFunctionUpdatedV2 blocks
-    // on `LastUpdateStatus: Successful`, so the introspection always sees new code.
-    await waitUntilFunctionUpdatedV2(
-      { client: sdkLambda, maxWaitTime: 60 },
-      { FunctionName: LAMBDA_NAME },
+    // upsert it and block until the code the introspection will read is THIS code.
+    // .note = the retry-for-role-propagation and the active/updated waiter pair main
+    //         had inline here now live INSIDE `setLambdaLive`, so every deployed suite
+    //         gets the same guarantee from one home
+    const lambdaDeployed = await setLambdaLive(
+      { lambda, region: REGION },
+      context,
     );
 
     return { lambdaDeployed };
@@ -212,7 +105,7 @@ describe('e2e: deployed introspectable lambda', () => {
       const schema = useThen('returns the endpoint schema', async () =>
         getOneLambdaContract(
           { which: { service: SERVICE, function: FUNCTION } },
-          { log, env: { access: 'prep', region: 'us-east-1' } },
+          { log, env: { access: 'prep', region: REGION } },
         ),
       );
 
@@ -247,7 +140,7 @@ describe('e2e: deployed introspectable lambda', () => {
       const contracts = useThen('returns a record of contracts', async () =>
         getAllLambdaContracts(
           { which: { service: SERVICE } },
-          { log, env: { access: 'prep', region: 'us-east-1' } },
+          { log, env: { access: 'prep', region: REGION } },
         ),
       );
 

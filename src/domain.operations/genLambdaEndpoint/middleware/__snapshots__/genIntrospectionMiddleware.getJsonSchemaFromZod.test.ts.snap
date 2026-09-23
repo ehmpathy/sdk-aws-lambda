@@ -1,0 +1,132 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`getJsonSchemaFromZod given: [case8] a schema this zod install did NOT build — the two-copy hazard when: [t0] the marker is absent entirely then: it fails LOUD, and the refusal names its own mechanism 1`] = `
+{
+  "message": "💥 MalfunctionError: introspection cannot render this schema: it carries no recognizable zod marker
+
+{
+  "hint": "the value handed to \`getJsonSchemaFromZod\` does not carry this zod install's marker — most often two copies of \`zod\` in one \`node_modules\`, so a schema built by one is rendered by the other. run \`npm ls zod\` (or \`pnpm why zod\`) and dedupe to a single version"
+}",
+  "name": "MalfunctionError",
+}
+`;
+
+exports[`getJsonSchemaFromZod given: [case8] a schema this zod install did NOT build — the two-copy hazard when: [t1] the marker is present but hollow then: it fails LOUD, and the refusal names its own mechanism 1`] = `
+{
+  "message": "💥 MalfunctionError: introspection cannot render this schema: it carries no recognizable zod marker
+
+{
+  "hint": "the value handed to \`getJsonSchemaFromZod\` does not carry this zod install's marker — most often two copies of \`zod\` in one \`node_modules\`, so a schema built by one is rendered by the other. run \`npm ls zod\` (or \`pnpm why zod\`) and dedupe to a single version"
+}",
+  "name": "MalfunctionError",
+}
+`;
+
+exports[`getJsonSchemaFromZod given: [case8] a schema this zod install did NOT build — the two-copy hazard when: [t2] the marker names a type this copy cannot place then: it fails LOUD, and the refusal names its own mechanism 1`] = `
+{
+  "message": "[toJSONSchema]: Non-representable type encountered: aTypeFromAnotherCopy",
+  "name": "Error",
+}
+`;
+
+exports[`getJsonSchemaFromZod given: [case10] a NATIVE schema this zod cannot render — the guard is not over-broad when: [t0] a \`z.custom()\` — marker present, render refused then: the MARKER guard passes it through, and the refusal names the type 1`] = `
+{
+  "message": "💥 MalfunctionError: introspection cannot render this schema: a 'custom' position has no json representation
+
+{
+  "type": "custom",
+  "hint": "replace the \`custom\` position with a json-representable one (for a value that is genuinely open, \`z.unknown()\`; for one that is absent, \`z.undefined()\`)"
+}",
+  "name": "MalfunctionError",
+}
+`;
+
+exports[`getJsonSchemaFromZod given: [case10] a NATIVE schema this zod cannot render — the guard is not over-broad when: [t2] the \`z.lazy()\` escape the readme documents then: and the door RENDERS it — the escape stays usable 1`] = `
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {
+    "name": {
+      "type": "string",
+    },
+    "uuid": {
+      "type": "string",
+    },
+  },
+  "required": [
+    "uuid",
+    "name",
+  ],
+  "type": "object",
+  "x-domain-object": {
+    "kind": "entity",
+    "name": "Surfer",
+    "primary": [
+      "uuid",
+    ],
+  },
+}
+`;
+
+exports[`getJsonSchemaFromZod given: [case11] a position that carries NO value when: [t2] an absent position at a KEY then: the key renders \`{ not: {} }\` and STAYS in \`required\` 1`] = `
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {
+    "a": {
+      "type": "string",
+    },
+    "b": {
+      "not": {},
+    },
+  },
+  "required": [
+    "a",
+    "b",
+  ],
+  "type": "object",
+}
+`;
+
+exports[`getJsonSchemaFromZod given: [case11] a position that carries NO value when: [t3] the four shapes an author reaches for, side by side then: each publishes, and the pair of senses stays apart 1`] = `
+{
+  "z.never()": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "not": {},
+  },
+  "z.null()": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "null",
+  },
+  "z.undefined()": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "not": {},
+  },
+  "z.void()": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "not": {},
+  },
+}
+`;
+
+exports[`getJsonSchemaFromZod given: [case11] a position that carries NO value when: [t6] a position the blanket flag would have SILENCED then: \`z.date()\` still fails loud, and the refusal names the type 1`] = `
+{
+  "message": "💥 MalfunctionError: introspection cannot render this schema: a 'date' position has no json representation
+
+{
+  "type": "date",
+  "hint": "replace the \`date\` position with a json-representable one (for a value that is genuinely open, \`z.unknown()\`; for one that is absent, \`z.undefined()\`)"
+}",
+  "name": "MalfunctionError",
+}
+`;
+
+exports[`getJsonSchemaFromZod given: [case11] a position that carries NO value when: [t9] an un-renderable position under a wrapper then: the refusal names the INNER type, never the wrapper 1`] = `
+{
+  "message": "💥 MalfunctionError: introspection cannot render this schema: a 'date' position has no json representation
+
+{
+  "type": "date",
+  "hint": "replace the \`date\` position with a json-representable one (for a value that is genuinely open, \`z.unknown()\`; for one that is absent, \`z.undefined()\`)"
+}",
+  "name": "MalfunctionError",
+}
+`;

@@ -4,8 +4,27 @@ extends:
   - .agent/repo=bhuild/role=dispatcher/keyrack.yml
   - .agent/repo=ehmpathy/role=mechanic/keyrack.yml
 env.prod: null
+
+# .what = AWS_PROFILE is required, and WAIVED when a static key is already exported
+# .why = the jest env files source this rack in `strict` mode, so an ungranted AWS_PROFILE
+#        refuses the whole suite at boot. that is correct when there is no credential at all,
+#        and a FALSE refusal when a human deliberately exported one — a workflow keyrack
+#        supports and this manifest simply had not declared
+#   .the mechanism = `decideIsKeyStrictlyRequired` waives an ABSENT key whose
+#                    `is-optional-if-has` peer is set in `process.env`, and never waives a
+#                    LOCKED one. so an expired session still refuses with `keyrack unlock` as
+#                    its fix (the paved path), while an ungranted profile beside a deliberate
+#                    static key proceeds
+#   .why this over a branch in the jest env = the waiver is PER KEY and declarative, so it
+#        states the policy where credential policy lives. a boolean in a setup file could only
+#        ask "is any credential present", which disarms the check for every key at once
+#   .the wrong-account hazard is closed elsewhere = `AWS_EC2_METADATA_DISABLED` refuses the
+#        silent fall-through to an instance role, and the `requiresAwsAuth` guard still refuses
+#        a run with NO credential. so this waiver widens neither
 env.prep:
-  - AWS_PROFILE
+  - key: AWS_PROFILE
+    is-optional-if-has: AWS_ACCESS_KEY_ID
 env.test: null
 env.all:
-  - AWS_PROFILE
+  - key: AWS_PROFILE
+    is-optional-if-has: AWS_ACCESS_KEY_ID

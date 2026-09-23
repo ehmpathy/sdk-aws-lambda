@@ -1,0 +1,36 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`getValidatedInput given: [case2] a value its schema rejects when: [t0] SEVERAL fields at fault at once then: the whole surface a caller meets is snapped 1`] = `
+"✋ ConstraintError: validation failed: name: Invalid input: expected string, received number; age: Invalid input: expected number, received string
+
+{
+  "issues": [
+    {
+      "path": "name",
+      "message": "Invalid input: expected string, received number",
+      "code": "invalid_type"
+    },
+    {
+      "path": "age",
+      "message": "Invalid input: expected number, received string",
+      "code": "invalid_type"
+    }
+  ],
+  "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
+}"
+`;
+
+exports[`getValidatedInput given: [case2] a value its schema rejects when: [t0] one field at fault then: the whole surface a caller meets is snapped 1`] = `
+"✋ ConstraintError: validation failed: name: Invalid input: expected string, received number
+
+{
+  "issues": [
+    {
+      "path": "name",
+      "message": "Invalid input: expected string, received number",
+      "code": "invalid_type"
+    }
+  ],
+  "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
+}"
+`;

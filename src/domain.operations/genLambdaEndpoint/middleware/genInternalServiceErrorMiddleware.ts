@@ -24,7 +24,7 @@ export const genInternalServiceErrorMiddleware = (opts: {
    *               a response and a hung request is worse than a 500
    *   false    -> DISARMED; rethrow, so the invocation FAILS, cloudwatch records the error, and
    *               the caller may retry — which is the right contract for a server fault when no
-   *               http client waits on it
+   *               http caller waits on it
    *
    * .note = the off-state is `false`, never absent. an absent field would disable a guarantee by
    *         omission, so a caller who forgot it would be indistinguishable from one who chose it
@@ -49,9 +49,28 @@ export const genInternalServiceErrorMiddleware = (opts: {
     // read the sdk-managed context once — trail may not have run yet
     const { log } = asContextTrailed({ context: request.context });
 
-    // log the error via context.log or fallback to console
+    /**
+     * .what = log the fault, and name WHICH endpoint raised it
+     * .why = the wire body a caller meets is deliberately generic — no internal detail, no
+     *        secret — so cloudwatch is the only surface that can carry a diagnosis. it carried
+     *        the message and the stack and never the endpoint, which is the half that matters
+     *        most where the fault is service-wide: one bad schema position 500s
+     *        `getAllLambdaContracts` for every endpoint beside it, and the log said WHAT broke
+     *        without WHERE
+     *
+     * .note = `functionName` is aws's own field on the lambda `Context`, never one this sdk
+     *         writes — so it is read straight off `request.context` rather than through
+     *         `asContextTrailed`, which exists for the sdk-added fields only
+     *
+     * ⚠️ .why the WIRE body is still bare = whether a 500 may name an internal schema position
+     *         at all is a disclosure call, and it belongs to the wisher — tracked as `F02`.
+     *         a log line crosses no trust boundary, so THIS half needed no such call
+     */
     const logError = log?.error ?? console.error;
     logError('handler.error', {
+      endpoint:
+        (request.context as { functionName?: string } | undefined)
+          ?.functionName ?? null,
       errorMessage: error.message,
       stackTrace: error.stack,
     });

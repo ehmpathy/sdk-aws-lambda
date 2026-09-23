@@ -3,6 +3,7 @@
  * .why = verifies end-to-end introspection behavior via public contract
  */
 import type { Context } from 'aws-lambda';
+import { DomainEntity } from 'domain-objects';
 import { genContextLogTrail } from 'sdk-logs';
 import { given, then, useThen, when } from 'test-fns';
 import { z } from 'zod';
@@ -831,6 +832,260 @@ describe('introspection', () => {
 
       then('error names the offending function', () => {
         expect(caught.message).toContain('svc-user-prep-prodOnly');
+      });
+    });
+  });
+
+  /**
+   * .what = the CROSSED clamp: a schema that carries BOTH a domain-object position and a
+   *         `.default()` field, introspected end-to-end
+   * .why = each half shipped and was tested alone, so the pair never crossed and the defect
+   *        was invisible. `X.contract()` coerces, a coerce IS a `.transform()`, and zod's
+   *        default `io: 'output'` throws `Transforms cannot be represented in JSON Schema` —
+   *        which takes down `getAllLambdaContracts` for the WHOLE service, not one handler
+   *
+   * .clamp = goes RED under a bare `z.toJSONSchema(schema)` (the pre-repair renderer) and
+   *          GREEN under `{ io: 'input' }`. verified by revert, not by inspection
+   */
+  given('[case13] introspection of a domain-object schema with a defaulted field', () => {
+    class Surfer extends DomainEntity<Surfer> implements Surfer {
+      public static primary = ['uuid'] as const;
+      public static schema = z.object({
+        uuid: z.string(),
+        name: z.string(),
+      });
+    }
+
+    const handler = genLambdaEndpoint(
+      {
+        schema: {
+          input: z.object({
+            surfer: Surfer.contract(), // <-- coerces, so it renders as a transform
+            board: z.string().default('foamboard'), // <-- differs across the two io faces
+          }),
+          /**
+           * .note = ⚠️ `z.void()` sat here and it CRASHED this case — zod refuses it at BOTH
+           *         io faces (`Void cannot be represented in JSON Schema`), so any endpoint
+           *         that introspects cannot declare one. measured across void/undefined/
+           *         unknown/never/null/any, and the throw is io-INDEPENDENT, so it predates
+           *         the `{ io: 'input' }` repair rather than follows from it.
+           *         zod clamps this in its OWN suite, so it is a stated contract rather
+           *         than an accident of a version:
+           *         `zod/src/v4/classic/tests/to-json-schema.test.ts:304` reads
+           *         `expect(() => z.toJSONSchema(z.void())).toThrow(...)`
+           * .note = `z.null()` is the input-only idiom that PUBLISHES — it renders
+           *         `{"type":"null"}`, an honest claim a cross-service caller can read.
+           *         `z.unknown()` renders `{}`, which is byte-identical to `z.any()`, so it
+           *         states no more than the rubber-stamp the wish complained of
+           */
+          output: z.null(),
+        },
+        invoke: async () => null,
+      },
+      { env: { access: 'prep' } },
+    );
+
+    when('[t0] invoked with introspect payload', () => {
+      const result = useThen(
+        'handler returns schema rather than throws',
+        async () =>
+          invokeHandlerForTest(handler, {
+            event: { introspect: 'schema' } as any,
+          }),
+      ) as unknown as LambdaEndpointSchema;
+
+      then('the dobj position publishes its WIRE shape', () => {
+        const surfer = (result.input as any).properties.surfer;
+        expect(surfer.properties.uuid).toBeDefined();
+        expect(surfer.properties.name).toBeDefined();
+      });
+
+      then('the x-domain-object pragma survives, so codegen can find it', () => {
+        const surfer = (result.input as any).properties.surfer;
+        expect(surfer['x-domain-object']).toEqual({
+          name: 'Surfer',
+          kind: 'entity',
+          primary: ['uuid'],
+        });
+      });
+
+      then('a defaulted field publishes as OPTIONAL, never required', () => {
+        // the wire face is what a caller SENDS, and a caller need not send a defaulted field.
+        // the instance face would list it required — a lie to every cross-service caller
+        expect((result.input as any).required).toEqual(['surfer']);
+        expect((result.input as any).properties.board).toBeDefined();
+      });
+
+      then('result matches snapshot', () => {
+        expect(result.input).toBeDefined();
+        expect(result).toMatchSnapshot();
+      });
+    });
+  });
+
+  /**
+   * .what = ONE endpoint that carries an `X.contract()` position on BOTH borders — a plain
+   *         dobj on the input, a dobj with a `.ref()` field on the output — introspected
+   *         end-to-end
+   * .why = the vision's acceptance names "a two-border endpoint with real `X.contract()` /
+   *        `.ref()` positions emits on both borders, pragma intact". before this case that
+   *        bound was proven by the UNION of two endpoints — `[case13]` clamps the input
+   *        border while its output is `z.null()`, and the codegen-refs suites clamp the
+   *        output border while their inputs are plain. a union of two halves is not the
+   *        claim: the claim is that ONE renderer call reaches both slots of one schema
+   *
+   * .clamp = PROVEN TO BITE — revert `getJsonSchemaFromZod` to a bare `z.toJSONSchema(schema)`
+   *          and all 5 rows of this case go RED; restore and all 5 go green. so the face is
+   *          load-bearing at both slots of one schema, measured rather than argued
+   *
+   * .bound = the face is folded INTO `getJsonSchemaFromZod`, so "the face reached one border
+   *          and not the other" is not a state this repo can enter. what this case adds over
+   *          `[case13]` is that one schema's BOTH slots carry a coerce and both survive it —
+   *          and the output-side `.ref()` pragma, which no other introspection case reads
+   */
+  given('[case14] introspection of an endpoint with a dobj on BOTH borders', () => {
+    class Seaturtle extends DomainEntity<Seaturtle> implements Seaturtle {
+      public static primary = ['uuid'] as const;
+      public static schema = z.object({ uuid: z.string(), name: z.string() });
+    }
+    class SurfTrophy extends DomainEntity<SurfTrophy> implements SurfTrophy {
+      public static primary = ['uuid'] as const;
+      public static schema = z.object({
+        uuid: z.string(),
+        rider: Seaturtle.contract().ref('primary'), // <-- a REF position, output side
+      });
+    }
+
+    const handler = genLambdaEndpoint(
+      {
+        schema: {
+          input: z.object({ rider: Seaturtle.contract() }), // <-- coerces, input border
+          output: z.object({ trophy: SurfTrophy.contract() }), // <-- coerces, output border
+        },
+        invoke: async () => ({
+          trophy: new SurfTrophy({ uuid: 't1', rider: { uuid: 's1' } }),
+        }),
+      },
+      { env: { access: 'prep' } },
+    );
+
+    when('[t0] invoked with introspect payload', () => {
+      const result = useThen(
+        'handler returns schema rather than throws',
+        async () =>
+          invokeHandlerForTest(handler, {
+            event: { introspect: 'schema' } as any,
+          }),
+      ) as unknown as LambdaEndpointSchema;
+
+      then('the INPUT border publishes its wire shape, pragma intact', () => {
+        const rider = (result.input as any).properties.rider;
+        expect(rider.properties.uuid).toBeDefined();
+        expect(rider.properties.name).toBeDefined();
+        expect(rider['x-domain-object']).toEqual({
+          name: 'Seaturtle',
+          kind: 'entity',
+          primary: ['uuid'],
+        });
+      });
+
+      then('the OUTPUT border publishes its wire shape, pragma intact', () => {
+        const trophy = (result.output as any).properties.trophy;
+        expect(trophy.properties.uuid).toBeDefined();
+        expect(trophy['x-domain-object']).toEqual({
+          name: 'SurfTrophy',
+          kind: 'entity',
+          primary: ['uuid'],
+        });
+      });
+
+      then('the output-side REF position keeps its own ref pragma', () => {
+        // .why = a ref renders as the referenced dobj's KEY rather than its whole shape,
+        //        and `assertAllDomainObjectRefsBind` binds it by this pragma. so a face
+        //        that flattened the ref would destroy the bind with no crash and no tell
+        // .note = the ref pragma is `{ of, by }`, NOT `{ name }` like `x-domain-object`.
+        //         I asserted `.name` here and it measured `undefined` — the two pragmas
+        //         are different shapes, and the first draft of this case assumed one
+        const rider = (result.output as any).properties.trophy.properties.rider;
+        expect(rider['x-domain-object-ref']).toEqual({
+          of: 'Seaturtle',
+          by: 'primary',
+        });
+        expect(rider.properties.uuid).toBeDefined(); // the KEY, not the whole shape
+      });
+
+      then('result matches snapshot', () => {
+        expect(result.input).toBeDefined();
+        expect(result.output).toBeDefined();
+        expect(result).toMatchSnapshot();
+      });
+    });
+  });
+
+  /**
+   * .what = the three input-only output declarations, rendered SIDE BY SIDE
+   * .why = the wish's headline acceptance asks that input-only validation be declarable
+   *        "explicitly and greppably — a reviewer can tell 'the author chose not to validate
+   *        output' apart from 'the author forgot', from the declaration alone". this PR
+   *        answers it with `z.null()`, and until this case that answer lived only in prose:
+   *        `[case13]` pins that `z.null()` renders, and pins not one word about whether it
+   *        is DISTINGUISHABLE from the rubber-stamp it replaces
+   *
+   * ⚠️ .what it clamps = the DIFFERENCE, never one rendering. `z.any()` and `z.unknown()`
+   *        publish a document whose ONLY key is the `$schema` boilerplate — a claim about
+   *        no value at all — while `z.null()` adds `type: 'null'`. so the greppability the
+   *        wish asks for is a property of the published bytes, and this is where it is
+   *        measured (rule.require.measure-the-value-you-emit)
+   *
+   * ⚠️ .note = these expectations are MEASURED, and my first draft of them was wrong. the
+   *         vision says `z.any()` renders `{}`, which is true of a bare `z.toJSONSchema`
+   *         call and false at THIS surface: introspection publishes a whole json-schema
+   *         document, so `$schema` rides along. the claim survives the correction and the
+   *         assertion I wrote from the prose did not — a run at the surface a caller meets
+   *         is the only thing that settles the surface a caller meets
+   */
+  given('[case15] the published face of each input-only output declaration', () => {
+    const asPublishedOutput = async (output: z.ZodType): Promise<unknown> => {
+      const handler = genLambdaEndpoint(
+        {
+          schema: { input: z.object({ uuid: z.string() }), output },
+          invoke: async () => null as never,
+        },
+        { env: { access: 'prep' } },
+      );
+      const result = (await invokeHandlerForTest(handler, {
+        event: { introspect: 'schema' } as any,
+      })) as unknown as LambdaEndpointSchema;
+      return result.output;
+    };
+
+    when('[t0] each declaration is introspected', () => {
+      then('z.null() publishes an HONEST claim a caller can read', async () => {
+        expect(await asPublishedOutput(z.null())).toEqual({
+          $schema: 'https://json-schema.org/draft/2020-12/schema',
+          type: 'null',
+        });
+      });
+
+      then('z.any() publishes the BOILERPLATE alone — the rubber-stamp', async () => {
+        // the document carries `$schema` and not one key that describes a value
+        expect(await asPublishedOutput(z.any())).toEqual({
+          $schema: 'https://json-schema.org/draft/2020-12/schema',
+        });
+      });
+
+      then('z.unknown() publishes the SAME empty claim as z.any()', async () => {
+        // .why = this is why `z.unknown()` is not the idiom. it reads as a deliberate choice
+        //        in source and publishes byte-identical to the stamp the wish complained of
+        expect(await asPublishedOutput(z.unknown())).toEqual(
+          await asPublishedOutput(z.any()),
+        );
+      });
+
+      then('so the honest idiom is DISTINGUISHABLE from the rubber-stamp', async () => {
+        expect(await asPublishedOutput(z.null())).not.toEqual(
+          await asPublishedOutput(z.any()),
+        );
       });
     });
   });

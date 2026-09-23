@@ -226,4 +226,57 @@ describe('getTypescriptFromJsonSchema', () => {
       );
     },
   );
+
+  given('[case8] a `not: {}` node — the position that carries NO value', () => {
+    /**
+     * .what = the codegen half of the absent-position render
+     * .why = `getJsonSchemaFromZod` publishes `{ not: {} }` for a `z.undefined()` /
+     *        `z.void()` position, and zod publishes it for `z.never()`. with no branch
+     *        for it, the node fell through to the `unknown` default — which says "ANY
+     *        value may be here", the exact inverse of what it declares. so a generated
+     *        client would carry a rubber-stamp for the one position whose contract is the
+     *        most precise available (rule.forbid.failhide)
+     *
+     * .the bite = delete the `not` branch from the subject and every row here goes red
+     *             with `unknown` in place of `void` (rule.require.clamp-edge-cases)
+     */
+    when('[t0] at the root — a mechanism that returns no value', () => {
+      then('it emits `void`, never `unknown`', () => {
+        expect(
+          getTypescriptFromJsonSchema({
+            schema: { not: {} } as unknown as JSONSchema,
+          }),
+        ).toEqual('void');
+      });
+    });
+
+    when('[t1] at a KEY — a field that must be absent', () => {
+      then('it emits `k?: void`, which permits the key to be omitted', () => {
+        // .why `?:` = the publisher drops an absent position out of `required`, so the
+        //      optional marker here is the same fact, read one layer down
+        expect(
+          getTypescriptFromJsonSchema({
+            schema: {
+              type: 'object',
+              properties: { a: { type: 'string' }, b: { not: {} } },
+              required: ['a'],
+            } as unknown as JSONSchema,
+          }),
+        ).toEqual('{ a: string; b?: void; }');
+      });
+    });
+
+    when('[t2] a `not` that is NOT empty', () => {
+      then('it is left to the `unknown` default — the branch is narrow', () => {
+        // .why = `{ not: <schema> }` is a real json-schema negation this emitter cannot
+        //        express. only the EMPTY form is the absent-position marker, so the
+        //        branch tests for it rather than for the key
+        expect(
+          getTypescriptFromJsonSchema({
+            schema: { not: { type: 'string' } } as unknown as JSONSchema,
+          }),
+        ).toEqual('unknown');
+      });
+    });
+  });
 });

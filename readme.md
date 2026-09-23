@@ -144,6 +144,73 @@ const schema = await askLambdaEndpoint(
 
 requires `env.access === 'prep'`. in prod, it throws a `ConstraintError`.
 
+## validate the input only
+
+`schema.output` is required. for an endpoint that returns no value, declare `z.void()`:
+
+```ts
+export const handler = genLambdaEndpoint(
+  {
+    schema: { input: inputSchema, output: z.void() },
+    invoke: async ({ event }) => { await doTheWork(event); },
+  },
+  { env: { access: 'prep' } },
+);
+```
+
+`z.void()`, `z.undefined()`, `z.null()` and `z.never()` each publish an honest contract. avoid
+`z.any()` and `z.unknown()` — they publish `{}`, which tells a caller that **any** value is valid.
+
+## domain objects at the border
+
+declare a domain object in the schema and `invoke` receives the **instance**, not the plain object
+zod yields. no `as` cast, no per-field rebuild:
+
+```ts
+import { Surfer } from './domain.objects/Surfer';
+
+export const handler = genLambdaEndpoint(
+  {
+    schema: { input: z.object({ surfer: Surfer.contract() }), output: z.void() },
+    invoke: async ({ event }) => genSurfLesson(event.surfer), // event.surfer instanceof Surfer
+  },
+  { env: { access: 'prep' } },
+);
+```
+
+`X.contract()` reaches every depth — not the top level alone:
+
+```ts
+schema: {
+  input: z.object({
+    surfer: Surfer.contract(),                       // depth 0
+    signup: z.object({                               // a PLAIN wrapper...
+      spot: SurfSpot.contract(),                     //   ...and the dobj one level under it
+    }).nullable(),
+    boards: z.array(Surfboard.contract()),           // every element of the array
+    report: WaveReport.contract(),                   // its `static nested` rebuilds `report.spot`
+  }),
+  output: z.void(),
+},
+```
+
+a value that fails the domain object's own constructor **fails loud at the border** and never reaches
+`invoke` half-built.
+
+what a caller of your generated cross-service client sees is the **wire** shape —
+`{ surfer: { uuid, name } }` — never the instance. the two differ by design: the wire is what
+crosses, the instance is what you hold once through.
+
+two syntax notes:
+
+```ts
+// a dobj that names ITSELF must defer, per js class-field order
+static schema = z.object({ replies: z.array(z.lazy(() => Comment.contract())) });
+
+// .ref() goes on the raw contract, before any chain
+z.object({ rider: Surfer.contract().ref('primary') }).optional()
+```
+
 ## contract discovery
 
 ```ts
@@ -171,10 +238,10 @@ import { forApiGateway, asApiGatewayResponseSchema } from 'sdk-aws-lambda';
 
 export const handler = forApiGateway({
   schema: {
-    input: z.any(),                                          // a twilio form blob
-    output: asApiGatewayResponseSchema({ body: z.undefined() }),
+    input: z.any(),                                       // a twilio form blob
+    output: asApiGatewayResponseSchema({ body: z.undefined() }), // carries no body
   },
-  invoke: async ({ event }) => ({ status: 204 }),            // 204, no body
+  invoke: async ({ event }) => ({ status: 204 }),         // 204, no body
 });
 ```
 
@@ -189,18 +256,32 @@ export const handler = forApiGateway({
 set a `Content-Type` yourself and the serializer stands aside, so xml/text reach the wire
 byte-identical. omit it with a body and you get `application/json`.
 
-### schema is required; `z.any()` is the opt-out
+### the body-less response
 
 `schema.output` describes what `invoke` **returns** (the envelope), so
-`asApiGatewayResponseSchema({ body })` wraps a body schema into it. a required field with a visible
-opt-out keeps validation and introspection on one code path, and puts the choice where a reviewer can
-see it.
+`asApiGatewayResponseSchema({ body })` wraps a body schema into it.
+
+for a response that carries **no body at all** — a 204, a redirect — declare the body
+`z.undefined()`:
+
+<!-- prettier-ignore -->
+| you declare | the published `body` slot | reads as |
+|---|---|---|
+| `z.undefined()` · `z.void()` · `z.never()` | `{ "not": {} }` | **"no body is ever carried"** |
+| `z.any()` · `z.unknown()` | `{}` | ⛔ the rubber-stamp — every value reads as valid |
+| `z.null()` | `{ "type": "null" }` | ⛔ claims the wire carries the four bytes `null` |
+
+all of them behave identically at **runtime**: each accepts `{ status: 204 }` and each still refuses
+an accidental `{ body: 'oops' }`. only the published contract differs, which is why the wrong choice
+ships green.
 
 # features
 
 - **genLambdaEndpoint** — define endpoints with validation, log capture, error classification
   - `genLambdaEndpoint()` — direct invoke (default)
   - `forApiGateway()` — http via api gateway, with full wire-response control (above)
+- **domain objects at the border** — `X.contract()` in a schema hands `invoke` real instances, at
+  every depth, with no `as` cast (above)
 - **askLambdaEndpoint** — ask another lambda with typed request/response, automatic trail propagation
 - **runLambdaEndpoint** — run an endpoint from a test
   - `onReferenced()` — you hold the handler; a caller fault is **returned**
@@ -209,7 +290,7 @@ see it.
   - `fromApiGateway()`, `fromSqs()`, `fromSns()`, `fromKinesis()`, `fromS3()`
 - **trace-id propagation** — pass `log`, and `trail.exid` threads through the call chain
 - **introspection** — expose json-schema via `{ introspect: 'schema' }` (prep only)
-- **contract discovery** — `getOneLambdaContract`, `getAllLambdaContracts`
+- **contract discovery** — `getOneLambdaContract`, `getAllLambdaContracts` for sdk generation
 
 # docs
 

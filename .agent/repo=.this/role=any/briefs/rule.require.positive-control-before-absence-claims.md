@@ -146,9 +146,45 @@ rhx globsafe --pattern 'src/.../genLambdaEndpoint.forApiGateway/*.ts' ->  12 fil
 #   ever have revealed that. only the directory listing did.
 ```
 
+## ⚠️ .the costliest zero is the one that blocks a REPAIR, never the one that justifies a deletion
+
+the enforcement list below leads with a deletion, because a false zero that deletes a live consumer
+is the loudest instance of this defect. **it is not the most expensive one.** a deletion goes red
+somewhere — a test, a build, a caller. an absence claim that *defers* a fix goes red nowhere at all,
+so it can hold a real repair for as long as anyone re-cites it.
+
+the shape it takes is a **rework grade**. a driver asks *"is this fix clean or dirty?"*, answers
+`dirty` because some precedent or affordance appears absent, and files a fulcrum. the grade then
+reads as a measurement, when it was a zero.
+
+measured on this stone: fulcrum `F36` graded a clamp **dirty** on the reason —
+
+> *"a test that greps `src` — **no precedent** — the repo's only tests that touch the filesystem
+> read generated output in a temp dir"*
+
+the probe behind that was `grepsafe 'readFile|readdir|…' --path src --glob '*.test.ts'`, which is a
+**sound query with a scope narrower than the conclusion drawn from it**: `*.test.ts` matches an
+integration test's suffix, so the hits were real and the corpus they were read as was not. the genre
+was declared the whole time — `rule.forbid.unit.remote-boundaries` names it outright, and `src/`
+already carried **9** `.integration.test.ts` files. the actual rework was one file and zero config.
+**the wrong grade survived two stones and a peer review.**
+
+⇒ **so a `dirty` grade sourced to an absence owes a control, exactly as a deletion does.** the
+control here was trivial and was never run: `globsafe 'src/**/*.integration.test.ts'`.
+
+**the test, for a proposer:** *"my rework grade rests on the absence of a thing. what did I run to
+establish that, and did the same form ever return a hit?"*
+
+**the tell, for a reviewer:** a fulcrum whose `rework: dirty` cites **no precedent**, **no
+affordance**, **no pavement**, or **no prior art** — and cites no command beside it. that is an
+absence claim with a fulcrum wrapped around it, and it blocks more than a deletion ever does.
+
 ## .enforcement
 
 - an absence claim used to justify a deletion, with no positive control recorded = **blocker**
+- an absence claim used to justify a **deferral** — a `rework: dirty` grade, a "no precedent" note,
+  a fulcrum raised on an affordance believed absent — with no positive control recorded =
+  **blocker** (measured: it held a one-file repair across two stones)
 - an absence claim recorded in a yield or review with no query form stated = **blocker**
 - a path-shaped glob passed to a basename filter, with its zero read as a find = **blocker**
 - a zero from a dot-directory search, read as an absence = **blocker**
@@ -158,6 +194,11 @@ rhx globsafe --pattern 'src/.../genLambdaEndpoint.forApiGateway/*.ts' ->  12 fil
 
 ## .see also
 
+- ⚠️ **`rule.require.survey-the-set-before-the-definite-article` — the form this rule's cue list
+  cannot reach.** every cue above is an explicit negative, so a claim with **no negative word in
+  it** — *"the escape hatch is `.refine()`"* — passes a diligent application of this rule while it
+  asserts the same absence. measured: it produced exactly the `rework: dirty` deferral the
+  enforcement list above names, and held a repair that was never owed
 - `rule.require.measure-the-value-you-emit` — a claim about a value you **emit** owes a run
 - `rule.require.read-the-slot-a-dependency-reads` — a claim about a slot you **share** owes a grep of
   the dependency's source

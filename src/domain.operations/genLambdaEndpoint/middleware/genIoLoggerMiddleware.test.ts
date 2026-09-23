@@ -1,6 +1,21 @@
+import { DomainEntity } from 'domain-objects';
 import { given, then, when } from 'test-fns';
+import { z } from 'zod';
 
 import { genIoLoggerMiddleware } from './genIoLoggerMiddleware';
+
+/**
+ * .what = a dobj used ONLY by `[case8]`, to put a live instance at both io borders
+ */
+interface LoggedRider {
+  uuid: string;
+  handle: string;
+}
+class LoggedRider extends DomainEntity<LoggedRider> implements LoggedRider {
+  public static primary = ['uuid'] as const;
+  public static unique = ['handle'] as const;
+  public static schema = z.object({ uuid: z.string(), handle: z.string() });
+}
 
 describe('genIoLoggerMiddleware', () => {
   const createMockLog = () => ({
@@ -190,6 +205,80 @@ describe('genIoLoggerMiddleware', () => {
 
         await expect(middleware.before!(request)).resolves.not.toThrow();
       });
+    });
+  });
+
+  /**
+   * .what = a LIVE dobj instance at both io borders, measured through this middleware
+   *
+   * ⚠️ .why it is owed = every other case in this file hands the logger a plain object
+   *    literal. this pr is the first that lets `request.event` and `request.response` hold a
+   *    CLASS instance — `X.contract()` parses the wire into one — and a log transport
+   *    serializes what it is handed
+   *
+   * ⇒ so the hazard is not a throw. it is a log line that reads `{}` while the handler
+   *   behaved correctly: an observability failhide, invisible to every functional assertion
+   *   in the suite (`rule.forbid.failhide`)
+   *
+   * .the row that carries the claim = `[t1]`. `[t0]` proves the value ARRIVES; only a
+   *      serialize proves it SURVIVES, which is what an on-call engineer actually reads
+   *      (rule.require.measure-the-value-you-emit — a claim about an emitted value owes a
+   *      run, and this branch has been wrong four times by a read instead)
+   *
+   * ⚠️ .PROVEN BY PROBE, never by revert (rule.require.clamp-edge-cases). the guarded
+   *    behavior is `domain-objects`', so there is no line of OURS to revert. instead the
+   *    failhide shape was built by hand and fed to `[t1]`'s assertion:
+   *
+   *      probe                                          | result
+   *      -----------------------------------------------|---------------------------
+   *      a prop defined `enumerable: false`, serialized  | 🔴 1 red, and it is `[t1]`
+   *
+   *    ⇒ so the assertion discriminates. `[t0]` stayed green under the probe — correctly,
+   *      since a stripped object still ARRIVES; that split is what makes the two rows two
+   *
+   * ⚠️ .this clamp guards an UPSTREAM property, so it is a canary rather than a contract. a
+   *    `domain-objects` bump that re-defines its props non-enumerably turns this red here,
+   *    rather than silent in a production log
+   */
+  given('[case8] a hydrated domain object at both borders', () => {
+    // .as = the wire shape a caller sends, and the instance `X.contract()` parses it into
+    const riderWire = { uuid: 'u1', handle: 'crush' };
+    const rider = LoggedRider.contract().parse(riderWire);
+
+    when('[t0] the instance flows through both hooks', () => {
+      // .why ONE middleware + ONE log, shared = the rows grade one pass
+      //      (rule.forbid.redundant-expensive-operations)
+      const mockLog = createMockLog();
+      const middleware = genIoLoggerMiddleware();
+      const request = {
+        event: rider,
+        response: rider,
+        context: { log: mockLog },
+        error: undefined as unknown as Error,
+        internal: {},
+      } as unknown as Parameters<NonNullable<typeof middleware.after>>[0];
+
+      then('the instance reaches the log, not a stripped copy', async () => {
+        await middleware.before!(request);
+        await middleware.after!(request);
+
+        const [, inputPayload] = mockLog.debug.mock.calls[0] ?? [];
+        const [, outputPayload] = mockLog.debug.mock.calls[1] ?? [];
+        expect((inputPayload as { event: unknown }).event).toBeInstanceOf(
+          LoggedRider,
+        );
+        expect((outputPayload as { response: unknown }).response).toBe(rider);
+      });
+
+      then(
+        'its fields survive a serialize, so the log line is readable',
+        () => {
+          // ⚠️ this is the row a failhide would break. `withImmute` re-defines each prop, and a
+          //    NON-enumerable definition would drop every field from `JSON.stringify` — the
+          //    handler still correct, the log still emitted, and the payload empty
+          expect(JSON.parse(JSON.stringify(rider))).toEqual(riderWire);
+        },
+      );
     });
   });
 });

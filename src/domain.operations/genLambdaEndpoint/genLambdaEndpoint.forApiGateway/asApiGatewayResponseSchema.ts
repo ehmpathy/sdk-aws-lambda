@@ -15,6 +15,30 @@ import type { ApiGatewayResponse } from '../../../domain.objects/ApiGatewayRespo
  *         any non-empty subset. the at-least-one rule is held by the TYPE at compile
  *         time; this schema guards the field types
  *
+ * .note for a BODY-LESS response = `z.undefined()`, `z.void()` and `z.never()` are now
+ *         EQUIVALENT, and each publishes honestly. all three accept `{ status: 204 }`, all
+ *         three refuse an accidental `{ body: 'oops' }`, and all three serialize to
+ *         `{ "not": {} }` — "no body is ever carried". there is no introspection penalty
+ *         for any of them
+ *
+ *         ⇒ **`z.undefined()` is the named idiom** — the readme states it, this spec's
+ *         cases declare it, and it names what the value IS: the `body` key is absent, and
+ *         `undefined` is the js word for absent. `z.never()` is a type-theory bottom type,
+ *         which claims more than the domain means
+ *
+ *         what to AVOID is `z.any()` / `z.unknown()`, which publish `{}` — a rubber-stamp
+ *         that tells a caller ANY body may arrive, the one your handler never sends as well
+ *
+ * ⚠️ .this was NOT always so = `z.undefined()` and `z.void()` used to throw
+ *         `Undefined cannot be represented in JSON Schema`, and the throw took down
+ *         `getAllLambdaContracts` for the WHOLE service once `{ introspect: 'schema' }`
+ *         arrived in `prep`. it was position-INDEPENDENT, so the `.optional()` this function
+ *         adds was no shelter. `getJsonSchemaFromZod` now renders both shapes via an
+ *         `override`, so the hazard is closed at the one door rather than dodged per schema
+ *   .measured = `[case17]` of the peer spec drives all three candidates through a REAL
+ *               introspection request and grades each. `[t1]` goes red if the render
+ *               regresses to a throw
+ *
  * .as = zod cannot express "at least one key present", so it infers `{ status?, headers?,
  *       body? }` — a superset of `PickAny` by exactly one member, `{}` — and no structural
  *       assignment relates the two
