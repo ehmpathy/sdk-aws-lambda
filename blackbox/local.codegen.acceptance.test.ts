@@ -159,9 +159,9 @@ describe('codegen (local)', () => {
   // a fake sdk whose endpoint surfaces a schema-less pragma-tagged dobj that the
   // codegen cannot reconstruct → LambdaDomainObjectNotCapturableError
   const asUncapturableSdk = (): LambdaClient => {
-    // a REAL dobj whose `static schema` is empty: `.contract` stamps the pragma onto
+    // a REAL dobj whose `static schema` is empty: `X.contract()` stamps the pragma onto
     // a shape with no properties, so the codegen cannot reconstruct it (uc.9). this
-    // exercises the production `.contract` → empty-schema → pragma path.
+    // exercises the production `X.contract()` → empty-schema → pragma path.
     interface Ghost {
       id: string;
     }
@@ -174,9 +174,12 @@ describe('codegen (local)', () => {
         {
           schema: {
             input: z.object({ id: z.string() }),
-            output: z.object({ ghost: Ghost.contract }),
+            output: z.object({ ghost: Ghost.contract() }),
           },
-          invoke: async () => ({ ghost: {} }),
+          // .note = an instance, per the rule `refTrophyHandlers.ts` states. the empty schema
+          //         is no exemption: uc.9 reads INTROSPECTION and never invokes this handler,
+          //         measured on the `local.codegen.journey` twin before this landed
+          invoke: async () => ({ ghost: new Ghost({ id: 'g1' }) }),
         },
         { env: { access: 'prep' } },
       ),

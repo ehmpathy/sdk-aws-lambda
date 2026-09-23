@@ -18,11 +18,42 @@ if (!existsSync(join(process.cwd(), 'package.json')))
   throw new Error('no package.json found in cwd. are you @gitroot?');
 
 /**
+ * .what = refuse the ec2 instance role as a credential source
+ * .why = with no AWS_PROFILE and no static keys, the aws sdk credential chain falls all the
+ *        way through to `fromInstanceMetadata` and picks up whatever role this box carries
+ *        (`@aws-sdk/credential-provider-node/dist-cjs/index.js` — `remoteProvider`, the last
+ *        link before the throw). that role is a DIFFERENT account than the one these tests
+ *        target, and it is adopted silently, so a test would run against the wrong account
+ *        with no tell (`rule.forbid.failhide`)
+ *
+ * ⚠️ .this block is THE HOME for this evidence. the same one-line assignment sits at
+ *    `jest.integration.env.ts` and `provision/aws.infra/account=demo/resources.ts`, and each
+ *    of those carries only its OWN `.why` plus a cite of this block
+ *
+ * .why it is kept even though `useKeyrack` splices static creds = that splice is the PRIMARY
+ *      repair and it is stronger, since the chain never reaches IMDS once `AWS_PROFILE` is
+ *      dropped. this line is the BACKSTOP for the two paths where `useKeyrack` returns early
+ *      — `process.env.CI`, and a repo with no `.agent/keyrack.yml` — where no splice happens
+ *
+ * .why the ASSIGNMENT is not extracted too = it must run before any aws client is
+ *      constructed, so its correctness is a property of WHERE THE LINE SITS. a shared module
+ *      reached by `import` makes that a property of the module graph instead, which is
+ *      strictly harder to audit. one visible line at each boot file beats one hidden one
+ *
+ * .note = ⚠️ this disables IMDS, never "ambient" in general. the container check runs FIRST in
+ *         `remoteProvider`, so `AWS_CONTAINER_CREDENTIALS_RELATIVE_URI` is still adopted on
+ *         ecs/fargate. an account assertion is what would close that, and is not yet built
+ * .note = ci is unaffected: github oidc is adopted at `fromEnv` / `fromTokenFile`, both ABOVE
+ *         `remoteProvider` in that chain
+ */
+process.env.AWS_EC2_METADATA_DISABLED = 'true';
+
+/**
  * .what = source credentials from keyrack for test env, via useKeyrack
  * .why =
  *   - auto-inject keys into process.env
  *   - fail fast with a helpful error if keyrack is locked or keys are absent
- *   - splice static creds + drop AWS_PROFILE, so the v3 sdk resolves the chained target
+ *   - splice static creds + drop AWS_PROFILE, so the v3 sdk reaches the chained target
  *     account rather than the ambient grove EC2 instance's own credentials
  * .note
  *   - use lenient mode if aws credentials already present (e.g., ci oidc)

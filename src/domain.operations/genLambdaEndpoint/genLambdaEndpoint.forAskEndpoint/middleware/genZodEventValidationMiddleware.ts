@@ -1,7 +1,7 @@
 import type middy from '@middy/core';
 import type { ZodSchema } from 'zod';
 
-import { getValidationError } from '../../middleware/getValidationError';
+import { getValidatedInput } from '../../middleware/getValidatedInput';
 
 /**
  * .what = validates the entire event against a zod schema
@@ -22,13 +22,14 @@ export const genZodEventValidationMiddleware = <TInput>(input: {
   before: middy.MiddlewareFn<any, any>;
 } => {
   const before: middy.MiddlewareFn<any, any> = async (request) => {
-    const result = input.schema.safeParse(request.event);
-    if (!result.success) {
-      throw getValidationError({ error: result.error });
-    }
+    const inputAfter = getValidatedInput({
+      schema: input.schema,
+      value: request.event,
+    });
+
     // replace event with parsed (transformed) result
     // .note = DELIBERATE MUTATION — `request` is middy's only channel to hand a value onward
-    request.event = result.data;
+    request.event = inputAfter;
   };
 
   return { before };

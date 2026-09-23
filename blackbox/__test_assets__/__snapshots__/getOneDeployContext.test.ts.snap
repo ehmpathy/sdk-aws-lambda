@@ -1,0 +1,21 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`getOneDeployContext given: [case1] an env with no aws credential at all when: [t0] a deploy context is asked for then: the whole surface reads as a human meets it 1`] = `
+"✋ ConstraintError: AWS credentials required for e2e test
+
+{
+  "hint": "run: rhx keyrack unlock --owner ehmpath --env test"
+}"
+`;
+
+exports[`getOneDeployContext given: [case3] the REFUSED arm — its text, apart from its trigger when: [t0] the hint is read then: the hint reads as a human meets it 1`] = `"a credential WAS present, so it is stale or scoped wrong rather than absent. re-run: rhx keyrack unlock --owner ehmpath --env test"`;
+
+exports[`getOneDeployContext given: [case4] the REFUSED arm — its WHOLE surface, apart from its trigger when: [t0] the arm wraps a cause the way a live refusal would then: the whole surface reads as a human meets it 1`] = `
+"💥 MalfunctionError: getOneDeployContext: aws refused the credential that was present
+
+{
+  "profile": "ehmpathy-prep",
+  "viaStaticKeys": false,
+  "hint": "a credential WAS present, so it is stale or scoped wrong rather than absent. re-run: rhx keyrack unlock --owner ehmpath --env test"
+}"
+`;

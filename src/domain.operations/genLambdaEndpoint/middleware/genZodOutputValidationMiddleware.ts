@@ -21,16 +21,24 @@ import { getValidatedOutput } from './getValidatedOutput';
  *         signature cannot warn them — `request.response` is `unknown` to middy, so both bind.
  *
  * .note = UNRESOLVED, NOT A DEFECT — this export carries two contracts with no discriminant.
- *         tracked as **F33** in `1.vision.yield.md`'s fulcrum table, where the three options
- *         (deprecate, add a `point` discriminant, accept) are spelled out.
+ *         tracked as **F33** in
+ *         `.behavior/v2026_08_03.feat-apigateway-wire-response/1.vision.yield.md`'s fulcrum
+ *         table — the bound that SHIPPED this export, and already merged — where the three
+ *         options (deprecate, add a `point` discriminant, accept) are spelled out.
  *
  *         no shipped chain registers it — both families validate inline instead, because each
  *         knows which of the two shapes it holds at that moment and this middleware cannot. so
  *         the open question is one of surface area, never of a live defect.
  *
- * .note = the validation itself is delegated to `getValidatedOutput`, as both input-side peers
- *         delegate to `getValidationError` — one guarantee, one implementation
+ * .note = the validation itself is delegated to `getValidatedOutput`, exactly as both input-side
+ *         peers delegate to `getValidatedInput` — one guarantee, one implementation, per border
  *         (rule.forbid.parallel-codepaths)
+ *
+ *         the two root primitives are peers rather than one, because they make DIFFERENT
+ *         guarantees: a bad input is the caller's fault and raises a `ConstraintError`, while a
+ *         bad output is the server's fault and raises a `MalfunctionError`
+ *         (rule.require.failloud). to merge them would need an error-class argument, which is a
+ *         fork on handed config — the shape that rule forbids
  */
 export const genZodOutputValidationMiddleware = <TOutput>(input: {
   schema: ZodSchema<TOutput>;

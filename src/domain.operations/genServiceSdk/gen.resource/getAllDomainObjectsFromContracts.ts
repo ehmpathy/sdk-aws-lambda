@@ -3,6 +3,7 @@ import type { JSONSchema } from 'zod/v4/core/json-schema';
 import type { DomainObjectCaptured } from '../../../domain.objects/DomainObjectCaptured';
 import { LambdaDomainObjectNotCapturableError } from '../../../domain.objects/LambdaDomainObjectNotCapturableError';
 import type { LambdaEndpointSchema } from '../../../domain.objects/LambdaEndpointSchema';
+import { getAllJsonSchemaNodes } from '../getAllJsonSchemaNodes';
 import { asDomainObjectPragma } from './asDomainObjectPragma';
 
 /**
@@ -21,27 +22,27 @@ export const getAllDomainObjectsFromContracts = (input: {
   const captured = new Map<string, DomainObjectCaptured>();
 
   // walk each endpoint's input and output schema trees
-  for (const schema of Object.values(input.contracts)) {
-    collectFromNode({ node: schema.input, captured });
-    collectFromNode({ node: schema.output, captured });
-  }
+  for (const schema of Object.values(input.contracts))
+    for (const root of [schema.input, schema.output])
+      for (const node of getAllJsonSchemaNodes({ root }))
+        captureDomainObjectAt({ node, captured });
 
   // return the de-duplicated contracts in stable (name-sorted) order
   return [...captured.values()].sort((a, b) => a.name.localeCompare(b.name));
 };
 
 /**
- * .what = recursively walk a json-schema node, collect every `x-domain-object`
- * .why = a dobj can appear at any depth (properties, items, $defs, anyOf, etc.)
+ * .what = capture ONE node, if it carries an `x-domain-object` pragma
+ * .why = the descent that reaches every node is `getAllJsonSchemaNodes`; what is left here
+ *        is this file's own semantics — the pragma read, the uc.9 guard, and the de-dup.
+ *        a dobj can appear at any depth (properties, items, $defs, anyOf, etc.), and the
+ *        walker reaches each without this function aware of the shape it sat in
  */
-const collectFromNode = (input: {
-  node: unknown;
+const captureDomainObjectAt = (input: {
+  node: object;
   captured: Map<string, DomainObjectCaptured>;
 }): void => {
   const { node, captured } = input;
-
-  // skip non-object nodes (leaves like strings/booleans/numbers)
-  if (typeof node !== 'object' || node === null) return;
 
   // capture this node if it carries a domain-object pragma
   const contract = asDomainObjectPragma({ node: node as JSONSchema });
@@ -58,13 +59,6 @@ const collectFromNode = (input: {
 
     // keep the first capture; a repeat of the same name is a de-dup no-op
     if (!captured.has(contract.name)) captured.set(contract.name, contract);
-  }
-
-  // recurse into every child value (arrays + nested objects)
-  for (const value of Object.values(node as Record<string, unknown>)) {
-    if (Array.isArray(value))
-      for (const item of value) collectFromNode({ node: item, captured });
-    else collectFromNode({ node: value, captured });
   }
 };
 

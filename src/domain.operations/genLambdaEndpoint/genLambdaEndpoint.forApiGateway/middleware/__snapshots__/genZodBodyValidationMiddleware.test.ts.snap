@@ -1,0 +1,46 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`genZodBodyValidationMiddleware given: [case5] a raw STRING body, as \`deserialize: { body: false }\` leaves it when: [t0] the coerce meets a string rather than an object then: the whole surface a caller meets is snapped 1`] = `
+"✋ ConstraintError: validation failed: (root): Invalid input: expected object, received string
+
+{
+  "issues": [
+    {
+      "path": "(root)",
+      "message": "Invalid input: expected object, received string",
+      "code": "invalid_type"
+    }
+  ],
+  "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
+}"
+`;
+
+exports[`genZodBodyValidationMiddleware given: [case6] a NULL body, the other shape the same option produces when: [t0] the coerce meets null rather than an object then: the whole surface a caller meets is snapped 1`] = `
+"✋ ConstraintError: validation failed: (root): Invalid input: expected object, received null
+
+{
+  "issues": [
+    {
+      "path": "(root)",
+      "message": "Invalid input: expected object, received null",
+      "code": "invalid_type"
+    }
+  ],
+  "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
+}"
+`;
+
+exports[`genZodBodyValidationMiddleware given: [case7] a body the SCHEMA accepts and the CONSTRUCTOR rejects when: [t0] the body passes the schema then: the whole surface a caller meets is snapped 1`] = `
+"✋ ConstraintError: validation failed: spot: GuardedSpot.contract(): the props satisfied the schema, but \`GuardedSpot.build(props)\` threw — a surf spot must carry a name. fix: align \`static schema\` with what the constructor demands (e.g. its \`static nested\` hydration), so any payload the schema accepts can also construct
+
+{
+  "issues": [
+    {
+      "path": "spot",
+      "message": "GuardedSpot.contract(): the props satisfied the schema, but \`GuardedSpot.build(props)\` threw — a surf spot must carry a name. fix: align \`static schema\` with what the constructor demands (e.g. its \`static nested\` hydration), so any payload the schema accepts can also construct",
+      "code": "custom"
+    }
+  ],
+  "hint": "each entry in \`issues\` names its own fix — apply the one at the path named there. ⚠️ where a message says the schema ACCEPTED the value, the fix belongs to the endpoint author, never to the caller"
+}"
+`;

@@ -1,7 +1,7 @@
 import type middy from '@middy/core';
 import type { ZodSchema } from 'zod';
 
-import { getValidationError } from '../../middleware/getValidationError';
+import { getValidatedInput } from '../../middleware/getValidatedInput';
 import type { UnifiedApiGatewayEvent } from '../UnifiedApiGatewayEvent';
 
 /**
@@ -31,10 +31,11 @@ export const genZodBodyValidationMiddleware = <TInput>(input: {
 } => {
   const before: middy.MiddlewareFn<any, any> = async (request) => {
     const event = request.event as UnifiedApiGatewayEvent;
-    const result = input.schema.safeParse(event.body);
-    if (!result.success) {
-      throw getValidationError({ error: result.error });
-    }
+    const inputAfter = getValidatedInput({
+      schema: input.schema,
+      value: event.body,
+    });
+
     // replace body with parsed (transformed) result
     /**
      * .note = DELIBERATE MUTATION — `request` is middy's only channel to hand a value onward,
@@ -46,13 +47,13 @@ export const genZodBodyValidationMiddleware = <TInput>(input: {
      *            (`^\s*(event|response|payload)\.\w+\s*=`), which finds exactly this one
      *
      * .as = `UnifiedApiGatewayEvent.body` is the PRE-validation shape (a string, or a parsed
-     *       json value), while `result.data` is `TInput` — the POST-validation domain shape.
+     *       json value), while `inputAfter` is `TInput` — the POST-validation domain shape.
      *       the two are unrelated by declaration, which is exactly right: this assignment IS
      *       the step that changes which of them lives in the slot
      * .removal = drops once the input-side translator lands and the chain carries `inputAfter`
      *            in its own slot rather than back in the event's `body` — the 🚧 F31 fulcrum
      */
-    event.body = result.data as unknown as typeof event.body;
+    event.body = inputAfter as unknown as typeof event.body;
   };
 
   return { before };

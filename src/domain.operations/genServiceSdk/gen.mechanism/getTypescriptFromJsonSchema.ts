@@ -2,6 +2,8 @@ import type { DomainObjectPragmaRef, DomainObjectRefBy } from 'domain-objects';
 import { UnexpectedCodePathError } from 'helpful-errors';
 import type { JSONSchema } from 'zod/v4/core/json-schema';
 
+import { getAllJsonSchemaNodes } from '../getAllJsonSchemaNodes';
+
 /**
  * .what = compile a json-schema into a TypeScript type literal string
  * .why = the codegen needs typed shapes for mechanism args/returns + resource
@@ -76,6 +78,23 @@ const asType = (
   if (type === 'array') return asArray(node, dobjRefs);
   if (type === 'object') return asObject(node, dobjRefs);
 
+  // `not: {}` → void. the node declares that NO json value is valid at this position —
+  // the shape `getJsonSchemaFromZod` emits for a `z.undefined()` / `z.void()` position,
+  // and the shape zod itself emits for `z.never()`
+  //
+  // .why `void` and not `never` = it must read correctly at BOTH positions this node
+  //      reaches. as a mechanism's return, `Promise<void>` is right and `Promise<never>`
+  //      would claim the call cannot return at all; as a key, `k?: void` permits the key
+  //      to be absent, which is what the position accepts. `void` is the one TS type that
+  //      is correct in each
+  //
+  // ⚠️ .why it is NOT left to the `unknown` fallthrough below = `unknown` says "any value
+  //      may be here", which is the exact inverse of what this node declares. so the
+  //      generated client would carry a rubber-stamp for the one position whose contract
+  //      is the most precise one available (rule.forbid.failhide)
+  const not = (node as { not?: object }).not;
+  if (not && Object.keys(not).length === 0) return 'void';
+
   // no recognizable shape → unknown (surfaces upstream schema looseness)
   return 'unknown';
 };
@@ -148,7 +167,7 @@ const REF_GENERIC_BY: Record<DomainObjectRefBy, string> = {
 
 /**
  * .what = read the `x-domain-object-ref` pragma off a schema node (the reference
- *         pragma stamped by `X.contract.ref(by)` in domain-objects@0.33.0)
+ *         pragma stamped by `X.contract().ref(by)` in domain-objects)
  * .why = a reference field carries only the referenced dobj (`of`) + which key (`by`)
  */
 const asRefPragma = (node: JSONSchema): DomainObjectPragmaRef | undefined =>
@@ -190,28 +209,13 @@ export const getRefGenericsUsed = (input: {
   dobjRefs: Record<string, string>;
 }): string[] => {
   const used = new Set<string>();
-  collectRefGenerics(input.schema, input.dobjRefs, used);
-  return [...used].sort();
-};
 
-/**
- * .what = recursively collect the ref generics used across a schema tree
- */
-const collectRefGenerics = (
-  node: unknown,
-  dobjRefs: Record<string, string>,
-  used: Set<string>,
-): void => {
-  if (typeof node !== 'object' || node === null) return;
-
-  const ref = asRefPragma(node as JSONSchema);
-  if (ref && dobjRefs[ref.of]) used.add(REF_GENERIC_BY[ref.by]);
-
-  for (const value of Object.values(node as Record<string, unknown>)) {
-    if (Array.isArray(value))
-      for (const item of value) collectRefGenerics(item, dobjRefs, used);
-    else collectRefGenerics(value, dobjRefs, used);
+  for (const node of getAllJsonSchemaNodes({ root: input.schema })) {
+    const ref = asRefPragma(node as JSONSchema);
+    if (ref && input.dobjRefs[ref.of]) used.add(REF_GENERIC_BY[ref.by]);
   }
+
+  return [...used].sort();
 };
 
 /**

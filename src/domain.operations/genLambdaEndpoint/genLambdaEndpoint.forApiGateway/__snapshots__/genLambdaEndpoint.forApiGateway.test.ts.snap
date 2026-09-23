@@ -19,7 +19,7 @@ exports[`genLambdaEndpoint.forApiGateway given: [case1] valid request when: [t0]
 
 exports[`genLambdaEndpoint.forApiGateway given: [case2] invalid request body when: [t0] handler invoked then: result matches snapshot 1`] = `
 {
-  "body": "{"errorMessage":"✋ ConstraintError: validation failed: email: Invalid email address\\n\\n{\\n  \\"issues\\": [\\n    {\\n      \\"path\\": \\"email\\",\\n      \\"message\\": \\"Invalid email address\\",\\n      \\"code\\": \\"invalid_format\\"\\n    }\\n  ]\\n}","errorType":"BadRequestError","details":{"issues":[{"path":"email","message":"Invalid email address","code":"invalid_format"}]}}",
+  "body": "{"errorMessage":"✋ ConstraintError: validation failed: email: Invalid email address\\n\\n{\\n  \\"issues\\": [\\n    {\\n      \\"path\\": \\"email\\",\\n      \\"message\\": \\"Invalid email address\\",\\n      \\"code\\": \\"invalid_format\\"\\n    }\\n  ],\\n  \\"hint\\": \\"send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`\\"\\n}","errorType":"BadRequestError","details":{"issues":[{"path":"email","message":"Invalid email address","code":"invalid_format"}],"hint":"send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"}}",
   "headers": {
     "Content-Type": "application/json",
   },
@@ -94,7 +94,7 @@ exports[`genLambdaEndpoint.forApiGateway given: [case6] deserialize body disable
 
 exports[`genLambdaEndpoint.forApiGateway given: [case7] introspection request in prep env when: [t0] handler invoked with introspect payload then: response matches snapshot 1`] = `
 {
-  "body": "{"input":{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"customerId":{"type":"string"}},"required":["customerId"],"additionalProperties":false},"output":{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"status":{"type":"number"},"headers":{"type":"object","propertyNames":{"type":"string"},"additionalProperties":{"type":"string"}},"body":{"type":"object","properties":{"name":{"type":"string"},"balance":{"type":"number"}},"required":["name","balance"],"additionalProperties":false}},"additionalProperties":false}}",
+  "body": "{"input":{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"customerId":{"type":"string"}},"required":["customerId"]},"output":{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"status":{"type":"number"},"headers":{"type":"object","propertyNames":{"type":"string"},"additionalProperties":{"type":"string"}},"body":{"type":"object","properties":{"name":{"type":"string"},"balance":{"type":"number"}},"required":["name","balance"]}}}}",
   "headers": {
     "Content-Type": "application/json",
   },
@@ -190,6 +190,136 @@ exports[`genLambdaEndpoint.forApiGateway given: [case13] a handler that answers 
 `;
 
 exports[`genLambdaEndpoint.forApiGateway given: [case15] a handler that returns the aws-native wire shape when: [t0] it returns { statusCode, body } — the pre-upgrade habit then: result matches snapshot 1`] = `
+{
+  "body": "{"errorMessage":"internal server error","errorType":"InternalServiceError","correlationId":"exid:[masked]"}",
+  "headers": {
+    "Content-Type": "application/json",
+  },
+  "statusCode": 500,
+}
+`;
+
+exports[`genLambdaEndpoint.forApiGateway given: [case17] a body-less envelope, met by an introspection request when: [t1] the body is \`z.undefined()\` — the NAMED idiom, and the one that used to crash then: and the published contract is snapped, in full 1`] = `
+{
+  "input": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "properties": {
+      "name": {
+        "type": "string",
+      },
+    },
+    "required": [
+      "name",
+    ],
+    "type": "object",
+  },
+  "output": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "properties": {
+      "body": {
+        "not": {},
+      },
+      "headers": {
+        "additionalProperties": {
+          "type": "string",
+        },
+        "propertyNames": {
+          "type": "string",
+        },
+        "type": "object",
+      },
+      "status": {
+        "type": "number",
+      },
+    },
+    "type": "object",
+  },
+}
+`;
+
+exports[`genLambdaEndpoint.forApiGateway given: [case18] a domain object in the schema, through the wired handler when: [t0] the handler is invoked with the wire shape then: and the whole coerced input a handler receives is snapped 1`] = `
+{
+  "crewFirst": {
+    "handle": "moana",
+    "home": {
+      "breakType": "point",
+      "name": "trestles",
+    },
+    "uuid": "u-2",
+  },
+  "signup": {
+    "note": "paddle out at dawn",
+    "spot": {
+      "breakType": "reef",
+      "name": "mavericks",
+    },
+  },
+  "surfer": {
+    "handle": "kai",
+    "home": {
+      "breakType": "reef",
+      "name": "pipeline",
+    },
+    "uuid": "u-1",
+  },
+}
+`;
+
+exports[`genLambdaEndpoint.forApiGateway given: [case18] a domain object in the schema, through the wired handler when: [t1] a value its domain object refuses is sent then: and the body it answers with names the field, loudly 1`] = `
+{
+  "body": "{"errorMessage":"✋ ConstraintError: validation failed: surfer.home.name: Invalid input: expected string, received undefined; surfer.home.breakType: Invalid input: expected string, received undefined\\n\\n{\\n  \\"issues\\": [\\n    {\\n      \\"path\\": \\"surfer.home.name\\",\\n      \\"message\\": \\"Invalid input: expected string, received undefined\\",\\n      \\"code\\": \\"invalid_type\\"\\n    },\\n    {\\n      \\"path\\": \\"surfer.home.breakType\\",\\n      \\"message\\": \\"Invalid input: expected string, received undefined\\",\\n      \\"code\\": \\"invalid_type\\"\\n    }\\n  ],\\n  \\"hint\\": \\"send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`\\"\\n}","errorType":"BadRequestError","details":{"issues":[{"path":"surfer.home.name","message":"Invalid input: expected string, received undefined","code":"invalid_type"},{"path":"surfer.home.breakType","message":"Invalid input: expected string, received undefined","code":"invalid_type"}],"hint":"send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"}}",
+  "headers": {
+    "Content-Type": "application/json",
+  },
+  "statusCode": 400,
+}
+`;
+
+exports[`genLambdaEndpoint.forApiGateway given: [case19] a nullable domain object in the response BODY, onto the wire when: [t0] the lookup found one then: and the whole payload a caller receives is snapped 1`] = `
+{
+  "body": "{"lesson":{"uuid":"l-1","spot":"pipeline"}}",
+  "headers": {
+    "Content-Type": "application/json",
+    "Origin-Agent-Cluster": "?1",
+    "Referrer-Policy": "no-referrer",
+    "Strict-Transport-Security": "max-age=15552000; includeSubDomains; preload",
+    "X-Content-Type-Options": "nosniff",
+    "X-DNS-Prefetch-Control": "off",
+    "X-Download-Options": "noopen",
+    "X-Permitted-Cross-Domain-Policies": "none",
+  },
+  "statusCode": 200,
+}
+`;
+
+exports[`genLambdaEndpoint.forApiGateway given: [case19] a nullable domain object in the response BODY, onto the wire when: [t1] the lookup found naught, so the position is null then: and the whole payload a caller receives is snapped 1`] = `
+{
+  "body": "{"lesson":null}",
+  "headers": {
+    "Content-Type": "application/json",
+    "Origin-Agent-Cluster": "?1",
+    "Referrer-Policy": "no-referrer",
+    "Strict-Transport-Security": "max-age=15552000; includeSubDomains; preload",
+    "X-Content-Type-Options": "nosniff",
+    "X-DNS-Prefetch-Control": "off",
+    "X-Download-Options": "noopen",
+    "X-Permitted-Cross-Domain-Policies": "none",
+  },
+  "statusCode": 200,
+}
+`;
+
+exports[`genLambdaEndpoint.forApiGateway given: [case20] a bare \`.transform()\` throw on the INPUT side — F35, at THIS family when: [t0] the caller sends a value the consumer guard refuses then: the whole payload, snapped 1`] = `
+{
+  "body": "{"errorMessage":"internal server error","errorType":"InternalServiceError","correlationId":"exid:[masked]"}",
+  "headers": {
+    "Content-Type": "application/json",
+  },
+  "statusCode": 500,
+}
+`;
+
+exports[`genLambdaEndpoint.forApiGateway given: [case21] a \`.pipe()\` type-shift at the OUTPUT border, at THIS family when: [t1] the handler obeys the COMPILER and hands back a number then: the whole payload, snapped 1`] = `
 {
   "body": "{"errorMessage":"internal server error","errorType":"InternalServiceError","correlationId":"exid:[masked]"}",
   "headers": {

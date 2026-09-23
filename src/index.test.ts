@@ -193,6 +193,15 @@ describe('[case1] the migrant swaps the import', () => {
             'getAllLambdaFunctionsByPrefix',
             'getAskLambdaCacheKey',
             'getOneLambdaContract',
+            // 🟡 these two are NOT asserted above, and deliberately so. this case
+            //    is the simple-lambda-* MIGRANT's surface, and a migrant needs
+            //    neither — they serve a consumer who assembles their own
+            //    validation step, so the order-ambiguity of the middleware export
+            //    never reaches them (`src/index.ts`, above their export). they sit
+            //    on this list because the list is EXHAUSTIVE over runtime keys,
+            //    never because `[case1]` covers them.
+            'getValidatedInput',
+            'getValidatedOutput',
             'isApiGatewayResponse',
             'isLambdaEndpointErrorEnvelopeAncient',
             'isLambdaEndpointErrorEnvelopeContemp',

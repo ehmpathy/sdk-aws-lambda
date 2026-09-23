@@ -62,13 +62,13 @@ const genJobDobj = (opts: { withExtraField: boolean }) => {
     ? z.object({
         uuid: z.string(),
         title: z.string(),
-        address: Address.contract,
+        address: Address.contract(),
         note: z.string(),
       })
     : z.object({
         uuid: z.string(),
         title: z.string(),
-        address: Address.contract,
+        address: Address.contract(),
       });
   interface Job {
     uuid: string;
@@ -93,10 +93,17 @@ const asSdk = (opts: { withExtraField: boolean }): LambdaClient => {
       {
         schema: {
           input: z.object({ uuid: z.string() }),
-          output: z.object({ job: Job.contract }),
+          output: z.object({ job: Job.contract() }),
         },
+        // .note = `X.contract()` coerces, so its `TOutput` is a live instance — `invoke`
+        //         owes a `new Job(...)` rather than a prop bag. `address` stays PLAIN on
+        //         purpose: `Job.nested` rebuilds it
         invoke: async () => ({
-          job: { uuid: 'j1', title: 't', address: { city: 'c', postal: 'p' } },
+          job: new Job({
+            uuid: 'j1',
+            title: 't',
+            address: { city: 'c', postal: 'p' },
+          }),
         }),
       },
       { env: { access: 'prep' } },
@@ -117,9 +124,9 @@ const asSdk = (opts: { withExtraField: boolean }): LambdaClient => {
 
 // an sdk whose endpoint references a schema-less dobj → uc.9 uncapturable
 const asUncapturableSdk = (): LambdaClient => {
-  // a REAL dobj whose `static schema` is an empty object: `.contract` stamps the
+  // a REAL dobj whose `static schema` is an empty object: `X.contract()` stamps the
   // x-domain-object pragma onto a shape with no properties, so the codegen cannot
-  // reconstruct it (uc.9). this exercises the production `.contract` → empty-schema
+  // reconstruct it (uc.9). this exercises the production `X.contract()` → empty-schema
   // → pragma path, not a hand-crafted pragma.
   interface Ghost {
     id: string;
@@ -133,9 +140,15 @@ const asUncapturableSdk = (): LambdaClient => {
       {
         schema: {
           input: z.object({ id: z.string() }),
-          output: z.object({ ghost: Ghost.contract }),
+          output: z.object({ ghost: Ghost.contract() }),
         },
-        invoke: async () => ({ ghost: {} }),
+        // .note = an instance HERE too, though the schema is empty. I expected this site to be
+        //         the family's one legitimate bag — the coerce parses against `z.object({})`,
+        //         which strips `id`, so I predicted `new Ghost({})` inside the coerce and a
+        //         throw. MEASURED instead: types pass and the suite passes, because uc.9 reads
+        //         INTROSPECTION and never invokes this handler. the exemption I was about to
+        //         write down did not exist (rule.require.measure-the-value-you-emit)
+        invoke: async () => ({ ghost: new Ghost({ id: 'g1' }) }),
       },
       { env: { access: 'prep' } },
     ),

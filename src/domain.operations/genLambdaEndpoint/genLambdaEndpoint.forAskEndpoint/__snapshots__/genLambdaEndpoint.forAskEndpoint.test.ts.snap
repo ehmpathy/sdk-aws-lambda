@@ -9,6 +9,7 @@ exports[`genLambdaEndpoint given: [case1] valid input and output when: [t0] hand
 exports[`genLambdaEndpoint given: [case2] invalid input when: [t0] handler invoked then: result matches snapshot 1`] = `
 {
   "details": {
+    "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`",
     "issues": [
       {
         "code": "invalid_type",
@@ -26,7 +27,8 @@ exports[`genLambdaEndpoint given: [case2] invalid input when: [t0] handler invok
       "message": "Invalid input: expected number, received string",
       "code": "invalid_type"
     }
-  ]
+  ],
+  "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
 }",
   "errorType": "BadRequestError",
 }
@@ -34,7 +36,7 @@ exports[`genLambdaEndpoint given: [case2] invalid input when: [t0] handler invok
 
 exports[`genLambdaEndpoint given: [case3] invalid output when: [t0] handler returns wrong shape then: it should throw MalfunctionError 1`] = `
 {
-  "message": "💥 MalfunctionError: output validation failed
+  "message": "💥 MalfunctionError: output validation failed: data: Invalid input: expected string, received number
 
 {
   "issues": [
@@ -43,9 +45,11 @@ exports[`genLambdaEndpoint given: [case3] invalid output when: [t0] handler retu
       "message": "Invalid input: expected string, received number",
       "code": "invalid_type"
     }
-  ]
+  ],
+  "hint": "the handler returned a value its own declared output schema refuses — correct each path named in \`issues\`. ⚠️ a plain object is NOT the cause: \`X.contract()\` coerces, so a bag whose fields are correct parses here. \`new X({ … })\` is the TYPE-level contract, and it checks these same paths at construction instead"
 }",
   "metadata": {
+    "hint": "the handler returned a value its own declared output schema refuses — correct each path named in \`issues\`. ⚠️ a plain object is NOT the cause: \`X.contract()\` coerces, so a bag whose fields are correct parses here. \`new X({ … })\` is the TYPE-level contract, and it checks these same paths at construction instead",
     "issues": [
       {
         "code": "invalid_type",
@@ -73,7 +77,6 @@ exports[`genLambdaEndpoint given: [case7] introspection request in prep env when
 {
   "input": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "additionalProperties": false,
     "properties": {
       "customerId": {
         "type": "string",
@@ -86,7 +89,6 @@ exports[`genLambdaEndpoint given: [case7] introspection request in prep env when
   },
   "output": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "additionalProperties": false,
     "properties": {
       "balance": {
         "type": "number",
@@ -141,5 +143,127 @@ exports[`genLambdaEndpoint given: [case9] introspection request without env conf
 exports[`genLambdaEndpoint given: [case10] normal request with env config when: [t0] handler invoked with normal payload then: result matches snapshot 1`] = `
 {
   "salute": "Hello, Bob!",
+}
+`;
+
+exports[`genLambdaEndpoint given: [case11] a domain object in the schema, through the wired handler when: [t0] the handler is invoked with the wire shape then: and the whole coerced input a handler receives is snapped 1`] = `
+{
+  "crewFirst": {
+    "handle": "moana",
+    "home": {
+      "breakType": "point",
+      "name": "trestles",
+    },
+    "uuid": "u-2",
+  },
+  "note": "dawn",
+  "signupSpot": {
+    "breakType": "reef",
+    "name": "mavericks",
+  },
+  "surfer": {
+    "handle": "kai",
+    "home": {
+      "breakType": "reef",
+      "name": "pipeline",
+    },
+    "uuid": "u-1",
+  },
+}
+`;
+
+exports[`genLambdaEndpoint given: [case11] a domain object in the schema, through the wired handler when: [t1] a value its domain object refuses is sent then: and the payload it answers with names the path, loudly 1`] = `
+{
+  "details": {
+    "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`",
+    "issues": [
+      {
+        "code": "invalid_type",
+        "message": "Invalid input: expected string, received undefined",
+        "path": "surfer.home.name",
+      },
+      {
+        "code": "invalid_type",
+        "message": "Invalid input: expected string, received undefined",
+        "path": "surfer.home.breakType",
+      },
+    ],
+  },
+  "errorMessage": "✋ ConstraintError: validation failed: surfer.home.name: Invalid input: expected string, received undefined; surfer.home.breakType: Invalid input: expected string, received undefined
+
+{
+  "issues": [
+    {
+      "path": "surfer.home.name",
+      "message": "Invalid input: expected string, received undefined",
+      "code": "invalid_type"
+    },
+    {
+      "path": "surfer.home.breakType",
+      "message": "Invalid input: expected string, received undefined",
+      "code": "invalid_type"
+    }
+  ],
+  "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
+}",
+  "errorType": "BadRequestError",
+}
+`;
+
+exports[`genLambdaEndpoint given: [case12] a nullable/optional domain object at the OUTPUT border when: [t0] the handler hands back a real instance at both positions then: and the bytes a caller receives carry the fields alone 1`] = `
+{
+  "coach": {
+    "spot": "trestles",
+    "uuid": "c-1",
+  },
+  "lesson": {
+    "spot": "pipeline",
+    "uuid": "l-1",
+  },
+}
+`;
+
+exports[`genLambdaEndpoint given: [case12] a nullable/optional domain object at the OUTPUT border when: [t1] the lookup found naught, so the position is null then: and the bytes show null PRESENT beside the absent key 1`] = `
+{
+  "lesson": null,
+}
+`;
+
+exports[`genLambdaEndpoint given: [case13] a bare \`.transform()\` throw on the INPUT side — F35, at THIS family when: [t0] the caller sends a value the consumer guard refuses then: so it reaches aws as a SERVER fault — CORRECT, per F35 1`] = `
+{
+  "errorMessage": "unknown surf spot",
+  "errorName": "Error",
+  "ownEnumerableKeys": [
+    "originalError",
+  ],
+  "readAsCallerFault": false,
+  "settlesAs": "REJECTED — a real lambda FunctionError",
+}
+`;
+
+exports[`genLambdaEndpoint given: [case14] a \`.pipe()\` type-shift at the OUTPUT border, at HANDLER grain when: [t0] the handler obeys the RUNTIME — it returns a string then: the published face contradicts the wire 1`] = `
+{
+  "publishedType": "string",
+  "wireType": "number",
+  "wireValue": 6,
+}
+`;
+
+exports[`genLambdaEndpoint given: [case14] a \`.pipe()\` type-shift at the OUTPUT border, at HANDLER grain when: [t1] the handler obeys the COMPILER — it returns a number then: the invocation FAILS — so the declared type is unusable 1`] = `
+{
+  "errorMessage": "💥 MalfunctionError: output validation failed: waveHeight: Invalid input: expected string, received number
+
+{
+  "issues": [
+    {
+      "path": "waveHeight",
+      "message": "Invalid input: expected string, received number",
+      "code": "invalid_type"
+    }
+  ],
+  "hint": "the handler returned a value its own declared output schema refuses — correct each path named in \`issues\`. ⚠️ a plain object is NOT the cause: \`X.contract()\` coerces, so a bag whose fields are correct parses here. \`new X({ … })\` is the TYPE-level contract, and it checks these same paths at construction instead"
+}",
+  "errorName": "Error",
+  "settlesAs": "REJECTED",
 }
 `;

@@ -4,7 +4,6 @@ exports[`e2e: deployed introspectable lambda given: [case1] introspect one deplo
 {
   "input": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "additionalProperties": false,
     "properties": {
       "shellId": {
         "type": "string",
@@ -21,7 +20,6 @@ exports[`e2e: deployed introspectable lambda given: [case1] introspect one deplo
   },
   "output": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "additionalProperties": false,
     "properties": {
       "ok": {
         "const": true,

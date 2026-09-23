@@ -19,7 +19,8 @@ exports[`e2e: deployed goSurf lambda with trail propagation given: [case1] deplo
       "message": "Invalid option: expected one of \\"longboard\\"|\\"shortboard\\"|\\"bodyboard\\"",
       "code": "invalid_value"
     }
-  ]
+  ],
+  "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
 }
 
 {
@@ -37,12 +38,14 @@ exports[`e2e: deployed goSurf lambda with trail propagation given: [case1] deplo
         "message": "Invalid option: expected one of \\"longboard\\"|\\"shortboard\\"|\\"bodyboard\\"",
         "code": "invalid_value"
       }
-    ]
+    ],
+    "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
   }
 }",
   "messageContainsValidation": true,
   "metadata": {
     "details": {
+      "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`",
       "issues": [
         {
           "code": "invalid_value",

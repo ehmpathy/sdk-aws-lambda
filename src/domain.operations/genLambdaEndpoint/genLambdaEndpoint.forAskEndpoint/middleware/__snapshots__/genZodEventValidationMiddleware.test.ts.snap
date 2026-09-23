@@ -1,0 +1,16 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`genZodEventValidationMiddleware given: [case11] a wire the SCHEMA accepts and the CONSTRUCTOR rejects when: [t0] the wire passes the schema then: the whole surface a handler author meets is snapped 1`] = `
+"✋ ConstraintError: validation failed: spot: GuardedSpot.contract(): the props satisfied the schema, but \`GuardedSpot.build(props)\` threw — a surf spot must carry a name. fix: align \`static schema\` with what the constructor demands (e.g. its \`static nested\` hydration), so any payload the schema accepts can also construct
+
+{
+  "issues": [
+    {
+      "path": "spot",
+      "message": "GuardedSpot.contract(): the props satisfied the schema, but \`GuardedSpot.build(props)\` threw — a surf spot must carry a name. fix: align \`static schema\` with what the constructor demands (e.g. its \`static nested\` hydration), so any payload the schema accepts can also construct",
+      "code": "custom"
+    }
+  ],
+  "hint": "each entry in \`issues\` names its own fix — apply the one at the path named there. ⚠️ where a message says the schema ACCEPTED the value, the fix belongs to the endpoint author, never to the caller"
+}"
+`;

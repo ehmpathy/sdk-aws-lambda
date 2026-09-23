@@ -88,6 +88,25 @@ export type ForApiGatewayInput<TInput, TBody> = {
      * .what = describes `inputAfter` — what `invoke` receives
      * .why = guards the point of consequence on the way in: a caller who sent the wrong
      *        shape is refused before the handler runs
+     *
+     * ⚠️ .why ONE type param here, where the twin carries TWO = this asymmetry is CORRECT, and
+     *         it reads like a missed parity fix. the twin declares
+     *         `input: ZodSchema<TInput, TInputBefore>` (`forAskEndpoint.ts:80`) to track the
+     *         codec's two faces — the wire face a caller sends, and the instance face `invoke`
+     *         receives after a coerce.
+     *
+     *   .why the twin NEEDS it = its returned handler is typed
+     *        `LambdaHandlerInput<TInputBefore>` (`forAskEndpoint.ts:108`), so the WIRE face
+     *        carries weight in its own public signature — a caller of the generated handler is
+     *        typed against what they put on the wire
+     *   .why this family does NOT = the handler this returns is pinned to
+     *        `ApiGatewayRequestPayload` (`:196`), an envelope fixed by aws that does not vary
+     *        with the schema. so the wire face has no slot to land in, and a `TInputBefore`
+     *        declared here would be unused — it changes `TInput` inference not at all, since
+     *        zod's `ZodType<Output, Input>` infers `TInput` from the Output position either way
+     *
+     * ⇒ so do NOT "fix" this to match the twin. the two families differ because their PUBLIC
+     *   HANDLER TYPES differ, never because one of them was overlooked
      */
     input: ZodSchema<TInput>;
 

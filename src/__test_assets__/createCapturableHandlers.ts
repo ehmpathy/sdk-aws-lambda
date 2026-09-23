@@ -5,7 +5,7 @@ import { genLambdaEndpoint } from '../domain.operations/genLambdaEndpoint/genLam
 
 /**
  * .what = test domain-objects + genLambdaEndpoint handlers whose zod schemas
- *         reference `SomeDobj.contract`, so introspection stamps the
+ *         reference `X.contract()`, so introspection stamps the
  *         `x-domain-object` pragma the codegen captures
  * .why = a self-contained fixture to exercise the codegen end-to-end via the
  *        in-process harness (no deploy) — an entity, a literal, a nested dobj,
@@ -36,7 +36,7 @@ class Job extends DomainEntity<Job> implements Job {
   public static schema = z.object({
     uuid: z.string(),
     title: z.string(),
-    address: Address.contract,
+    address: Address.contract(),
   });
 }
 
@@ -50,14 +50,18 @@ export const createCapturableHandlers = () => ({
     {
       schema: {
         input: z.object({ uuid: z.string() }),
-        output: z.object({ job: Job.contract }),
+        output: z.object({ job: Job.contract() }),
       },
+      // .note = `X.contract()` coerces, so its `TOutput` is a live instance — `invoke` owes a
+      //         `new Job(...)` rather than a prop bag (the rule `refTrophyHandlers.ts` states)
+      // .note = `address` stays a PLAIN object on purpose: `Job.nested` rebuilds it, so this
+      //         one `new Job(...)` exercises the nested route too (uc.4)
       invoke: async () => ({
-        job: {
+        job: new Job({
           uuid: 'job-1',
           title: 'a job',
           address: { city: 'austin', postal: '78704' },
-        },
+        }),
       }),
     },
     { env: { access: 'prep' } },
@@ -66,8 +70,11 @@ export const createCapturableHandlers = () => ({
     {
       schema: {
         input: z.object({ limit: z.number() }),
-        output: z.object({ jobs: z.array(Job.contract) }),
+        output: z.object({ jobs: z.array(Job.contract()) }),
       },
+      // .note = an EMPTY array carries no element, so there is no instance to construct here.
+      //         the array's element contract is proven by `getJob` above, and this endpoint's
+      //         own subject is that the codegen DE-DUPES `Job` across the two endpoints
       invoke: async () => ({ jobs: [] }),
     },
     { env: { access: 'prep' } },

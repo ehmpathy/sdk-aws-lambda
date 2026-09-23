@@ -7,11 +7,18 @@ import type { DomainObjectCaptured } from '../../../domain.objects/DomainObjectC
  * .what = read the `x-domain-object` pragma off one json-schema node → a
  *         DomainObjectCaptured, or null when the node carries no pragma
  * .why = a captured node identifies a domain-object only if its schema was built
- *        from `SomeDobj.contract`; a plain shape has no pragma and stays a plain type
+ *        from `X.contract()`; a plain shape has no pragma and stays a plain type
  *
- * .kind = domain-objects@0.33.0 stamps the true `kind` on the pragma (via getKind).
+ * .kind = domain-objects stamps the true `kind` on the pragma (via getKind) since 0.33.0.
  *         read it directly; fall back to the legacy `primary`-non-empty heuristic
- *         only for a pre-0.33 producer whose pragma omits `kind` (cross-version safe)
+ *         only for a pre-0.33 producer whose pragma omits `kind`
+ *
+ * .note = ⚠️ that fallback is REAL backcompat, and it holds for a reason this repo's own
+ *         version cannot settle: the pragma's producer is the REMOTE lambda under
+ *         introspection, which runs its own `domain-objects` on its own release cadence.
+ *         so our bump to 0.34.0 does not retire a pre-0.33 producer — a peer service
+ *         still on 0.32.x emits a `kind`-less pragma, and to drop the fallback would
+ *         mis-type its every entity as a literal, silently
  */
 export const asDomainObjectPragma = (input: {
   node: JSONSchema;

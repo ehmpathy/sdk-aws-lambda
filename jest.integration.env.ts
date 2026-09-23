@@ -33,9 +33,23 @@ if (
   throw new Error(`integration.test is not targeting stage 'test'`);
 
 /**
+ * .what = refuse the ec2 instance role as a credential source
+ * .why HERE = an integration test invokes a REAL deployed lambda by slug, so a fall-through
+ *      to this box's instance role would invoke the wrong account's function and report its
+ *      answer as ours (`rule.forbid.failhide`)
+ *
+ * .the shared evidence — the `remoteProvider` chain read, the container caveat, why the
+ *  assignment is not extracted, and why it survives `useKeyrack`'s stronger splice — lives
+ *  ONCE at `jest.acceptance.env.ts`, above its copy of this line. read it there
+ *
+ * .note = this must be set BEFORE any aws client is constructed, so it sits above the source
+ */
+process.env.AWS_EC2_METADATA_DISABLED = 'true';
+
+/**
  * .what = source aws credentials from keyrack and export them to process.env in one call
  * .why = useKeyrack sources the tier's profile AND splices static creds + drops AWS_PROFILE —
- *        the v3 sdk's default credential provider otherwise resolves AWS_PROFILE through the
+ *        the v3 sdk's default credential provider otherwise reads AWS_PROFILE through the
  *        ambient grove EC2 instance's own credentials rather than the chained target account.
  */
 useKeyrack({ env: 'test' });
