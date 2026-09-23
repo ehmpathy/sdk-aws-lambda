@@ -109,6 +109,16 @@ describe('advertisedExamples.coverage', () => {
 
         // this repo's own verb prefixes (`rule.require.get-set-gen-verbs`), so a
         // foreign symbol like `createStandardHandler` is correctly out of scope
+        //
+        // 🟡 the INVERSE trap, and it has fired: a CONSUMER-side function in an
+        //    example fence — `genSurfLesson(event.surfer)` — carries one of these
+        //    prefixes and is caught here. that is the clamp right, never a false
+        //    positive: every other `gen*` in the readme IS an export, so a reader
+        //    takes this one for an export too.
+        //
+        //  ⇒ the fix is to RENAME it in the readme to a verb this repo does not
+        //    claim (`bookSurfLesson`), never to exempt it. an exemption list would
+        //    blunt the clamp for every rename drift it exists to catch.
         const named = [
           ...new Set(readme.match(/\b(?:as|is|gen|run|ask)[A-Z]\w*/g) ?? []),
         ];

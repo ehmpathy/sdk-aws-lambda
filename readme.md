@@ -172,7 +172,7 @@ import { Surfer } from './domain.objects/Surfer';
 export const handler = genLambdaEndpoint(
   {
     schema: { input: z.object({ surfer: Surfer.contract() }), output: z.void() },
-    invoke: async ({ event }) => genSurfLesson(event.surfer), // event.surfer instanceof Surfer
+    invoke: async ({ event }) => bookSurfLesson(event.surfer), // event.surfer instanceof Surfer
   },
   { env: { access: 'prep' } },
 );
