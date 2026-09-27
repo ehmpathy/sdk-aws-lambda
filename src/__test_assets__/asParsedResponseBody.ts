@@ -1,10 +1,10 @@
 import { MalfunctionError } from 'helpful-errors';
 
-import type { ApiGatewayResponsePayload } from '../domain.objects/ApiGatewayResponsePayload';
+import type { ApiGatewayResponseOnwire } from '../domain.objects/ApiGatewayResponseOnwire';
 
 /**
  * .what = reads the json body off a wire response, and fails loud when there is none
- * .why = `body` is optional on `ApiGatewayResponsePayload` because a body-less response (a
+ * .why = `body` is optional on `ApiGatewayResponseOnwire` because a body-less response (a
  *        204, a 308) reaches the wire with the key absent. a test that wants a body must
  *        therefore declare that, so this states the expectation once, in one named place,
  *        rather than narrow it at every assertion
@@ -21,7 +21,7 @@ export const asParsedResponseBody = <
   // biome-ignore lint/suspicious/noExplicitAny: `JSON.parse` returns `any`; see .note
   TBody = any,
 >(input: {
-  response: ApiGatewayResponsePayload;
+  response: ApiGatewayResponseOnwire;
 }): TBody => {
   const { body } = input.response;
 

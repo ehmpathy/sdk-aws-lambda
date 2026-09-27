@@ -16,7 +16,6 @@ const { log } = genContextLogTrail({ trail: null, env: null });
 
 import {
   asApiGatewayResponseSchema,
-  forApiGateway,
   genIntrospectionMiddleware,
   genLambdaEndpoint,
   getAllLambdaContracts,
@@ -92,11 +91,11 @@ describe('introspection', () => {
       output: z.object({ salute: z.string() }),
     };
 
-    const handler = genLambdaEndpoint(
+    const handler = genLambdaEndpoint.forAsk(
       {
         schema,
-        invoke: async ({ event }) => ({
-          salute: `Hello, ${event.name}!`,
+        invoke: async ({ payload }) => ({
+          salute: `Hello, ${payload.name}!`,
         }),
       },
       { env: { access: 'prep' } },
@@ -155,11 +154,11 @@ describe('introspection', () => {
       output: z.object({ salute: z.string() }),
     };
 
-    const handler = genLambdaEndpoint(
+    const handler = genLambdaEndpoint.forAsk(
       {
         schema,
-        invoke: async ({ event }) => ({
-          salute: `Hello, ${event.name}!`,
+        invoke: async ({ payload }) => ({
+          salute: `Hello, ${payload.name}!`,
         }),
       },
       { env: { access: 'prod' } },
@@ -198,11 +197,11 @@ describe('introspection', () => {
       output: z.object({ salute: z.string() }),
     };
 
-    const handler = genLambdaEndpoint(
+    const handler = genLambdaEndpoint.forAsk(
       {
         schema,
-        invoke: async ({ event }) => ({
-          salute: `Hello, ${event.name}!`,
+        invoke: async ({ payload }) => ({
+          salute: `Hello, ${payload.name}!`,
         }),
       },
       { env: { access: 'prod' } },
@@ -242,11 +241,11 @@ describe('introspection', () => {
       output: z.object({ salute: z.string() }),
     };
 
-    const handler = genLambdaEndpoint({
+    const handler = genLambdaEndpoint.forAsk({
       schema,
       // no env config
-      invoke: async ({ event }) => ({
-        salute: `Hello, ${event.name}!`,
+      invoke: async ({ payload }) => ({
+        salute: `Hello, ${payload.name}!`,
       }),
     });
 
@@ -281,11 +280,11 @@ describe('introspection', () => {
       output: z.object({ salute: z.string() }),
     };
 
-    const handler = genLambdaEndpoint({
+    const handler = genLambdaEndpoint.forAsk({
       schema,
       // no env config
-      invoke: async ({ event }) => ({
-        salute: `Hello, ${event.name}!`,
+      invoke: async ({ payload }) => ({
+        salute: `Hello, ${payload.name}!`,
       }),
     });
 
@@ -317,16 +316,16 @@ describe('introspection', () => {
 
   given('[case5] forApiGateway with introspection in prep env', () => {
     const schema = {
-      input: z.object({ data: z.string() }),
+      input: z.object({ payload: z.object({ data: z.string() }) }),
       output: asApiGatewayResponseSchema({
-        body: z.object({ success: z.boolean() }),
+        payload: z.object({ success: z.boolean() }),
       }),
     };
 
-    const handler = forApiGateway(
+    const handler = genLambdaEndpoint.forApiGateway(
       {
         schema,
-        invoke: async () => ({ body: { success: true } }),
+        invoke: async () => ({ payload: { success: true } }),
       },
       { env: { access: 'prep' } },
     );
@@ -357,9 +356,15 @@ describe('introspection', () => {
       });
 
       then('result matches snapshot', () => {
-        // explicit assertion ensures shape check before snapshot
-        expect(result.statusCode).toBe(200);
-        expect(asParsedResponseBody({ response: result }).input).toBeDefined();
+        /**
+         * .what = the explicit assertion `rule.require.snapshots` pairs with every snapshot
+         * .why THIS one = the two `then`s above already assert the status and the parsed body,
+         *         so a third copy of either would verify what is verified and leave the
+         *         snapshot's OWN reach unasserted. the snapshot's reach here is the WIRE form —
+         *         the json-schema, serialized into `body` as a string — so that is what this
+         *         assertion names (`rule.forbid.redundant-expensive-operations`)
+         */
+        expect(typeof result.body).toEqual('string');
         expect(result).toMatchSnapshot();
       });
     });
@@ -394,7 +399,7 @@ describe('introspection', () => {
       }),
     };
 
-    const handler = genLambdaEndpoint(
+    const handler = genLambdaEndpoint.forAsk(
       {
         schema,
         invoke: async () => ({
@@ -438,11 +443,11 @@ describe('introspection', () => {
       output: z.object({ salute: z.string() }),
     };
 
-    const handler = genLambdaEndpoint(
+    const handler = genLambdaEndpoint.forAsk(
       {
         schema,
-        invoke: async ({ event }) => ({
-          salute: `Hello, ${event.name}!`,
+        invoke: async ({ payload }) => ({
+          salute: `Hello, ${payload.name}!`,
         }),
       },
       { env: async () => ({ access: 'prep' as const }) },
@@ -492,12 +497,12 @@ describe('introspection', () => {
       }),
     };
 
-    const handler = genLambdaEndpoint(
+    const handler = genLambdaEndpoint.forAsk(
       {
         schema,
-        invoke: async ({ event }) => ({
+        invoke: async ({ payload }) => ({
           user: {
-            id: event.userId,
+            id: payload.userId,
             name: 'Test User',
             email: 'test@example.com',
           },
@@ -551,14 +556,14 @@ describe('introspection', () => {
 
   given('[case9] getOneLambdaContract when introspection blocked in prod env', () => {
     // handler in prod env blocks introspection
-    const handler = genLambdaEndpoint(
+    const handler = genLambdaEndpoint.forAsk(
       {
         schema: {
           input: z.object({ name: z.string() }),
           output: z.object({ salute: z.string() }),
         },
-        invoke: async ({ event }) => ({
-          salute: `Hello, ${event.name}!`,
+        invoke: async ({ payload }) => ({
+          salute: `Hello, ${payload.name}!`,
         }),
       },
       { env: { access: 'prod' } },
@@ -650,7 +655,7 @@ describe('introspection', () => {
       output: z.object({ theme: z.enum(['light', 'dark']), language: z.string() }),
     };
 
-    const getUserHandler = genLambdaEndpoint(
+    const getUserHandler = genLambdaEndpoint.forAsk(
       {
         schema: userSchema,
         invoke: async () => ({ name: 'Test', email: 'test@example.com' }),
@@ -658,7 +663,7 @@ describe('introspection', () => {
       { env: { access: 'prep' } },
     );
 
-    const getSettingsHandler = genLambdaEndpoint(
+    const getSettingsHandler = genLambdaEndpoint.forAsk(
       {
         schema: settingsSchema,
         invoke: async () => ({ theme: 'dark' as const, language: 'en' }),
@@ -750,7 +755,7 @@ describe('introspection', () => {
   given('[case12] getAllLambdaContracts is all-or-none', () => {
     // a service where one function does not support introspection: the whole
     // batch must fail loud rather than return a partial contract set
-    const getUserHandler = genLambdaEndpoint(
+    const getUserHandler = genLambdaEndpoint.forAsk(
       {
         schema: {
           input: z.object({ userId: z.string() }),
@@ -762,7 +767,7 @@ describe('introspection', () => {
     );
 
     // handler gated to prod: not introspectable when queried in prep
-    const prodOnlyHandler = genLambdaEndpoint(
+    const prodOnlyHandler = genLambdaEndpoint.forAsk(
       {
         schema: {
           input: z.object({ x: z.number() }),
@@ -856,7 +861,7 @@ describe('introspection', () => {
       });
     }
 
-    const handler = genLambdaEndpoint(
+    const handler = genLambdaEndpoint.forAsk(
       {
         schema: {
           input: z.object({
@@ -957,7 +962,7 @@ describe('introspection', () => {
       });
     }
 
-    const handler = genLambdaEndpoint(
+    const handler = genLambdaEndpoint.forAsk(
       {
         schema: {
           input: z.object({ rider: Seaturtle.contract() }), // <-- coerces, input border
@@ -1048,7 +1053,7 @@ describe('introspection', () => {
    */
   given('[case15] the published face of each input-only output declaration', () => {
     const asPublishedOutput = async (output: z.ZodType): Promise<unknown> => {
-      const handler = genLambdaEndpoint(
+      const handler = genLambdaEndpoint.forAsk(
         {
           schema: { input: z.object({ uuid: z.string() }), output },
           invoke: async () => null as never,

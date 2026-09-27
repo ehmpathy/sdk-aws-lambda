@@ -3,7 +3,7 @@ import { getError, given, then, useThen, when } from 'test-fns';
 import { z } from 'zod';
 
 import { LAMBDA_ENDPOINT_ERROR_SERDE_CONTEMP } from '../../domain.objects/LambdaEndpointErrorResponseBody';
-import { genLambdaEndpoint } from '../genLambdaEndpoint/genLambdaEndpoint.forAskEndpoint/genLambdaEndpoint.forAskEndpoint';
+import { forAsk } from '../genLambdaEndpoint/genLambdaEndpoint.forAsk/genLambdaEndpoint.forAsk';
 import { getIsWrappedPayload } from '../lambdaEndpointWire/frame/getIsWrappedPayload';
 import { asLambdaEndpointErrorEnvelopeContemp } from './dialect/isLambdaEndpointErrorEnvelope';
 import { onReferenced } from './runLambdaEndpoint.onReferenced';
@@ -13,13 +13,13 @@ import { onReferenced } from './runLambdaEndpoint.onReferenced';
  * .why = the minimum shape that exercises success + constraint rejection
  */
 const genEchoEndpoint = () =>
-  genLambdaEndpoint({
+  forAsk({
     schema: {
       input: z.object({ uuid: z.string().uuid() }),
       output: z.object({ uuid: z.string(), seenAt: z.string() }),
     },
-    invoke: async ({ event }) => ({
-      uuid: event.uuid,
+    invoke: async ({ payload }) => ({
+      uuid: payload.uuid,
       seenAt: '2026-09-08T00:00:00.000Z',
     }),
   });
@@ -212,7 +212,7 @@ describe('runLambdaEndpoint.onReferenced', () => {
   });
 
   given('[case3] an endpoint whose handler raises a malfunction', () => {
-    const handler = genLambdaEndpoint({
+    const handler = forAsk({
       schema: {
         input: z.object({ uuid: z.string() }),
         output: z.object({ uuid: z.string() }),
@@ -646,7 +646,7 @@ describe('runLambdaEndpoint.onReferenced', () => {
   given(
     '[edge] an endpoint whose caller sends a constraint error natively',
     () => {
-      const handler = genLambdaEndpoint({
+      const handler = forAsk({
         schema: {
           input: z.object({ uuid: z.string() }),
           output: z.object({ uuid: z.string() }),

@@ -15,8 +15,7 @@ import {
   asLambdaEndpointOutput,
   asLambdaEvent,
   BadRequestError,
-  forApiGateway,
-  genApiGatewayEventNormalizationMiddleware,
+  genApiGatewayRequestEventNormalizationMiddleware,
   genConstraintErrorMiddleware,
   genIoLoggerMiddleware,
   genLambdaEndpoint,
@@ -26,45 +25,21 @@ import {
   LambdaEndpointError,
   runLambdaEndpoint,
 } from '../src/index';
+// the WHOLE public surface, read as a key set — see `[case1][t1]`
+import * as sdk from '../src/index';
 
 /**
- * .note = the referenced invoke reaches the PUBLIC barrel now, never a private
- *   `__test_assets__` path. two faults were repaired at once:
+ * .note = every referenced invoke goes through `runLambdaEndpoint.onReferenced` from the public
+ *   barrel, never a private `__test_assets__` path — the ACTION must go through the contract
+ *   (`rule.require.acceptance.blackbox`), and that util carries the wire-fidelity strip and the
+ *   guards a consumer meets
  *
- *   1. `invokeHandlerForTest` was an unguarded twin of
- *      `runLambdaEndpoint.onReferenced` — no wire-fidelity strip, no dialect
- *      awareness, no absent-event guard, no callback-arity guard. so this
- *      acceptance suite exercised a code path no consumer can reach
- *   2. an acceptance test that imports a private path is not blackbox
- *      (`rule.require.acceptance.blackbox`: the ACTION must go through the
- *      contract). it read from `../src/index` for every assertion, then invoked
- *      through the back door
- *
- * ⚠️ **the twin was reported to carry zero importers, and it carried nine.** a
- *    grep scoped to `src/` missed both consumers here — the same peer-module
- *    blindness `[case9] [t4]` was added to catch, in the very round that added it.
- *
- * 🔴 .why every payload-format case declares `struct: { payload: 'ancient' }`
- *
- *    these cases hand-build the WIRE payload and assert on what the handler then
- *    receives. `onReferenced` frames CONTEMP by default — it wraps the event as
- *    `{ event, trail }` — so a payload that is already wrapped gets wrapped
- *    twice. the ancient dialect sends the event FLAT, which is what a test that
- *    supplies its own bytes actually means.
- *
- *    ⇒ measured: `[case5]`'s `{ event: { message }, trail: { exid } }` arrived at
- *      the handler as `{ event, trail }` rather than `{ message }`, and zod
- *      rejected it — *"expected string, received undefined"*.
- *
- * ⚠️ **and four of these six cases passed under the double wrap, by luck.** where
- *    the handler expects the WRAPPER shape (`[case9]`, which asserts
- *    `receivedKeys` holds `event` + `trail` + `extra`), the extra wrap is undone
- *    by the trail middleware and the round trip is a no-op. so the defect showed
- *    on two sites and was live on all six.
- *
- *    ⇒ the dialect is declared on every one of them rather than only where it
- *      went red — a case that passes for the wrong reason is a case that will
- *      surprise the next editor.
+ * 🔴 .why every payload-format case declares `struct: { payload: 'ancient' }` = these cases
+ *   hand-build the WIRE payload. `onReferenced` frames CONTEMP by default — it wraps the event as
+ *   `{ event, trail }` — so a payload already wrapped would be wrapped twice. the ancient dialect
+ *   sends the event FLAT, which is what a test that supplies its own bytes means. the dialect is
+ *   declared on all of them, since a double wrap passes by luck wherever the trail middleware
+ *   undoes it
  */
 
 /**
@@ -116,12 +91,61 @@ const asSnapshottable = <T>(journey: T): T => {
 describe('sdk-aws-lambda', () => {
   given('[case1] public exports', () => {
     when('[t0] imports evaluated', () => {
-      then('genLambdaEndpoint should be callable', () => {
-        expect(typeof genLambdaEndpoint).toBe('function');
+      /**
+       * 🔴 .what this clamps = the family shape, `{ forAsk, forApiGateway, forSqs }`
+       *
+       * .why = the family's name must belong to the FAMILY, never to one of its variants
+       *        (`rule.forbid.unqualified-variant-exports`), so every variant is a key on it and
+       *        none is a callable default
+       *
+       * ⚠️ .the arm that carries the weight is the BARE-EXPORT one = the `.forX` assertions below
+       *      would also pass if someone re-added a bare `forApiGateway` beside the family. only
+       *      `[t1]` refuses that
+       */
+      then('genLambdaEndpoint is a plain object whose keys are its variants', () => {
+        expect(typeof genLambdaEndpoint).toBe('object');
+        expect(Object.keys(genLambdaEndpoint).sort()).toEqual([
+          'forApiGateway',
+          'forAsk',
+          'forSqs',
+        ]);
       });
 
-      then('forApiGateway should be callable', () => {
-        expect(typeof forApiGateway).toBe('function');
+      then('genLambdaEndpoint.forApiGateway rides on the family', () => {
+        expect(typeof genLambdaEndpoint.forApiGateway).toBe('function');
+      });
+
+      then('genLambdaEndpoint.forAsk rides on the family', () => {
+        expect(typeof genLambdaEndpoint.forAsk).toBe('function');
+      });
+
+      /**
+       * ⚠️ .what = `forSqs` is a SUB-FAMILY, so it is an OBJECT where its peers are functions
+       * .why = the sqs trigger forces a cardinality choice no other trigger does — an invoke
+       *        carries N messages. so the trigger names an object and the cardinality names
+       *        its leaves (`genLambdaEndpoint.forSqs.perRecord` / `.perBatch`)
+       */
+      then('genLambdaEndpoint.forSqs rides on the family, as an object', () => {
+        expect(typeof genLambdaEndpoint.forSqs).toBe('object');
+        expect(typeof genLambdaEndpoint.forSqs).not.toBe('function');
+      });
+
+      then('both forSqs cardinality leaves are reachable', () => {
+        expect(typeof genLambdaEndpoint.forSqs.perRecord).toBe('function');
+        expect(typeof genLambdaEndpoint.forSqs.perBatch).toBe('function');
+      });
+
+      /**
+       * .what = the sub-family enumerates EXACTLY its two leaves
+       * .why = autocomplete on `genLambdaEndpoint.forSqs.` must show the whole set, so a
+       *        third cardinality added tomorrow goes red here until it is advertised
+       *        (`rule.require.clamp-edge-cases` — clamp the class)
+       */
+      then('the forSqs key set is exactly { perRecord, perBatch }', () => {
+        expect(Object.keys(genLambdaEndpoint.forSqs).sort()).toEqual([
+          'perBatch',
+          'perRecord',
+        ]);
       });
 
       then('askLambdaEndpoint should be callable', () => {
@@ -144,6 +168,51 @@ describe('sdk-aws-lambda', () => {
       then('BadRequestError should be constructable', () => {
         const error = new BadRequestError('test');
         expect(error).toBeInstanceOf(Error);
+      });
+    });
+
+    /**
+     * 🔴 .what = NO variant of this family is exported BARE from the public surface
+     *
+     * .why = a bare variant export is the defect's own cause, never merely its symptom. once
+     *        `genLambdaEndpoint` named the ask variant, its peer had no family name left to
+     *        qualify — so `forApiGateway` shipped preposition-led. this arm refuses the RE-ENTRY
+     *        of that shape, which `[t0]`'s three assertions cannot: each of them stays green with
+     *        a bare `forApiGateway` re-added beside the family
+     *
+     * .note = the read is of the module's own key set, so a new variant added bare tomorrow goes
+     *         red here without anyone's foresight (`rule.require.clamp-edge-cases` — clamp the
+     *         CLASS, never the one instance that raised it)
+     *
+     * 🔴 .the second assertion greps the CAUSE, where the first greps a FORM. `for*` is the
+     *        shape the defect took ONCE; the cause is *a member of this family, exported bare*.
+     *        `forSqs`'s leaves are named `perRecord` / `perBatch`, so a bare one of those would
+     *        pass a `for*` filter and be exactly the same defect
+     *        (`rule.require.sweep-the-defect-class` — grep the subject, never the syntax of the
+     *        one instance you already fixed)
+     */
+    when('[t1] the module namespace is read whole', () => {
+      then('no bare `for*` variant sits beside the family', () => {
+        const exported = Object.keys(sdk);
+
+        expect(exported).toContain('genLambdaEndpoint');
+        expect(exported.filter((key) => key.startsWith('for'))).toEqual([]);
+      });
+
+      then('no MEMBER of the family — at any depth — sits beside it either', () => {
+        const exported = new Set(Object.keys(sdk));
+
+        /**
+         * .what = every reachable name under the family, the sub-family's leaves among them
+         * .why = a reader who adds a variant adds it HERE, on the object. so this list is
+         *        derived from the family itself rather than restated, and cannot go stale
+         */
+        const members = [
+          ...Object.keys(genLambdaEndpoint),
+          ...Object.keys(genLambdaEndpoint.forSqs),
+        ];
+
+        expect(members.filter((member) => exported.has(member))).toEqual([]);
       });
     });
   });
@@ -171,9 +240,9 @@ describe('sdk-aws-lambda', () => {
       });
 
       then(
-        'genApiGatewayEventNormalizationMiddleware should be callable',
+        'genApiGatewayRequestEventNormalizationMiddleware should be callable',
         () => {
-          expect(typeof genApiGatewayEventNormalizationMiddleware).toBe(
+          expect(typeof genApiGatewayRequestEventNormalizationMiddleware).toBe(
             'function',
           );
         },
@@ -187,10 +256,10 @@ describe('sdk-aws-lambda', () => {
       output: z.object({ message: z.string() }),
     };
 
-    const handler = genLambdaEndpoint({
+    const handler = genLambdaEndpoint.forAsk({
       schema,
-      invoke: async ({ event }) => ({
-        message: `Hello, ${event.name}!`,
+      invoke: async ({ payload }) => ({
+        message: `Hello, ${payload.name}!`,
       }),
     });
 
@@ -245,13 +314,13 @@ describe('sdk-aws-lambda', () => {
     });
 
     when('[t3] output validation fails', () => {
-      const badOutputHandler = genLambdaEndpoint({
+      const badOutputHandler = genLambdaEndpoint.forAsk({
         schema: {
           input: z.object({ name: z.string() }),
           output: z.object({ message: z.string(), count: z.number() }),
         },
-        invoke: async ({ event }) => ({
-          message: `Hello, ${event.name}!`,
+        invoke: async ({ payload }) => ({
+          message: `Hello, ${payload.name}!`,
           // count field absent - triggers output validation error
         }),
       });
@@ -269,15 +338,15 @@ describe('sdk-aws-lambda', () => {
 
   given('[case4] forApiGateway handler', () => {
     const schema = {
-      input: z.object({ data: z.string() }),
+      input: z.object({ payload: z.object({ data: z.string() }) }),
       output: asApiGatewayResponseSchema({
-        body: z.object({ success: z.boolean() }),
+        payload: z.object({ success: z.boolean() }),
       }),
     };
 
-    const handler = forApiGateway({
+    const handler = genLambdaEndpoint.forApiGateway({
       schema,
-      invoke: async () => ({ body: { success: true } }),
+      invoke: async () => ({ payload: { success: true } }),
     });
 
     const mockContext = {
@@ -375,10 +444,10 @@ describe('sdk-aws-lambda', () => {
       output: z.object({ echo: z.string(), exid: z.string() }),
     };
 
-    const handler = genLambdaEndpoint({
+    const handler = genLambdaEndpoint.forAsk({
       schema,
-      invoke: async ({ event }, { log }) => ({
-        echo: event.message,
+      invoke: async ({ payload }, { log }) => ({
+        echo: payload.message,
         exid:
           log.trail?.exid ??
           'no-exid',
@@ -458,10 +527,10 @@ describe('sdk-aws-lambda', () => {
       output: z.object({ echo: z.string(), exid: z.string() }),
     };
 
-    const handler = genLambdaEndpoint({
+    const handler = genLambdaEndpoint.forAsk({
       schema,
-      invoke: async ({ event }, { log }) => ({
-        echo: event.message,
+      invoke: async ({ payload }, { log }) => ({
+        echo: payload.message,
         exid:
           log.trail?.exid ??
           'no-exid',
@@ -509,11 +578,11 @@ describe('sdk-aws-lambda', () => {
       }),
     };
 
-    const handler = genLambdaEndpoint({
+    const handler = genLambdaEndpoint.forAsk({
       schema,
-      invoke: async ({ event }, { log }) => ({
-        receivedTrail: event.trail,
-        receivedDestination: event.destination,
+      invoke: async ({ payload }, { log }) => ({
+        receivedTrail: payload.trail,
+        receivedDestination: payload.destination,
         exidGenerated:
           log.trail?.exid?.startsWith('exid:') ?? false,
       }),
@@ -562,6 +631,7 @@ describe('sdk-aws-lambda', () => {
         Records: z.array(
           z.object({
             messageId: z.string(),
+            // .note = `body` is AWS's key on an sqs record, so it keeps aws's name
             body: z.string(),
           }),
         ),
@@ -572,10 +642,10 @@ describe('sdk-aws-lambda', () => {
       }),
     };
 
-    const handler = genLambdaEndpoint({
+    const handler = genLambdaEndpoint.forAsk({
       schema,
-      invoke: async ({ event }, { log }) => ({
-        processedCount: event.Records.length,
+      invoke: async ({ payload }, { log }) => ({
+        processedCount: payload.Records.length,
         exidGenerated:
           log.trail?.exid?.startsWith('exid:') ?? false,
       }),
@@ -628,10 +698,10 @@ describe('sdk-aws-lambda', () => {
       }),
     };
 
-    const handler = genLambdaEndpoint({
+    const handler = genLambdaEndpoint.forAsk({
       schema,
-      invoke: async ({ event }, { log }) => ({
-        receivedKeys: Object.keys(event),
+      invoke: async ({ payload }, { log }) => ({
+        receivedKeys: Object.keys(payload),
         exidGenerated:
           log.trail?.exid?.startsWith('exid:') ?? false,
       }),
@@ -837,15 +907,15 @@ describe('sdk-aws-lambda', () => {
     MalfunctionError.throw('the response carries no body', { response });
 
   given('[case20] an api-gateway event, built by the factory and RUN', () => {
-    const handler = forApiGateway({
+    const handler = genLambdaEndpoint.forApiGateway({
       schema: {
-        input: z.object({ slug: z.string().min(1) }),
+        input: z.object({ payload: z.object({ slug: z.string().min(1) }) }),
         output: asApiGatewayResponseSchema({
-          body: z.object({ slug: z.string(), found: z.boolean() }),
+          payload: z.object({ slug: z.string(), found: z.boolean() }),
         }),
       },
-      invoke: async ({ event }) => ({
-        body: { slug: event.slug, found: true },
+      invoke: async ({ payload }) => ({
+        payload: { slug: payload.slug, found: true },
       }),
     });
 
@@ -999,12 +1069,12 @@ describe('sdk-aws-lambda', () => {
    * published barrel (F22 resolves F19 + F20).
    */
   given('[case13] a caller who MISDECLARES the dialect on the narrow', () => {
-    const handler = genLambdaEndpoint({
+    const handler = genLambdaEndpoint.forAsk({
       schema: {
         input: z.object({ uuid: z.string().uuid() }),
         output: z.object({ uuid: z.string() }),
       },
-      invoke: async ({ event }) => ({ uuid: event.uuid }),
+      invoke: async ({ payload }) => ({ uuid: payload.uuid }),
     });
 
     when(
@@ -1473,12 +1543,12 @@ describe('sdk-aws-lambda', () => {
         runLambdaEndpoint.onReferenced({
           event: { spot: 'pipeline' },
           handler: withDecorator(
-            genLambdaEndpoint({
+            genLambdaEndpoint.forAsk({
               schema: {
                 input: z.object({ spot: z.string() }),
                 output: z.object({ swell: z.string() }),
               },
-              invoke: async ({ event }) => ({ swell: `${event.spot}:6ft` }),
+              invoke: async ({ payload }) => ({ swell: `${payload.spot}:6ft` }),
             }),
           ),
         }),
@@ -1504,12 +1574,12 @@ describe('sdk-aws-lambda', () => {
         runLambdaEndpoint.onReferenced({
           event: { spot: 42 } as unknown as { spot: string },
           handler: withDecorator(
-            genLambdaEndpoint({
+            genLambdaEndpoint.forAsk({
               schema: {
                 input: z.object({ spot: z.string() }),
                 output: z.object({ swell: z.string() }),
               },
-              invoke: async ({ event }) => ({ swell: `${event.spot}:6ft` }),
+              invoke: async ({ payload }) => ({ swell: `${payload.spot}:6ft` }),
             }),
           ),
         }),

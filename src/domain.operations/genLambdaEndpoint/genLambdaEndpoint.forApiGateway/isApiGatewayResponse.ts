@@ -1,11 +1,11 @@
 import { withAssure } from 'type-fns';
 
 import type { ApiGatewayResponse } from '../../../domain.objects/ApiGatewayResponse';
-import { getAllWirePayloadKeysFound } from './getAllWirePayloadKeysFound';
+import { getAllResponseOnwireKeysFound } from './getAllResponseOnwireKeysFound';
 
 /**
  * .what = checks that a value is an ApiGatewayResponse — an object with at least one of
- *         status, headers, or body, and none of the aws wire-payload keys
+ *         status, headers, or payload, and none of the aws response-wire keys
  * .why = the type refuses `{}` at compile time, but a handler's return crosses an
  *        `unknown` boundary at run time (a js caller, an `any`, a cast). this is the
  *        runtime backstop for the invariants the type holds
@@ -14,11 +14,14 @@ import { getAllWirePayloadKeysFound } from './getAllWirePayloadKeysFound';
  *         `schema.output`'s job; this exists so an empty, non-object, or wire-shaped return
  *         fails loud HERE rather than reach middy's `statusCode ??= 500` and emit a silent 500
  *
- * .note = the foreign-key half closes a MIGRATION hazard the cardinality half could not see.
- *         `{ statusCode: 404, body: JSON.stringify(x) }` — the aws-native shape, and the one
- *         the wish's own `.ground` evidence used — satisfies `'body' in input`, so it used to
- *         pass. it then lost its 404 to `status ?? 200` and had its body encoded twice
+ * .note = the foreign-key half closes a hazard the cardinality half cannot see.
+ *         `{ statusCode: 404, body: JSON.stringify(x) }` — the aws-native shape — satisfies the
+ *         cardinality half, then loses its 404 to `status ?? 200` and has its body encoded twice
  *         (rule.forbid.failhide)
+ *
+ * .note = `body` is a foreign key, since the envelope's body slot is `payload`, and
+ *         `asApiGatewayResponseOnwire` reads `'payload' in response` — so it would drop a `body`
+ *         with no word. the foreign-key half turns that silent drop into a throw that names the fix
  */
 export const isApiGatewayResponse = withAssure(
   (input: unknown): input is ApiGatewayResponse<unknown> => {
@@ -29,10 +32,10 @@ export const isApiGatewayResponse = withAssure(
     if (Array.isArray(input)) return false;
 
     // reject the aws wire shape; no step here reads its keys, so they would vanish
-    if (getAllWirePayloadKeysFound({ response: input }).length) return false;
+    if (getAllResponseOnwireKeysFound({ response: input }).length) return false;
 
     // require at least one of the three fields — this is what PickAny encodes
-    return 'status' in input || 'headers' in input || 'body' in input;
+    return 'status' in input || 'headers' in input || 'payload' in input;
   },
   { name: 'isApiGatewayResponse' },
 );

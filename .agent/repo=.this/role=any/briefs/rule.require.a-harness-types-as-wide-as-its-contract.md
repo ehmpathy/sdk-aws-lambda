@@ -38,7 +38,7 @@ three costs, and they compound:
   was narrow. the contract widened, the harness did not, and no compiler complains — a narrow
   parameter accepts fewer inputs, so it stays type-valid forever.
 
-measured on the case that produced this rule: `ApiGatewayRequestPayload` is
+measured on the case that produced this rule: `ApiGatewayRequestEventOnwire` is
 `APIGatewayProxyEvent | APIGatewayProxyEventV2`, and the wire harness typed its handler
 `APIGatewayProxyEvent`. **all 11 wire acceptance cases — the entire proof of the wish's central
 claim — ran only the v1 arm, for 22 iterations of peer review.** the gap survived nine l1 reviewers

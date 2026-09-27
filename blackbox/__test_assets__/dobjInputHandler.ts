@@ -20,7 +20,7 @@
  *        `errorType` and no `arrivedAs` proves it did not produce a result. the pair is its own
  *        positive control, so no deliberate mutation is owed at this grain
  *   .the bound this does NOT prove = that `invoke` was not entered and then abandoned. the
- *        unit twin asserts that directly (`forAskEndpoint.test.ts [case11][t1]`, `reached`),
+ *        unit twin asserts that directly (`forAsk.test.ts [case11][t1]`, `reached`),
  *        and it is a closure fact, so it is not observable from bytes at all
  *
  * ⚠️ .note = LOCAL-ONLY. this fixture is NOT deployed — `provision/aws.infra/account=demo/
@@ -109,16 +109,16 @@ export const dobjInputContractSchema = {
  * .what = the handler under test — built through `src/index`, so the action a suite drives
  *         crosses this repo's public contract
  */
-export const handler = genLambdaEndpoint(
+export const handler = genLambdaEndpoint.forAsk(
   {
     schema: dobjInputContractSchema,
-    invoke: async ({ event }) => ({
+    invoke: async ({ payload }) => ({
       arrivedAs: {
-        surfer: asArrivalName({ value: event.surfer }),
-        surferHome: asArrivalName({ value: event.surfer.home }),
-        crewFirst: asArrivalName({ value: event.crew[0] }),
-        signupSpot: asArrivalName({ value: event.signup?.spot }),
-        note: asArrivalName({ value: event.signup?.note }),
+        surfer: asArrivalName({ value: payload.surfer }),
+        surferHome: asArrivalName({ value: payload.surfer.home }),
+        crewFirst: asArrivalName({ value: payload.crew[0] }),
+        signupSpot: asArrivalName({ value: payload.signup?.spot }),
+        note: asArrivalName({ value: payload.signup?.note }),
       },
     }),
   },

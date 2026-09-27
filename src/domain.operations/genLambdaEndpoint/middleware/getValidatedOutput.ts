@@ -45,35 +45,17 @@ const OUTPUT_VALIDATION_HINT =
  * .what = validates output against schema and returns typed result
  * .why = named transformer for decode-friction-free validation in orchestrators
  *
- * .note = this is the ONE output-side validator, and BOTH families call it DIRECTLY —
- *         `forAskEndpoint.ts:125` and `forApiGateway.ts:274`. so a repair here lands at both
- *         borders at once, exactly as `getValidatedInput` does on the input side
+ * .note = this is the ONE output-side validator, and the two families that answer a caller —
+ *         `forAsk` and `forApiGateway` — call it DIRECTLY in their `logic`. so a repair here lands
+ *         at both borders at once, as `getValidatedInput` does on the input side
  *
- * ⚠️ .why NOT through `genZodOutputValidationMiddleware` = that export wraps this function for a
- *         consumer who composes their own chain, and no shipped chain registers it. each family
- *         validates inline because each knows which of two shapes it holds at that moment and the
- *         middleware cannot (its own `.note` states the same, as does the readme)
+ * .why NOT through `genZodOutputValidationMiddleware` = that export wraps this function for a
+ *         consumer who composes their own chain; no shipped chain registers it
  *
- * 🟡 .why the parameter is `response` where its input-border twin takes `value` = the asymmetry
- *         is motivated, not an oversight, and it was raised as a nitpick at i018:
- *
- *           - at THIS border the value has exactly one home, in both families and in the
- *             readme's own consumer example: `response: request.response`. the name states
- *             the slot, so the call site reads as an identity
- *           - at the INPUT border it has TWO homes — `forAskEndpoint` hands `request.event`
- *             whole, `forApiGateway` hands `event.body`, because its `request.event` must
- *             stay http-shaped for `@middy/http-cors`. no slot name is true of both, so
- *             `value` is the honest neutral there rather than a claim about position
- *             (rule.prefer.names-by-position-over-claim)
- *
- *         ⇒ ⛔ the plan that used to sit here is VOID: it deferred the rename to *"F35's
- *           resolution, which forces a shared `parseOrThrow` primitive"*. F35 was ruled
- *           2026-09-21 as NO REPAIR OWED, so no such extraction will arrive and no future
- *           edit will carry this rename for free
- *
- *         ⇒ the divergence therefore stands on its own merits, which are the two bullets
- *           above and are sufficient: one border has a true slot name, the other has two
- *           homes and no name true of both. ⇒ this is a settled asymmetry, never a debt
+ * .why the parameter is `response` where its input twin takes `value` = at THIS border the value
+ *         has one home — `request.response` — so the name states the slot. at the input border
+ *         each family hands a different value, so `value` is the neutral name there
+ *         (rule.prefer.names-by-position-over-claim)
  */
 export const getValidatedOutput = <TOutput>(input: {
   response: unknown;

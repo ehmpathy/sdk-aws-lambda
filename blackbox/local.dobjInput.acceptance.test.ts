@@ -42,7 +42,7 @@
  *   .and each expected value is GROUNDED IN A RUN rather than guessed:
  *      — the five `arrivedAs` strings are measured by `__test_assets__/dobjInputHandler.test.ts`,
  *        which runs under the UNIT project and has no credential gate
- *      — the refusal's key set is measured by `forAskEndpoint.test.ts [case11][t1]`, whose
+ *      — the refusal's key set is measured by `forAsk.test.ts [case11][t1]`, whose
  *        recorded snapshot carries exactly `details` / `errorMessage` / `errorType` for this
  *        same family, this same middleware, and this same malformed shape
  */
@@ -150,7 +150,7 @@ describe('a domain object at the input border arrives coerced, or is refused lou
     /**
      * ⚠️ .why the ANCIENT dialect is declared = the three assertions below name the flat
      *    `{ details, errorMessage, errorType }` envelope, and they are grounded in
-     *    `forAskEndpoint.test.ts [case11][t1]`'s recorded snapshot — which is the ancient shape.
+     *    `forAsk.test.ts [case11][t1]`'s recorded snapshot — which is the ancient shape.
      *    `onReferenced` frames contemp by default, and a contemp frame answers the NESTED
      *    `{ error: { class } }` envelope instead, so an undeclared dialect would silently move
      *    every expected value off the run that grounds them
@@ -203,7 +203,7 @@ describe('a domain object at the input border arrives coerced, or is refused lou
        * ⚠️ .why the KEY SET is asserted whole = the three rows above each read one fact, so a
        *    refusal that grew a field — a stack trace, an internal id — would pass all three.
        *    the key set is the denylist half a snapshot would have carried
-       *  .grounded in = `forAskEndpoint.test.ts [case11][t1]`'s recorded snapshot, which is this
+       *  .grounded in = `forAsk.test.ts [case11][t1]`'s recorded snapshot, which is this
        *    same family and this same malformed shape, and carries exactly these three
        */
       then('and the refusal carries exactly the declared keys', () => {

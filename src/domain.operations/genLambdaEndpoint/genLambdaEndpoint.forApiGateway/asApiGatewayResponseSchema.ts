@@ -3,17 +3,19 @@ import { type ZodSchema, z } from 'zod';
 import type { ApiGatewayResponse } from '../../../domain.objects/ApiGatewayResponse';
 
 /**
- * .what = lifts a body schema into the response-envelope schema
- * .why = `schema.output` describes the whole response (`outputBefore`), never the body
+ * .what = lifts a payload schema into the response-envelope schema
+ * .why = `schema.output` describes the whole response (`outputBefore`), never the payload
  *        inside it — so a reader can line the schema up against the pipeline. this keeps
  *        the common case a one-liner instead of a hand-written envelope per call site
  *
- * .note = `body` is NAMED rather than positional because the envelope holds three fields, so
- *         the argument must say which one it supplies
+ * .note = `payload` is named rather than positional because the envelope holds three fields, so
+ *         the argument must say which one it supplies. it is the same word `ApiGatewayResponse`
+ *         uses, deliberately — an argument that named the key `body` would reintroduce the one
+ *         synonym this contract retires
  *
- * .note = every field is optional in the schema, since `PickAny` lets a handler supply
- *         any non-empty subset. the at-least-one rule is held by the TYPE at compile
- *         time; this schema guards the field types
+ * .note = every field is optional in the schema, since `PickAny` lets a handler supply any
+ *         non-empty subset. the at-least-one rule is held by the type at compile time; this
+ *         schema guards the field types
  *
  * .note for a BODY-LESS response = `z.undefined()`, `z.void()` and `z.never()` are now
  *         EQUIVALENT, and each publishes honestly. all three accept `{ status: 204 }`, all
@@ -40,12 +42,12 @@ import type { ApiGatewayResponse } from '../../../domain.objects/ApiGatewayRespo
  *               regresses to a throw
  *
  * .as = zod cannot express "at least one key present", so it infers `{ status?, headers?,
- *       body? }` — a superset of `PickAny` by exactly one member, `{}` — and no structural
+ *       payload? }` — a superset of `PickAny` by exactly one member, `{}` — and no structural
  *       assignment relates the two
- * ⚠️ .note for a DIRECT consumer = this schema is publicly exported, and on its own it ACCEPTS
+ * .note for a direct consumer = this schema is publicly exported, and on its own it accepts
  *         `{}`. inside `forApiGateway` that is unreachable — `isApiGatewayResponse.assure`
  *         refuses an empty response before this schema is ever reached — but a consumer who
- *         validates against this schema DIRECTLY inherits no such guard. so pair it with the
+ *         validates against this schema directly inherits no such guard. so pair it with the
  *         `ApiGatewayResponse` type (which refuses `{}` at compile time) rather than treat a
  *         parse as the whole check
  *
@@ -54,11 +56,11 @@ import type { ApiGatewayResponse } from '../../../domain.objects/ApiGatewayRespo
  *            compile-time guarantee lives in `ApiGatewayResponse` and the runtime guarantee
  *            lives here, and this cast is the seam between them
  */
-export const asApiGatewayResponseSchema = <TBody>(input: {
-  body: ZodSchema<TBody>;
-}): ZodSchema<ApiGatewayResponse<TBody>> =>
+export const asApiGatewayResponseSchema = <TPayload>(input: {
+  payload: ZodSchema<TPayload>;
+}): ZodSchema<ApiGatewayResponse<TPayload>> =>
   z.object({
     status: z.number().optional(),
     headers: z.record(z.string(), z.string()).optional(),
-    body: input.body.optional(),
-  }) as unknown as ZodSchema<ApiGatewayResponse<TBody>>;
+    payload: input.payload.optional(),
+  }) as unknown as ZodSchema<ApiGatewayResponse<TPayload>>;

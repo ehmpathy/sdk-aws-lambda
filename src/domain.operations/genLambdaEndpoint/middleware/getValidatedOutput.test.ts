@@ -27,58 +27,9 @@ const asErrorTitle = (input: { error: Error }): string =>
 
 /**
  * .what = the OUTPUT-side primitive's own contract, clamped in its own vocabulary
- * .why = it is the peer of `getValidatedInput` and had no test file of its own. both families
- *        call it DIRECTLY — `forAskEndpoint.ts:125` and `forApiGateway.ts:274` — so a regression
- *        here is a regression at both borders, and until now only the consumers could catch one
- *
- * ⚠️ .a prior draft of this note said `forApiGateway` reaches it *"through
- *    `genZodOutputValidationMiddleware`"*. that was FALSE, and it contradicted the subject file
- *    two screens away (`getValidatedOutput.ts:48-55`). that export wraps this function for a
- *    consumer who composes their own chain, and NO shipped chain registers it — which is F33,
- *    orphaned-by-design. six review lanes across two rounds read the contradiction before it was
- *    repaired; a false sentence beside a primitive this critical is taken as the truth by the
- *    next maintainer (`rule.forbid.maintenance-hazards`)
- *
- * .note = its ERROR CLASS is the half that must never drift toward its input twin. an input
- *         failure is the caller's fault (`ConstraintError`, and the lambda SUCCEEDS with a
- *         BadRequestError body); an output failure is the handler's (`MalfunctionError`, and the
- *         lambda FAILS). the next person to touch output validation has
- *         `getValidationError.ts` next door as the nearest pattern, and a verbatim copy of it
- *         would invert that — so `[case3]` pins the class rather than assume it
- *         (invariant.badrequesterror-not-lambda-error)
- *
- * .note = there is deliberately NO domain-object here, for the same reason the input twin gives:
- *         the subject imports `zod` and `helpful-errors` and no third dependency, so its test
- *         carries the same set. `[case5]` stands in for a real `X.contract()` position with a
- *         hand-written coerce, which is the same mechanism
- *
- * 🔴 .the correction this file records about ITSELF = a prior draft of this note read *"that a
- *    real `X.contract()` position refuses a prop bag is one INSTANCE of `[case4]`'s claim"*.
- *    **`[case5]`, two screens below, already falsified it and the note stood.** a schema that
- *    COERCES, handed a plain shape, PARSES — and hands back the instance. so bag-vs-instance is
- *    orthogonal to pass-vs-fail, and the DATA is what decides. the instance rule is a TYPE-level
- *    contract, enforced by tsc only where a union blocks inference of `TOutput`
- *
- *    ⇒ stated rather than quietly edited, because a clamp that contradicts its own file's prose
- *      is the one shape a reader trusts the prose over (`rule.require.trust-but-verify`)
- *
- * ⚠️ .the clamps were PROVEN by revert, and the first pass was toothless. the transcript, since
- *    a clamp that records only its red is a clamp a later reader over-trusts:
- *
- *      revert                                                 | result
- *      -------------------------------------------------------|-----------------------------
- *      title -> `'output validation failed'` (v1 assertions)  | 🟡 1 red. the two message
- *                                                             |    clamps read `error.message`,
- *                                                             |    which HOLDS the serialized
- *                                                             |    metadata — so the path they
- *                                                             |    sought was in the JSON and
- *                                                             |    they passed regardless
- *      the same revert, after `asErrorTitle` landed           | 🔴 3 red. they bite
- *      `MalfunctionError` -> `ConstraintError`                | 🔴 2 red. `[case3]` bites
- *
- *    ⇒ the first green is the half worth the note. an assertion against a whole helpful-error
- *      message proves no guarantee about its TITLE, and the two look identical in source
- *      (rule.require.clamp-edge-cases)
+ * .why = it is the peer of `getValidatedInput`. `forAsk` and `forApiGateway` call it DIRECTLY in
+ *        their `logic` — never through `genZodOutputValidationMiddleware`, which no shipped chain
+ *        registers — so a regression here is a regression at both borders
  */
 describe('getValidatedOutput', () => {
   given('[case1] a response the schema accepts', () => {

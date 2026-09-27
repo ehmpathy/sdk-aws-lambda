@@ -15,6 +15,11 @@ import { getUnwrappedEventWithExid } from './getUnwrappedEventWithExid';
  * payload formats:
  *   - wrapped: { event: X, trail: { exid } } → extracts trail, unwraps to X
  *   - raw: X → generates trail, uses X as event
+ *
+ * .note = the wrapped arm is the only inbound source of an `exid`, and only `askLambdaEndpoint`
+ *         sends that shape. so an api-gateway or an sqs envelope cannot match it, and both
+ *         families mint a fresh id every invoke — a trace does not cross an http or a queue
+ *         boundary (`domain.terms/trail.md`)
  */
 export const genTrailMiddleware = (): {
   before: middy.MiddlewareFn<any, any>;

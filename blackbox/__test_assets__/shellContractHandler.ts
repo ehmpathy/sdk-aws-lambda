@@ -22,12 +22,12 @@ export const shellContractSchema = {
  * .what = shell contract handler with prep access (introspection enabled)
  * .note = bundled and deployed to AWS via declastruct
  */
-export const handler = genLambdaEndpoint(
+export const handler = genLambdaEndpoint.forAsk(
   {
     schema: shellContractSchema,
-    invoke: async ({ event }) => ({
+    invoke: async ({ payload }) => ({
       ok: true as const,
-      shellId: event.shellId,
+      shellId: payload.shellId,
     }),
   },
   { env: { access: 'prep' } },

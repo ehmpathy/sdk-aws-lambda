@@ -30,13 +30,13 @@ describe('asLambdaEvent', () => {
     () => {
       const handler = forApiGateway({
         schema: {
-          input: z.object({ slug: z.string().min(1) }),
+          input: z.object({ payload: z.object({ slug: z.string().min(1) }) }),
           output: asApiGatewayResponseSchema({
-            body: z.object({ slug: z.string(), found: z.boolean() }),
+            payload: z.object({ slug: z.string(), found: z.boolean() }),
           }),
         },
-        invoke: async ({ event }) => ({
-          body: { slug: event.slug, found: true },
+        invoke: async ({ payload }) => ({
+          payload: { slug: payload.slug, found: true },
         }),
       });
 
@@ -283,9 +283,9 @@ describe('asLambdaEvent', () => {
       when('[t4] a malfunction is raised inside the handler', () => {
         const brokenHandler = forApiGateway({
           schema: {
-            input: z.object({ slug: z.string() }),
+            input: z.object({ payload: z.object({ slug: z.string() }) }),
             output: asApiGatewayResponseSchema({
-              body: z.object({ slug: z.string() }),
+              payload: z.object({ slug: z.string() }),
             }),
           },
           invoke: async () => {
@@ -294,7 +294,7 @@ describe('asLambdaEvent', () => {
         });
 
         then(
-          'the response is a 500 — it RETURNS, where forAskEndpoint throws',
+          'the response is a 500 — it RETURNS, where forAsk throws',
           async () => {
             const result = (await (brokenHandler as any)(
               asLambdaEvent.fromApiGateway({

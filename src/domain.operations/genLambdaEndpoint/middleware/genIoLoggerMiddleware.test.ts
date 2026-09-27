@@ -70,24 +70,22 @@ describe('genIoLoggerMiddleware', () => {
   });
 
   /**
-   * ⚠️ .what = this case builds a request state that NEITHER shipped chain produces today
+   * .what = this case builds a request state that neither shipped chain produces today
    * .why = `onError` reads `request.response`, and in both `forApiGateway` and
-   *        `forAskEndpoint` this middleware is registered at a HIGHER array index than the
-   *        error builders — so middy's hook reversal runs it BEFORE they set the response,
-   *        and `request.response` is always `undefined` there. the state below is injected by
-   *        hand
+   *        `forAsk` this middleware is registered at a higher array index than the
+   *        error builders — so middy's hook reversal runs it before they set the response, and
+   *        `request.response` is always `undefined` there. the state below is injected by hand
    *
-   * .note = so read this case for what it is: a UNIT test of the branch's own logic, never
-   *         evidence that the branch is reachable in a composed chain. to read it as the
-   *         latter is the false-confidence pattern this repo already retired once
-   *         (rule.require.snapshots-deny-volatile-not-allow-expected)
+   * .note = read this case for what it is: a unit test of the branch's own logic, never
+   *         evidence that the branch is reachable in a composed chain
    *
-   * .why kept = the branch goes live the moment the F32 header-order reorder lands, and this
-   *             case is the coverage that reorder needs on day one. the honest fix is the
-   *             reorder, and its blast radius sits outside this bound — so the case stays and
-   *             states its own limit, rather than vanish and take the coverage with it
+   * .why kept = the branch goes live the moment the chain-order repair lands, and this case is
+   *         the coverage that repair needs on day one. its blast radius sits outside this
+   *         bound, so the case stays and states its own limit rather than vanish and take the
+   *         coverage with it
+   *         (`.dream/v2026_09_22.fix.no-cors-or-owasp-headers-on-error-responses.md`)
    */
-  given('[case3] onError with an INJECTED response', () => {
+  given('[case3] onError with an injected response', () => {
     when('[t0] middleware invoked', () => {
       then('it should log the response', async () => {
         const mockLog = createMockLog();

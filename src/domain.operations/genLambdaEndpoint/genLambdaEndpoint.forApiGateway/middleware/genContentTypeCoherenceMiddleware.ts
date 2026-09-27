@@ -6,10 +6,10 @@ import type middy from '@middy/core';
  *        the defect this whole affordance exists to retire. a 204 and a 308 each reach the wire
  *        body-less and would otherwise claim `application/json`
  *
- * ⚠️ .note = MUST be registered FIRST in the chain array. middy `unshift`s `after` and `onError`,
- *         so index 0 runs LAST on both — the only position later than the serializer that stamps
- *         the header, and later than the error builders that set `request.response`. anywhere
- *         else, the `onError` hook meets an absent response and returns early
+ * .note = must be registered first in the chain array. middy `unshift`s `after` and `onError`,
+ *         so index 0 runs last on both — the only position later than the serializer that
+ *         stamps the header, and later than the error builders that set `request.response`.
+ *         anywhere else, the `onError` hook meets an absent response and returns early
  *
  * .note = the same function serves both hooks, so one implementation holds the guarantee on
  *         either path. no error response is body-less today, so `onError` finds no work yet; it
@@ -31,7 +31,7 @@ export const genContentTypeCoherenceMiddleware = (): {
      *       declares the shape this chain always puts there — `httpSecurityHeaders`, `httpCors`,
      *       and the error builders each write a flat string map
      * .removal = drops when middy gains typed response inference, at which point
-     *            `ApiGatewayResponsePayload['headers']` types this member directly
+     *            `ApiGatewayResponseOnwire['headers']` types this member directly
      */
     const headers = request.response.headers as
       | Record<string, string>

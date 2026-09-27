@@ -98,6 +98,7 @@ type ApiGatewayResponse<TBody> = PickAny<{
 - ⚖️ **`rule.avoid.constraints-the-state-already-proves` — the COUNTERWEIGHT.** hold real
   cardinality in the type, **and no more**. applied alone, this rule produces a conditional type
   that proves a tautology; read the pair together
+- `rule.forbid.defended-exceptions` — the general form of the *"prose states a cardinality"* tell above
 - `rule.prefer.prevent-over-correct` (ergonomist) — the ladder this sits at the top of
 - `rule.require.shapefit` (mechanic) — types must fit; a mismatch is a defect
 - `rule.require.assure-via-type-checks` (mechanic) — the runtime backstop for what a type cannot hold

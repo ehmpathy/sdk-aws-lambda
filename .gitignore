@@ -21,3 +21,4 @@
 coverage
 dist
 node_modules
+!.agent/.actors/actor.via.slug=.default/

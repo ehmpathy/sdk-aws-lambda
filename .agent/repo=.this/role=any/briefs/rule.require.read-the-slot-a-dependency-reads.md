@@ -105,7 +105,7 @@ const before = async (request) => {
  * .note = `request.event` must stay http-shaped through the chain: `@middy/http-cors` reads
  *         `request.event.headers` and derives the http method from `request.event` in its
  *         `after` hook (`@middy/http-cors/index.js:38,83,106`). so the handler's input is
- *         carried at `event.body`, never in the event's place
+ *         carried at `event.payload`, never in the event's place
  */
 ```
 

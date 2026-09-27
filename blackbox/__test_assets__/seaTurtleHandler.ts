@@ -22,11 +22,11 @@ export const goSurfSchema = {
  * .what = go surf handler for e2e tests
  * .note = bundled and deployed to AWS via declastruct
  */
-export const handler = genLambdaEndpoint({
+export const handler = genLambdaEndpoint.forAsk({
   schema: goSurfSchema,
-  invoke: async ({ event }, { log }) => ({
+  invoke: async ({ payload }, { log }) => ({
     success: true as const,
-    comment: `caught a ${event.style} wave in the ${event.ocean}`,
+    comment: `caught a ${payload.style} wave in the ${payload.ocean}`,
     trailExid: log.trail?.exid ?? null,
   }),
 });

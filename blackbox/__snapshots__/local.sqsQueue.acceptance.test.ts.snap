@@ -1,0 +1,43 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`the sqs queue input given: [case1] a consumer reaches perRecord through the family object when: [t0] one message arrives on the queue then: the handler read all four slots 1`] = `
+{
+  "0": {
+    "exidPresent": true,
+    "orderId": "ord-1",
+    "recordCount": 1,
+    "source": "web",
+  },
+}
+`;
+
+exports[`the sqs queue input given: [case3] a consumer reaches perBatch through the family object when: [t0] a batch of three arrives, one poison and one unparseable then: both failure sources reach the response 1`] = `
+{
+  "batchItemFailures": [
+    {
+      "itemIdentifier": "msg-1",
+    },
+    {
+      "itemIdentifier": "msg-2",
+    },
+  ],
+}
+`;
+
+exports[`the sqs queue input given: [case3] a consumer reaches perBatch through the family object when: [t0] a batch of three arrives, one poison and one unparseable then: the refused message never reached the handler 1`] = `
+{
+  "arrived": 3,
+  "exidPresent": true,
+  "reached": [
+    "ord-ok",
+    "ord-poison",
+  ],
+}
+`;
+
+exports[`the sqs queue input given: [case4] a queue message carries a capitalized attribute name when: [t0] the message arrives then: every attribute name survives with its case intact 1`] = `
+{
+  "OrderSource": "web",
+  "x-untouched": "kept",
+}
+`;

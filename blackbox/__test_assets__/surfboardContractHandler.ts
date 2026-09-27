@@ -39,7 +39,7 @@ export const surfboardContractSchema = {
  * .what = getSurfboard handler with prep access (introspection enabled)
  * .note = bundled and deployed to AWS via declastruct
  */
-export const handler = genLambdaEndpoint(
+export const handler = genLambdaEndpoint.forAsk(
   {
     schema: surfboardContractSchema,
     // .note = `X.contract()` coerces, so its `TOutput` is a live instance — `invoke` owes a
@@ -58,9 +58,9 @@ export const handler = genLambdaEndpoint(
     //         `JSON.stringify` drops outright. its `enumerable: false` flag is a second,
     //         independent guard — and the revert proves it is not the load-bearing one: flip
     //         that dist line and the bytes do not move. `[case2]` there pins both
-    invoke: async ({ event }) => ({
+    invoke: async ({ payload }) => ({
       surfboard: new SeaturtleSurfboard({
-        uuid: event.uuid,
+        uuid: payload.uuid,
         brand: 'seaturtle',
         length: { inches: 108 },
       }),

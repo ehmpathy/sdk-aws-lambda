@@ -1,7 +1,7 @@
 import { DomainEntity, DomainLiteral } from 'domain-objects';
 import { z } from 'zod';
 
-import { genLambdaEndpoint } from '../domain.operations/genLambdaEndpoint/genLambdaEndpoint.forAskEndpoint/genLambdaEndpoint.forAskEndpoint';
+import { forAsk } from '../domain.operations/genLambdaEndpoint/genLambdaEndpoint.forAsk/genLambdaEndpoint.forAsk';
 
 /**
  * .what = test domain-objects + genLambdaEndpoint handlers whose zod schemas
@@ -46,7 +46,7 @@ class Job extends DomainEntity<Job> implements Job {
  *        capture Job (+ nested Address) once, de-duped across both endpoints
  */
 export const createCapturableHandlers = () => ({
-  getJob: genLambdaEndpoint(
+  getJob: forAsk(
     {
       schema: {
         input: z.object({ uuid: z.string() }),
@@ -66,7 +66,7 @@ export const createCapturableHandlers = () => ({
     },
     { env: { access: 'prep' } },
   ),
-  getJobs: genLambdaEndpoint(
+  getJobs: forAsk(
     {
       schema: {
         input: z.object({ limit: z.number() }),

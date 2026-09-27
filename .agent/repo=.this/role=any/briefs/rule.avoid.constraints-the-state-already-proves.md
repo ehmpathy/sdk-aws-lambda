@@ -128,6 +128,7 @@ export interface Translate<TShapes extends LambdaEndpointShapes> {
 
 ## .see also
 
+- `rule.forbid.defended-exceptions` — the general form of the *"needs no essay"* tell above
 - `rule.require.illegal-states-unrepresentable` — the rule this bounds; hold real cardinality
   in the type
 - `rule.prefer.prevent-over-correct` (ergonomist) — the ladder; its top rung is for **silent**

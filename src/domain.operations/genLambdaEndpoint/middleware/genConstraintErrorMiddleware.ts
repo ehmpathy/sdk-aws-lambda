@@ -29,10 +29,14 @@ import { getIsConstraintError } from './getIsConstraintError';
 export const genConstraintErrorMiddleware = (opts: {
   /**
    * .what = renders the error body as this family's `outputAfter`
-   * .why = the two families owe DIFFERENT shapes for the same fault: api-gateway owes a wire
-   *        payload with a 400 and a stringified body, while an ask-endpoint response IS its
-   *        payload. only the family knows which, so the family supplies it — never a flag read
-   *        here (rule.forbid.parallel-codepaths)
+   * .why = the two families owe DIFFERENT shapes for the same fault: api-gateway owes an
+   *        `ApiGatewayResponseOnwire` — a 400 with the body stringified inside it — while an
+   *        ask-endpoint response goes to the wire as it stands. only the family knows which,
+   *        so the family supplies it — never a flag read here (rule.forbid.parallel-codepaths)
+   *
+   * .why not the word `payload` here = this seam serves BOTH families, and the word splits at
+   *        exactly this line: for api-gateway it names the request BODY (rfc 9110), so it can
+   *        NOT also name the response envelope that carries one. `domain.terms/payload.md`
    */
   asOutputAfter: (
     body:
