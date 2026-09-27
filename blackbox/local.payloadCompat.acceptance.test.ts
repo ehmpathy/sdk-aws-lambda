@@ -10,7 +10,6 @@ import { z } from 'zod';
 import {
   asApiGatewayResponseSchema,
   askLambdaEndpoint,
-  forApiGateway,
   genLambdaEndpoint,
 } from '../src/index';
 import { asParsedResponseBody } from '../src/__test_assets__/asParsedResponseBody';
@@ -52,16 +51,16 @@ describe('user journey: basic lambda endpoint', () => {
       }),
     };
 
-    const handler = genLambdaEndpoint({
+    const handler = genLambdaEndpoint.forAsk({
       schema,
       invoke: async ({
-        event,
+        payload,
       }: {
-        event: { userId: string; action: string };
+        payload: { userId: string; action: string };
       }) => ({
         success: true,
-        userId: event.userId,
-        action: event.action,
+        userId: payload.userId,
+        action: payload.action,
         timestamp: new Date().toISOString(),
       }),
     });
@@ -123,14 +122,15 @@ describe('user journey: basic lambda endpoint', () => {
  *         `result.statusCode` / `result.headers` / `result.body`
  *
  * .why = the subject here is the SDK-AUTHORING contract: does `forApiGateway` accept this
- *        config shape, and does it hand back the payload shape a lambda runtime expects. that
- *        question is answered at the return value, so a socket would add cost and no signal
+ *        config shape, and does it hand back the `ApiGatewayResponseOnwire` shape a lambda runtime
+ *        expects. that question is answered at the return value, so a socket would add cost and
+ *        no signal
  *
  * ⚠️ .why this is NOT the wire proof = the wish is explicit that a return value proves no fact
  *        about the wire ("an assertion that the handler returned `{ statusCode: 204 }` does not
  *        prove api gateway sees a 204 with no body"). that proof lives at wire grain, in
- *        `blackbox/local.wireResponse.acceptance.test.ts`, where 15 cases go over a real socket
- *        via `genApiGatewayProxyHarness` + `getOneWireResponse` and pin the actual bytes
+ *        `blackbox/local.httpResponse.acceptance.test.ts`, where 15 cases go over a real socket
+ *        via `genApiGatewayProxyHarness` + `getOneHttpResponse` and pin the actual bytes
  *
  * .note = read the two files as a PAIR: this one fixes the config contract, that one fixes the
  *         bytes. a reader who takes this block for the wire proof would over-credit it — which
@@ -140,27 +140,25 @@ describe('user journey: api gateway handler', () => {
   given('[case1] developer creates api gateway handler', () => {
     const schema = {
       input: z.object({
-        productId: z.string(),
-        quantity: z.number().positive(),
+        payload: z.object({
+          productId: z.string(),
+          quantity: z.number().positive(),
+        }),
       }),
       output: asApiGatewayResponseSchema({
-        body: z.object({
+        payload: z.object({
           orderId: z.string(),
           total: z.number(),
         }),
       }),
     };
 
-    const handler = forApiGateway({
+    const handler = genLambdaEndpoint.forApiGateway({
       schema,
-      invoke: async ({
-        event,
-      }: {
-        event: { productId: string; quantity: number };
-      }) => ({
-        body: {
+      invoke: async ({ payload }) => ({
+        payload: {
           orderId: `order-${Date.now()}`,
-          total: event.quantity * 9.99,
+          total: payload.quantity * 9.99,
         },
       }),
     });
@@ -290,7 +288,7 @@ describe('user journey: lambda caller contract verification', () => {
 
 describe('user journey: trail context propagation', () => {
   given('[case1] handler chain with trail context', () => {
-    const firstHandler = genLambdaEndpoint({
+    const firstHandler = genLambdaEndpoint.forAsk({
       schema: {
         input: z.object({
           data: z.string(),
@@ -307,7 +305,7 @@ describe('user journey: trail context propagation', () => {
       },
     });
 
-    const secondHandler = genLambdaEndpoint({
+    const secondHandler = genLambdaEndpoint.forAsk({
       schema: {
         input: z.object({
           data: z.string(),

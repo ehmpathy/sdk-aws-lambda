@@ -21,8 +21,8 @@ describe('genIntrospectionMiddleware', () => {
     asInputAfter: (request: any) => request.event,
     asOutputAfter: (schema: LambdaEndpointSchema) => schema,
   };
-  const atEventBody = {
-    asInputAfter: (request: any) => request.event?.body,
+  const atEventPayload = {
+    asInputAfter: (request: any) => request.event?.payload,
     asOutputAfter: (schema: LambdaEndpointSchema) => ({
       statusCode: 200,
       body: JSON.stringify(schema),
@@ -30,7 +30,7 @@ describe('genIntrospectionMiddleware', () => {
     }),
   };
 
-  describe('forAskEndpoint (standard lambda)', () => {
+  describe('forAsk (standard lambda)', () => {
     given('[case1] introspection request in prep env', () => {
       const middleware = genIntrospectionMiddleware({
         schema: { input: inputSchema, output: outputSchema },
@@ -186,13 +186,13 @@ describe('genIntrospectionMiddleware', () => {
       const middleware = genIntrospectionMiddleware({
         schema: { input: inputSchema, output: outputSchema },
         env: { access: 'prep' },
-        ...atEventBody,
+        ...atEventPayload,
       });
 
       when('[t0] before middleware runs', () => {
         const request = useThen('middleware executes', async () => {
           const req = {
-            event: { body: { introspect: 'schema' } },
+            event: { payload: { introspect: 'schema' } },
             context: {},
             response: undefined as unknown,
           };
@@ -221,13 +221,13 @@ describe('genIntrospectionMiddleware', () => {
       const middleware = genIntrospectionMiddleware({
         schema: { input: inputSchema, output: outputSchema },
         env: { access: 'prod' },
-        ...atEventBody,
+        ...atEventPayload,
       });
 
       when('[t0] before middleware runs', () => {
         then('throws ConstraintError', async () => {
           const req = {
-            event: { body: { introspect: 'schema' } },
+            event: { payload: { introspect: 'schema' } },
             context: {},
             response: undefined as unknown,
           };
@@ -237,7 +237,7 @@ describe('genIntrospectionMiddleware', () => {
 
         then('error message mentions environment', async () => {
           const req = {
-            event: { body: { introspect: 'schema' } },
+            event: { payload: { introspect: 'schema' } },
             context: {},
             response: undefined as unknown,
           };
@@ -251,13 +251,13 @@ describe('genIntrospectionMiddleware', () => {
       const middleware = genIntrospectionMiddleware({
         schema: { input: inputSchema, output: outputSchema },
         env: { access: 'prep' },
-        ...atEventBody,
+        ...atEventPayload,
       });
 
       when('[t0] before middleware runs', () => {
         then('passes through with response unset', async () => {
           const req = {
-            event: { body: { orderId: '456' } },
+            event: { payload: { orderId: '456' } },
             context: {},
             response: undefined,
           };

@@ -2,6 +2,10 @@
  * sdk-aws-lambda
  *
  * define endpoints, ask endpoints, auto-propagate trace-ids.
+ *
+ * .note = the trace-id propagates lambda to lambda, via the `{ event, trail }` wrapper
+ *        `askLambdaEndpoint` sends. it does not cross an http or a queue boundary — those
+ *        triggers mint a fresh `exid` per invoke (`domain.terms/trail.md`)
  */
 
 // re-export from helpful-errors for convenience
@@ -15,9 +19,9 @@ export { BadRequestError } from 'helpful-errors';
  */
 export { delLambdaSdks } from './access/sdks/lambda/genLambdaSdk';
 // domain objects
-export type { ApiGatewayRequestPayload } from './domain.objects/ApiGatewayRequestPayload';
+export type { ApiGatewayRequestEventOnwire } from './domain.objects/ApiGatewayRequestEventOnwire';
 export type { ApiGatewayResponse } from './domain.objects/ApiGatewayResponse';
-export type { ApiGatewayResponsePayload } from './domain.objects/ApiGatewayResponsePayload';
+export type { ApiGatewayResponseOnwire } from './domain.objects/ApiGatewayResponseOnwire';
 export type { ContextAwsLambdaCaller } from './domain.objects/ContextAwsLambdaCaller';
 export type {
   ContextAwsLambdaServer,
@@ -50,18 +54,29 @@ export { getAskLambdaCacheKey } from './domain.operations/askLambdaEndpoint/cach
 export { asLambdaEndpoint } from './domain.operations/asLambdaEndpoint/asLambdaEndpoint';
 // test utils — the event source axis (construct the envelope a source delivers)
 export { asLambdaEvent } from './domain.operations/asLambdaEvent/asLambdaEvent';
+/**
+ * .what = the `genLambdaEndpoint` family —
+ *         `{ forAsk, forApiGateway, forSqs: { perRecord, perBatch } }`
+ * .why = no variant is exported bare beside it, so autocomplete enumerates the family
+ *        (`rule.forbid.unqualified-variant-exports`)
+ */
+export { genLambdaEndpoint } from './domain.operations/genLambdaEndpoint/genLambdaEndpoint';
+export type {
+  ApiGatewayHeadersDeclared,
+  ApiGatewayHeadersMerged,
+  ApiGatewayHeadersOnwire,
+  ApiGatewayRequestEventUnified,
+} from './domain.operations/genLambdaEndpoint/genLambdaEndpoint.forApiGateway/ApiGatewayRequestEventUnified';
 export { asApiGatewayResponseSchema } from './domain.operations/genLambdaEndpoint/genLambdaEndpoint.forApiGateway/asApiGatewayResponseSchema';
 export type {
   CorsConfig,
   ForApiGatewayContext,
   ForApiGatewayInput,
 } from './domain.operations/genLambdaEndpoint/genLambdaEndpoint.forApiGateway/genLambdaEndpoint.forApiGateway';
-export { forApiGateway } from './domain.operations/genLambdaEndpoint/genLambdaEndpoint.forApiGateway/genLambdaEndpoint.forApiGateway';
 export { isApiGatewayResponse } from './domain.operations/genLambdaEndpoint/genLambdaEndpoint.forApiGateway/isApiGatewayResponse';
-export { genApiGatewayEventNormalizationMiddleware } from './domain.operations/genLambdaEndpoint/genLambdaEndpoint.forApiGateway/middleware/genApiGatewayEventNormalizationMiddleware';
+export { genApiGatewayRequestEventNormalizationMiddleware } from './domain.operations/genLambdaEndpoint/genLambdaEndpoint.forApiGateway/middleware/genApiGatewayRequestEventNormalizationMiddleware';
 export { genContentTypeCoherenceMiddleware } from './domain.operations/genLambdaEndpoint/genLambdaEndpoint.forApiGateway/middleware/genContentTypeCoherenceMiddleware';
-export { genZodBodyValidationMiddleware } from './domain.operations/genLambdaEndpoint/genLambdaEndpoint.forApiGateway/middleware/genZodBodyValidationMiddleware';
-export type { UnifiedApiGatewayEvent } from './domain.operations/genLambdaEndpoint/genLambdaEndpoint.forApiGateway/UnifiedApiGatewayEvent';
+export { genZodInputValidationMiddleware } from './domain.operations/genLambdaEndpoint/genLambdaEndpoint.forApiGateway/middleware/genZodInputValidationMiddleware';
 export type {
   EndpointOperation,
   FlatPayload,
@@ -69,15 +84,32 @@ export type {
   GenLambdaEndpointInput,
   LambdaHandlerInput,
   WrappedPayload,
-} from './domain.operations/genLambdaEndpoint/genLambdaEndpoint.forAskEndpoint/genLambdaEndpoint.forAskEndpoint';
-export { genLambdaEndpoint } from './domain.operations/genLambdaEndpoint/genLambdaEndpoint.forAskEndpoint/genLambdaEndpoint.forAskEndpoint';
-export { genZodEventValidationMiddleware } from './domain.operations/genLambdaEndpoint/genLambdaEndpoint.forAskEndpoint/middleware/genZodEventValidationMiddleware';
+} from './domain.operations/genLambdaEndpoint/genLambdaEndpoint.forAsk/genLambdaEndpoint.forAsk';
+export { genZodEventValidationMiddleware } from './domain.operations/genLambdaEndpoint/genLambdaEndpoint.forAsk/middleware/genZodEventValidationMiddleware';
+/**
+ * .what = the `forSqs` sub-family's types, through `SqsEventDecoded`
+ * .why = each is reachable from `ForSqsPerRecordInput` / `ForSqsPerBatchInput`, so a consumer
+ *        must be able to name it
+ * .note = the chain's own operations (`asSqsEventDecoded`, `setSqsRecordValidated`, …) stay
+ *         unexported, as do the api-gateway peers
+ */
+export type {
+  ForSqsPerBatchInput,
+  SqsRecordSuccessRef,
+} from './domain.operations/genLambdaEndpoint/genLambdaEndpoint.forSqs/genLambdaEndpoint.forSqs.perBatch';
+export type { ForSqsPerRecordInput } from './domain.operations/genLambdaEndpoint/genLambdaEndpoint.forSqs/genLambdaEndpoint.forSqs.perRecord';
+export type {
+  SqsEventDecoded,
+  SqsHeadersDeclared,
+  SqsHeadersMerged,
+  SqsHeadersOnwire,
+  SqsRecordDecoded,
+  SqsRecordDecodedShape,
+} from './domain.operations/genLambdaEndpoint/genLambdaEndpoint.forSqs/SqsEventDecoded';
 /**
  * .what = the shared `request.context` reader every exported middleware uses
- * .why = it centralizes the one cast that reaches the trail fields this sdk itself wrote onto
- *        the lambda context. a consumer who authors a PEER of the exported middlewares would
- *        otherwise restate that cast — the exact sprawl this reader exists to retire
- *        (rule.forbid.as-cast)
+ * .why = it holds the one cast to the trail fields this sdk writes, so a consumer who authors a
+ *        peer middleware need not restate it (rule.forbid.as-cast)
  */
 export {
   asContextTrailed,
@@ -92,9 +124,7 @@ export { genTrailMiddleware } from './domain.operations/genLambdaEndpoint/middle
 export { genZodOutputValidationMiddleware } from './domain.operations/genLambdaEndpoint/middleware/genZodOutputValidationMiddleware';
 /**
  * .what = the two error-body shapes `genConstraintErrorMiddleware.asOutputAfter` receives
- * .why = that middleware is public, so its OWN parameter type must be nameable by a consumer.
- *        an unexported parameter type forces an `any` or a hand-copied re-declaration at the
- *        public boundary (rule.forbid.as-cast)
+ * .why = a public middleware's parameter types must be nameable by a consumer
  */
 export type {
   LambdaEndpointErrorResponseBodyAncient,
@@ -129,12 +159,17 @@ export {
 export type { ValidationErrorMetadata } from './domain.operations/genLambdaEndpoint/middleware/getValidationError';
 export type { ZodIssueSummary } from './domain.operations/genLambdaEndpoint/middleware/getZodIssuesSummary';
 /**
+ * .what = types reachable from the public `ForApiGatewayInput` signature
+ * .why = a consumer who declares a handler apart from the call site must be able to name them
+ */
+export type { FrozenDeep } from './domain.operations/genLambdaEndpoint/setEventFrozen';
+/**
+ * .what = the `logTranslate` config type
  * .note = `TranslateLog` is public because `logTranslate` accepts it, and it replaces the
  *         formerly-public `IoLogTranslate`. its three designed peers — `Translate<TShapes>`,
  *         `LambdaEndpointShapes`, `Translator<TFrom, TInto>` — are DELETED rather than
  *         unexported: no config field ever accepted a `Translate`, so all three would ship with
- *         zero consumers (rule.prefer.wet-over-dry). the design survives in `1.vision.yield.md`,
- *         so a later round restores a TERM from a record rather than a dead declaration
+ *         zero consumers (rule.prefer.wet-over-dry)
  */
 export type { TranslateLog } from './domain.operations/genLambdaEndpoint/TranslateLog';
 // sdk codegen (generate a per-service sdk from introspection)

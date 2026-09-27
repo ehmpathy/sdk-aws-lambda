@@ -34,6 +34,11 @@ const config: Config = {
     '!**/*.integration.test.ts',
     '!**/.yalc/**',
     '!**/.agent/**',
+    // 🔴 `.log/` is where this repo's own test runner writes, and where a human drops a scratch
+    //    copy of a suite or a snapshot to diff it. it is gitignored, so a stray file there is
+    //    invisible to `git status` — yet jest walks it, loads any `*.test.ts` as a suite, and
+    //    pairs any `*.snap` against no test. both fail the run, LOCALLY ONLY and never in ci
+    '!**/.log/**',
   ],
   setupFilesAfterEnv: ['./jest.unit.env.ts'],
 

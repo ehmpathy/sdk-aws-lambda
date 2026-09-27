@@ -20,7 +20,7 @@ describe('genConstraintErrorMiddleware', () => {
    *        (rule.forbid.parallel-codepaths). each family's own suite proves its real chain
    */
   const asBody = { asOutputAfter: (body: unknown) => body };
-  const asWirePayload = {
+  const asResponseOnwire = {
     asOutputAfter: (body: unknown) => ({
       statusCode: 400,
       body: JSON.stringify(body),
@@ -80,7 +80,7 @@ describe('genConstraintErrorMiddleware', () => {
     when('[t0] middleware handles error', () => {
       then('it should return 400 with JSON body', async () => {
         const mockLog = createMockLog();
-        const middleware = genConstraintErrorMiddleware(asWirePayload);
+        const middleware = genConstraintErrorMiddleware(asResponseOnwire);
         const error = new BadRequestError('Invalid input');
         const request = {
           event: {},
@@ -301,7 +301,7 @@ describe('genConstraintErrorMiddleware', () => {
     when('[t0] middleware handles error', () => {
       then('it should return 400 with JSON body', async () => {
         const mockLog = createMockLog();
-        const middleware = genConstraintErrorMiddleware(asWirePayload);
+        const middleware = genConstraintErrorMiddleware(asResponseOnwire);
         const error = new ConstraintError('Invalid input');
         const request = {
           event: {},
@@ -421,7 +421,7 @@ describe('genConstraintErrorMiddleware', () => {
     when('[t2] apiGateway mode', () => {
       then('it should return 400 with errorType: ConstraintError', async () => {
         const mockLog = createMockLog();
-        const middleware = genConstraintErrorMiddleware(asWirePayload);
+        const middleware = genConstraintErrorMiddleware(asResponseOnwire);
         const error = new ConstraintError('Invalid input');
         const request = {
           event: {},

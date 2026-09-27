@@ -6,15 +6,18 @@ a claim about a value **your** code emits must come from a **run**, never from t
 system you emit it into. a vendor's declaration constrains what they will **accept**; it says
 not one word about what your pipeline actually **produces**.
 
+⚠️ this repo ships the 👍 form, as `ApiGatewayResponseOnwire`. grep the live name to check that
+(`rule.require.trust-but-verify` — a brief's example is a claim about a tree).
+
 ```ts
 // 👎 the alias asserts conformance no one measured
-export type ApiGatewayResponsePayload = APIGatewayProxyResult;
-//                                      ^ aws declares `body: string`, REQUIRED.
+export type ApiGatewayResponseOnwire = APIGatewayProxyResult;
+//                                     ^ aws declares `body: string`, REQUIRED.
 //   so the design concluded "a body-less 204 must emit body: ''" — from the type alone.
 //   a run showed the serializer turns '' into '""'. the emit was body-ABSENT all along.
 
 // 👍 the alias states the one measured divergence, and why
-export type ApiGatewayResponsePayload = Omit<APIGatewayProxyResult, 'body'> & {
+export type ApiGatewayResponseOnwire = Omit<APIGatewayProxyResult, 'body'> & {
   body?: string; // a body-less response reaches the wire with the key ABSENT, never ''
 };
 ```

@@ -7,8 +7,13 @@ import { getTypescriptFromJsonSchema } from './getTypescriptFromJsonSchema';
  * .why = the mechanisms file exposes one fn per discovered endpoint (uc.1); each
  *        is a thin, typed call into the endpoint by its service+function
  *
- * .note = `event` is the repo's ubiqlang lambda-payload input; the wrapper keeps
- *         the caller's `context` ambient (env.access lives there)
+ * .note = `event` is **the whole object the invoke delivers** — aws's own word, and this
+ *         repo's term for it (`domain.terms/event.md`). a direct-invoke lambda carries no
+ *         envelope, so what arrives IS the caller's input and the two coincide here. that
+ *         coincidence is a property of this trigger, never of the word: at api gateway the
+ *         two differ, and there `event` names the envelope while `payload` names its body
+ *
+ * .note = the wrapper keeps the caller's `context` ambient (env.access lives there)
  */
 export const asMechanismFnSource = (input: {
   service: string;

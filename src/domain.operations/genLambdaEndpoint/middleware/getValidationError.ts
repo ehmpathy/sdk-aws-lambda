@@ -23,8 +23,8 @@ export interface ValidationErrorMetadata {
  *   - *"introspect the schema with `{ introspect: 'schema' }`"* — `genIntrospectionMiddleware`
  *     gates on `env.access === 'prep'` (`genIntrospectionMiddleware.ts:63`), so the hint would
  *     be a dead end in prod
- *   - *"check the `deserialize` option"* — refuted in a prior round: it is meaningless at the
- *     ask-endpoint border, which shares this builder
+ *   - *"check the `deserialize` option"* — meaningless at the ask-endpoint border, which shares
+ *     this builder
  *   ⇒ so the hint names the ACT, which is true at both borders and in every env. a hint that is
  *     false in one env is worse than none, since a caller spends the trip before they learn it
  */
@@ -32,19 +32,10 @@ export interface ValidationErrorMetadata {
  * ⚠️ .why DOUBLE quotes, where this repo's formatter prefers single = the possessive. biome
  *         picks the delimiter that needs fewer escapes, so a string that carries `'` takes `"`
  *
- * .the history, since the possessive was deferred for three rounds = "the endpoint declared
- *      input schema" shipped first, and three reviewers read it as a defect. the answer each
- *      round was a deferral: the string is emitted verbatim by four ACCEPTANCE snapshots whose
- *      suite cannot run here, so a source edit would leave four snapshots stale with no run to
- *      prove they moved right — the CLEAN half of `rule.always.fix-forward-under-scouts-honor`
- *
- *      ⇒ the deferral rested on an absence nobody had measured. a grep of the SUBJECT found
- *        22 byte-identical hits across 8 files, and SEVEN of them are UNIT snapshots — among
- *        them `genLambdaEndpoint.forApiGateway.test.ts.snap`, which carries the fully-escaped
- *        JSON-in-string form the acceptance hits have. so a unit run proves the identical
- *        transformation on the identical shape (rule.require.positive-control-before-absence-claims)
- *      ⇒ the repair is one `sedreplace` over all 8 files, then a unit run with NO `--resnap`.
- *        green means the hand-applied edit equals what the code emits, byte for byte
+ * .note = this string is emitted verbatim into unit AND acceptance snapshots, in the same
+ *         escaped JSON-in-string form. to reword it: `sedreplace` the old text across every
+ *         snapshot, then run unit with NO `--resnap` — green proves the hand edit matches the
+ *         emit byte for byte, which covers the acceptance snaps that share the form
  */
 const VALIDATION_HINT_GENERIC =
   "send a value that satisfies the endpoint's declared input schema — correct each path named in `issues`";
@@ -79,8 +70,53 @@ const VALIDATION_HINT_SELF_NAMED =
 const FIX_NAMED_MARKER = 'fix:';
 
 /**
+ * .what = detects the one validation failure whose cause is the author's schema rather than
+ *         the caller's request — a `.strict()` (or `z.strictObject`) header bag
+ * .why = the sdk parses the whole wire header bag against `schema.input`, and api gateway
+ *        injects keys no author declares (`host`, `x-forwarded-for`, `x-amzn-trace-id`, and
+ *        cloudfront's own set). so a strict header schema refuses every real request — a total
+ *        outage from an idiomatic zod instinct
+ * .note = scoped to the `headers` path deliberately. `.strict()` on `payload` is correct and
+ *         safe: the body is wholly the handler's, so an undeclared key there really is a
+ *         caller fault. the axis is who else writes into the bag
+ *         (`rule.require.read-the-slot-a-dependency-reads`)
+ */
+const getIsStrictHeaderRefusal = (input: {
+  issues: ZodIssueSummary[];
+}): boolean =>
+  input.issues.some(
+    (issue) => issue.code === 'unrecognized_keys' && issue.path === 'headers',
+  );
+
+/**
+ * .what = the fix, named at the one moment an author is certain to read it
+ * .why = zod's own message names the SYMPTOM precisely (`Unrecognized keys: "host", …`) and
+ *        the CURE not at all, so an author reads it as a question about api gateway rather
+ *        than about their own schema (`rule.require.errors-name-the-fix`)
+ */
+const HINT_STRICT_HEADERS =
+  ' — a `headers` schema must NOT be `.strict()`: this sdk parses the WHOLE wire bag, and api' +
+  ' gateway injects keys you did not declare, so a strict bag refuses every real request. drop' +
+  ' `.strict()` — zod strips undeclared keys by default, and the sdk merges your validated keys' +
+  ' back over the wire bag, so no key is lost. (`.strict()` on `payload` stays safe.)';
+
+/**
  * .what = transforms zod validation error into ConstraintError
  * .why = callers need friendly error messages for invalid input
+ *
+ * .why the hint ships on the wire, though it addresses the author and not the caller = a strict
+ *        header bag refuses 100% of traffic, so this message can only ever be read in a broken
+ *        deployment — the author's own first request is the first to meet it. there is no
+ *        author-only channel here in any case: `getErrorResponseBody` already forwards this
+ *        error's metadata as `details`
+ *
+ * .why not refused at gen time, which would be one rung higher = a `toJSONSchema` probe of
+ *        `schema.input` could read `additionalProperties: false` and throw at construction. it
+ *        is refused on two counts: the failure here is already loud and total — never silent —
+ *        and the ladder in `rule.prefer.prevent-over-correct` exists to close silent failures;
+ *        and the probe throws on schemas it cannot represent, so the guard would need a
+ *        swallowed error to stay safe, which trades a documented footgun for an undocumented
+ *        failure mode (`rule.forbid.failhide`)
  */
 export const getValidationError = (input: {
   error: ZodError;
@@ -93,8 +129,13 @@ export const getValidationError = (input: {
     ? VALIDATION_HINT_SELF_NAMED
     : VALIDATION_HINT_GENERIC;
 
+  // a strict header bag is the one refusal whose cure is the author's, so it rides the title
+  const hintStrictHeaders = getIsStrictHeaderRefusal({ issues })
+    ? HINT_STRICT_HEADERS
+    : '';
+
   return new ConstraintError<ValidationErrorMetadata>(
-    `validation failed: ${issuesMessage}`,
+    `validation failed: ${issuesMessage}${hintStrictHeaders}`,
     { issues, hint },
   );
 };

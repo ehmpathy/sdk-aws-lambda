@@ -131,6 +131,7 @@ const validate = config.validate === false ? noop : (config.validate ?? theDefau
 
 ## .see also
 
+- `rule.forbid.defended-exceptions` — the general form of the *"prose is a confession"* tell above
 - `rule.forbid.undefined-inputs` (mechanic) — permits a declared third state; this rule says
   which value may carry it
 - `rule.forbid.nullable-without-reason` (mechanic) — "off" is a boolean concept, not an

@@ -1,0 +1,14 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`asApiGatewayRequestEventUnified given: [case7] a capitalized header key, on either version arm when: [t2] the two folded bags are set side by side then: both bags match snapshot, as a pair 1`] = `
+{
+  "v1": {
+    "authorization": "Bearer tok",
+    "x-signature": "abc",
+  },
+  "v2": {
+    "authorization": "Bearer tok",
+    "x-signature": "abc",
+  },
+}
+`;

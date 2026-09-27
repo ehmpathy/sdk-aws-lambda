@@ -12,7 +12,8 @@ import { z } from 'zod';
 
 import { createInProcessLambdaHarness } from '../src/__test_assets__/createInProcessLambdaHarness';
 import { LambdaDomainObjectRefUnbindableError } from '../src/domain.objects/LambdaDomainObjectRefUnbindableError';
-import { genLambdaEndpoint } from '../src/domain.operations/genLambdaEndpoint/genLambdaEndpoint.forAskEndpoint/genLambdaEndpoint.forAskEndpoint';
+// the FAMILY, off the public surface — a blackbox suite reads what a consumer reads
+import { genLambdaEndpoint } from '../src/index';
 import { genServiceSdk } from '../src/domain.operations/genServiceSdk/genServiceSdk';
 
 /**
@@ -96,7 +97,7 @@ type Handler = (event: any, context: Context) => Promise<unknown>;
 
 const asRefServiceSdk = (opts: { withPeers: boolean }): LambdaClient => {
   const handlers: Record<string, Handler> = {
-    getTrophy: genLambdaEndpoint(
+    getTrophy: genLambdaEndpoint.forAsk(
       {
         schema: {
           input: z.object({ uuid: z.string() }),
@@ -142,7 +143,7 @@ const asRefServiceSdk = (opts: { withPeers: boolean }): LambdaClient => {
 
   // the peer endpoints that surface each referenced dobj whole (bind the refs)
   if (opts.withPeers) {
-    handlers.getRider = genLambdaEndpoint(
+    handlers.getRider = genLambdaEndpoint.forAsk(
       {
         schema: {
           input: z.object({ uuid: z.string() }),
@@ -154,7 +155,7 @@ const asRefServiceSdk = (opts: { withPeers: boolean }): LambdaClient => {
       },
       { env: { access: 'prep' } },
     );
-    handlers.getBoard = genLambdaEndpoint(
+    handlers.getBoard = genLambdaEndpoint.forAsk(
       {
         schema: {
           input: z.object({ brand: z.string() }),
@@ -166,7 +167,7 @@ const asRefServiceSdk = (opts: { withPeers: boolean }): LambdaClient => {
       },
       { env: { access: 'prep' } },
     );
-    handlers.getSponsor = genLambdaEndpoint(
+    handlers.getSponsor = genLambdaEndpoint.forAsk(
       {
         schema: {
           input: z.object({ uuid: z.string() }),

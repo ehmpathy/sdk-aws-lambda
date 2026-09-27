@@ -14,7 +14,20 @@
       "!**/node_modules",
       "!**/.artifact",
       "!**/.generated",
-      "!**/.test*"
+      "!**/.test*",
+      // 🔴 `.agent/` holds role briefs and tool caches — among them `rmsafe`'s trash, which
+      //    preserves each deleted file's ORIGINAL path. so a deleted `src/**/*.ts` lands back
+      //    under a literal `src/` segment, and `**/src/**/*.ts` above matches it BY CONSTRUCTION.
+      //    ⚠️ `vcs.useIgnoreFile` does not save us: the trash is ignored by a NESTED
+      //    `.agent/.cache/.gitignore`, which biome does not read.
+      //    ⇒ the claim to check is a DIFFERENTIAL, never a total. run `biome check` with this
+      //    line armed, then disarmed, and compare `Checked N files`. every file in the delta is
+      //    a deleted one, and the delta GROWS without bound as the trash fills — which is what
+      //    earns the exclusion, and why no absolute count belongs in this comment.
+      //    ⚠️ the warnings that REMAIN when armed are the repo's own, untouched by this line,
+      //    and they are not a gate: `test:lint` runs `biome check --diagnostic-level=error`.
+      //    (a sample, 2026-09-23: armed 179 files / 201 warnings · disarmed 189 / 216)
+      "!**/.agent"
     ]
   },
   "formatter": {

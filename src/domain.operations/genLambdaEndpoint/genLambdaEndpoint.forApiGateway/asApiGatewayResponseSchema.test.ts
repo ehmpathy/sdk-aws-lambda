@@ -18,7 +18,7 @@ import { isApiGatewayResponse } from './isApiGatewayResponse';
  */
 describe('asApiGatewayResponseSchema', () => {
   const schema = asApiGatewayResponseSchema({
-    body: z.object({ salutation: z.string() }),
+    payload: z.object({ salutation: z.string() }),
   });
 
   given('[case1] a full envelope', () => {
@@ -28,12 +28,12 @@ describe('asApiGatewayResponseSchema', () => {
           schema.parse({
             status: 200,
             headers: { 'content-type': 'text/xml' },
-            body: { salutation: 'aloha, kai' },
+            payload: { salutation: 'aloha, kai' },
           }),
         ).toEqual({
           status: 200,
           headers: { 'content-type': 'text/xml' },
-          body: { salutation: 'aloha, kai' },
+          payload: { salutation: 'aloha, kai' },
         });
       });
     });
@@ -67,8 +67,8 @@ describe('asApiGatewayResponseSchema', () => {
 
     when('[t2] a body-only response is parsed', () => {
       then('it passes with the status absent', () => {
-        expect(schema.parse({ body: { salutation: 'aloha' } })).toEqual({
-          body: { salutation: 'aloha' },
+        expect(schema.parse({ payload: { salutation: 'aloha' } })).toEqual({
+          payload: { salutation: 'aloha' },
         });
       });
     });
@@ -89,26 +89,26 @@ describe('asApiGatewayResponseSchema', () => {
     when('[t1] the body does not match the supplied body schema', () => {
       then('the parse is refused', () => {
         expect(() =>
-          schema.parse({ body: { farewell: 'a hui hou' } }),
+          schema.parse({ payload: { farewell: 'a hui hou' } }),
         ).toThrow();
       });
     });
   });
 
   /**
-   * ⚠️ .what = THE DISCLOSED GAP, asserted rather than described
+   * .what = the disclosed gap, asserted rather than described
    *
    * .why = zod cannot express "at least one key present", so this schema's inferred shape is
    *        a superset of `ApiGatewayResponse` by exactly one member: `{}`. a consumer who
-   *        treats a parse as the WHOLE check inherits no empty-response guard
+   *        treats a parse as the whole check inherits no empty-response guard
    *
-   * .why green means the gap is PRESENT = `[t0]` passes today. it goes RED when the seam
-   *        closes, which is the signal `asApiGatewayResponseSchema`'s `.removal` note wants
+   * .the polarity = this assertion is green while the gap is present, and goes red when the
+   *        seam closes — the signal `asApiGatewayResponseSchema`'s `.removal` note wants
    */
-  given('[case4] an EMPTY response, against the schema standalone', () => {
+  given('[case4] an empty response, against the schema standalone', () => {
     when('[t0] it is parsed directly, outside forApiGateway', () => {
       then(
-        '⚠️ DISCLOSED GAP — it is ACCEPTED, so a parse is not the whole check',
+        'the disclosed gap — it is accepted, so a parse is not the whole check',
         () => {
           expect(schema.parse({})).toEqual({});
         },
@@ -121,7 +121,7 @@ describe('asApiGatewayResponseSchema', () => {
      *        points at actually refuses the same value. absent this, `[t0]` would read as
      *        "an empty response is fine everywhere"
      */
-    when('[t1] the SAME value meets the guard forApiGateway uses', () => {
+    when('[t1] the same value meets the guard forApiGateway uses', () => {
       then('it is refused loudly', () => {
         expect(() => isApiGatewayResponse.assure({})).toThrow();
       });

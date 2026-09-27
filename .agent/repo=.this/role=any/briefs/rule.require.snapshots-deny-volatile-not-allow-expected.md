@@ -13,7 +13,7 @@ expect({
 }).toMatchSnapshot();
 
 // 👍 a DENYLIST — it surfaces the field nobody thought to name
-expect(asWireSnapshot({ wire })).toMatchSnapshot();
+expect(asHttpResponseSnapshot({ wire })).toMatchSnapshot();
 //     ^ drops `date` / `connection` / `keep-alive` / `transfer-encoding`, keeps ALL else
 ```
 
@@ -66,7 +66,7 @@ the tells:
 - an **object literal** built at the call site whose keys are copied out of the subject —
   `{ statusCode: result.statusCode, body: result.body }`. that is the allowlist, written inline.
 - a projection whose name says which fields it keeps (`asStatusAndBody`) rather than which it drops
-  (`asWireSnapshot`, `withoutVolatile`)
+  (`asHttpResponseSnapshot`, `withoutVolatile`)
 - a snapshot beside an assertion that checks **the same** field. the snapshot is then pure
   redundancy, which is the signature of a subset with no independent reach
 - **a per-field mask with a literal** (`timestamp: '[masked]'`) — this one is fine and is the house

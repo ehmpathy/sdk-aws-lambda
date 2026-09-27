@@ -96,7 +96,7 @@ exports[`sdk-aws-lambda given: [case4] forApiGateway handler when: [t0] invoked 
 
 exports[`sdk-aws-lambda given: [case4] forApiGateway handler when: [t1] invoked with invalid request body then: it should return 400 with error details 1`] = `
 {
-  "body": "{"errorMessage":"✋ ConstraintError: validation failed: data: Invalid input: expected string, received number\\n\\n{\\n  \\"issues\\": [\\n    {\\n      \\"path\\": \\"data\\",\\n      \\"message\\": \\"Invalid input: expected string, received number\\",\\n      \\"code\\": \\"invalid_type\\"\\n    }\\n  ],\\n  \\"hint\\": \\"send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`\\"\\n}","errorType":"BadRequestError","details":{"issues":[{"path":"data","message":"Invalid input: expected string, received number","code":"invalid_type"}],"hint":"send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"}}",
+  "body": "{"errorMessage":"✋ ConstraintError: validation failed: payload.data: Invalid input: expected string, received number\\n\\n{\\n  \\"issues\\": [\\n    {\\n      \\"path\\": \\"payload.data\\",\\n      \\"message\\": \\"Invalid input: expected string, received number\\",\\n      \\"code\\": \\"invalid_type\\"\\n    }\\n  ],\\n  \\"hint\\": \\"send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`\\"\\n}","errorType":"BadRequestError","details":{"issues":[{"path":"payload.data","message":"Invalid input: expected string, received number","code":"invalid_type"}],"hint":"send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"}}",
   "headers": {
     "Content-Type": "application/json",
   },
@@ -106,7 +106,7 @@ exports[`sdk-aws-lambda given: [case4] forApiGateway handler when: [t1] invoked 
 
 exports[`sdk-aws-lambda given: [case4] forApiGateway handler when: [t2] invoked with malformed JSON body then: it should return 400 with parse error 1`] = `
 {
-  "body": "{"errorMessage":"✋ ConstraintError: validation failed: (root): Invalid input: expected object, received string\\n\\n{\\n  \\"issues\\": [\\n    {\\n      \\"path\\": \\"(root)\\",\\n      \\"message\\": \\"Invalid input: expected object, received string\\",\\n      \\"code\\": \\"invalid_type\\"\\n    }\\n  ],\\n  \\"hint\\": \\"send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`\\"\\n}","errorType":"BadRequestError","details":{"issues":[{"path":"(root)","message":"Invalid input: expected object, received string","code":"invalid_type"}],"hint":"send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"}}",
+  "body": "{"errorMessage":"✋ ConstraintError: validation failed: payload: Invalid input: expected object, received string\\n\\n{\\n  \\"issues\\": [\\n    {\\n      \\"path\\": \\"payload\\",\\n      \\"message\\": \\"Invalid input: expected object, received string\\",\\n      \\"code\\": \\"invalid_type\\"\\n    }\\n  ],\\n  \\"hint\\": \\"send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`\\"\\n}","errorType":"BadRequestError","details":{"issues":[{"path":"payload","message":"Invalid input: expected object, received string","code":"invalid_type"}],"hint":"send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"}}",
   "headers": {
     "Content-Type": "application/json",
   },
@@ -116,7 +116,7 @@ exports[`sdk-aws-lambda given: [case4] forApiGateway handler when: [t2] invoked 
 
 exports[`sdk-aws-lambda given: [case4] forApiGateway handler when: [t3] invoked with null body then: it should return 400 for null body 1`] = `
 {
-  "body": "{"errorMessage":"✋ ConstraintError: validation failed: (root): Invalid input: expected object, received null\\n\\n{\\n  \\"issues\\": [\\n    {\\n      \\"path\\": \\"(root)\\",\\n      \\"message\\": \\"Invalid input: expected object, received null\\",\\n      \\"code\\": \\"invalid_type\\"\\n    }\\n  ],\\n  \\"hint\\": \\"send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`\\"\\n}","errorType":"BadRequestError","details":{"issues":[{"path":"(root)","message":"Invalid input: expected object, received null","code":"invalid_type"}],"hint":"send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"}}",
+  "body": "{"errorMessage":"✋ ConstraintError: validation failed: payload: Invalid input: expected object, received null\\n\\n{\\n  \\"issues\\": [\\n    {\\n      \\"path\\": \\"payload\\",\\n      \\"message\\": \\"Invalid input: expected object, received null\\",\\n      \\"code\\": \\"invalid_type\\"\\n    }\\n  ],\\n  \\"hint\\": \\"send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`\\"\\n}","errorType":"BadRequestError","details":{"issues":[{"path":"payload","message":"Invalid input: expected object, received null","code":"invalid_type"}],"hint":"send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"}}",
   "headers": {
     "Content-Type": "application/json",
   },
@@ -126,7 +126,7 @@ exports[`sdk-aws-lambda given: [case4] forApiGateway handler when: [t3] invoked 
 
 exports[`sdk-aws-lambda given: [case4] forApiGateway handler when: [t4] invoked with empty object body then: it should return 400 for empty body 1`] = `
 {
-  "body": "{"errorMessage":"✋ ConstraintError: validation failed: data: Invalid input: expected string, received undefined\\n\\n{\\n  \\"issues\\": [\\n    {\\n      \\"path\\": \\"data\\",\\n      \\"message\\": \\"Invalid input: expected string, received undefined\\",\\n      \\"code\\": \\"invalid_type\\"\\n    }\\n  ],\\n  \\"hint\\": \\"send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`\\"\\n}","errorType":"BadRequestError","details":{"issues":[{"path":"data","message":"Invalid input: expected string, received undefined","code":"invalid_type"}],"hint":"send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"}}",
+  "body": "{"errorMessage":"✋ ConstraintError: validation failed: payload.data: Invalid input: expected string, received undefined\\n\\n{\\n  \\"issues\\": [\\n    {\\n      \\"path\\": \\"payload.data\\",\\n      \\"message\\": \\"Invalid input: expected string, received undefined\\",\\n      \\"code\\": \\"invalid_type\\"\\n    }\\n  ],\\n  \\"hint\\": \\"send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`\\"\\n}","errorType":"BadRequestError","details":{"issues":[{"path":"payload.data","message":"Invalid input: expected string, received undefined","code":"invalid_type"}],"hint":"send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"}}",
   "headers": {
     "Content-Type": "application/json",
   },

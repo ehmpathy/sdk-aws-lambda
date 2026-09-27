@@ -75,6 +75,7 @@ independence, never the count of parts.
 
 ## .see also
 
+- `rule.forbid.defended-exceptions` — the general form of the *"the proposal explains the name"* tell above
 - `rule.require.ubiqlang` (mechanic) — a term must name one concept the domain holds
 - `rule.require.treestruct` (mechanic) — `[verb][...noun]` / `[...noun][state]`; a mash breaks the noun hierarchy
 - `howto.dimensional-decomposition` (architect) — the axes this rule keeps out of names

@@ -5,16 +5,21 @@ import type { ZodType } from 'zod';
 import type { EnvConfig } from '../../../domain.objects/ContextAwsLambdaServer';
 import type { LambdaEndpointSchema } from '../../../domain.objects/LambdaEndpointSchema';
 import { getJsonSchemaFromZod } from './genIntrospectionMiddleware.getJsonSchemaFromZod';
-import { isIntrospectionPayload } from './genIntrospectionMiddleware.isIntrospectionPayload';
+import { isIntrospectionInput } from './genIntrospectionMiddleware.isIntrospectionInput';
 
 /**
  * .what = middleware that intercepts introspection requests
  * .why = enables runtime schema discovery for sdk generation
  *
  * behavior:
- *   - if payload is { introspect: 'schema' } and env.access === 'prep': return schema
- *   - if payload is { introspect: 'schema' } and env.access !== 'prep': fail fast
+ *   - if `inputAfter` is { introspect: 'schema' } and env.access === 'prep': return schema
+ *   - if `inputAfter` is { introspect: 'schema' } and env.access !== 'prep': fail fast
  *   - otherwise: pass through to handler
+ *
+ * .why `inputAfter` and not `payload` = this middleware serves both families, and they keep the
+ *        caller's value in different places — `event.payload` for api-gateway, `event` itself
+ *        for ask-endpoint. `inputAfter` is the position both share; `payload` is one family's
+ *        word for a body (`domain.terms/payload.md`)
  */
 export const genIntrospectionMiddleware = <TInput, TOutput>(opts: {
   schema: {
@@ -29,24 +34,31 @@ export const genIntrospectionMiddleware = <TInput, TOutput>(opts: {
    *        knows which. the api-gateway chain must keep `request.event` HTTP-SHAPED, since
    *        `@middy/http-cors` reads `request.event.headers` and derives the http method from
    *        `request.event` in its `after` hook — so that family carries the value at
-   *        `event.body`, while the ask-endpoint family carries it at `event` itself
+   *        `event.payload`, while the ask-endpoint family carries it at `event` itself
    */
   asInputAfter: (request: any) => unknown;
 
   /**
    * .what = renders the schema as this family's `outputAfter`, per family
    * .why = the short-circuit writes STRAIGHT to the wire, so the shape is the family's own:
-   *        api-gateway owes a wire payload, while an ask-endpoint response IS its payload
+   *        api-gateway owes an `ApiGatewayResponseOnwire`, while an ask-endpoint response goes
+   *        to the wire as it stands
    */
   asOutputAfter: (schema: LambdaEndpointSchema) => unknown;
 }): {
   before: middy.MiddlewareFn<any, any>;
 } => {
   const before: middy.MiddlewareFn<any, any> = async (request) => {
-    // read inputAfter from wherever this family keeps it
-    const payload = opts.asInputAfter(request);
+    /**
+     * .what = read `inputAfter` from wherever this family keeps it
+     * .why the name = `inputAfter` is a POSITION, and it is true of BOTH families. a local
+     *        named `payload` would be the api-gateway family's own word (`event.payload`) put
+     *        on a value that for the ask-endpoint family is the WHOLE event — one word, two
+     *        senses, at a seam that serves two callers (`domain.terms/payload.md`)
+     */
+    const inputAfter = opts.asInputAfter(request);
 
-    if (!isIntrospectionPayload(payload)) return;
+    if (!isIntrospectionInput(inputAfter)) return;
 
     // extract env from config
     const env = typeof opts.env === 'function' ? await opts.env() : opts.env;

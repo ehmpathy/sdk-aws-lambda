@@ -82,7 +82,7 @@ export class SurfTrophy extends DomainEntity<SurfTrophy> implements SurfTrophy {
 /**
  * .what = getTrophy — surfaces a SurfTrophy that holds its three refs
  */
-export const getTrophy = genLambdaEndpoint(
+export const getTrophy = genLambdaEndpoint.forAsk(
   {
     schema: {
       input: z.object({ uuid: z.string() }),
@@ -122,9 +122,9 @@ export const getTrophy = genLambdaEndpoint(
     //   (rule.require.sweep-the-defect-class — grep the SUBJECT, never the set you fixed)
     //   .the one non-instance left = `createCapturableHandlers.getJobs` returns `[]`, which
     //    holds no element to construct. stated there rather than left to inference
-    invoke: async ({ event }) => ({
+    invoke: async ({ payload }) => ({
       trophy: new SurfTrophy({
-        uuid: event.uuid,
+        uuid: payload.uuid,
         rider: { uuid: 's1' },
         board: { brand: 'seaturtle', lengthInInches: 108 },
         sponsor: { uuid: 'sp1' },
@@ -137,14 +137,14 @@ export const getTrophy = genLambdaEndpoint(
 /**
  * .what = getRider — surfaces the referenced Seaturtle WHOLE (binds rider ref)
  */
-export const getRider = genLambdaEndpoint(
+export const getRider = genLambdaEndpoint.forAsk(
   {
     schema: {
       input: z.object({ uuid: z.string() }),
       output: z.object({ rider: Seaturtle.contract() }),
     },
-    invoke: async ({ event }) => ({
-      rider: new Seaturtle({ uuid: event.uuid, name: 'crush' }),
+    invoke: async ({ payload }) => ({
+      rider: new Seaturtle({ uuid: payload.uuid, name: 'crush' }),
     }),
   },
   { env: { access: 'prep' } },
@@ -153,14 +153,14 @@ export const getRider = genLambdaEndpoint(
 /**
  * .what = getBoard — surfaces the referenced Surfboard WHOLE (binds board ref)
  */
-export const getBoard = genLambdaEndpoint(
+export const getBoard = genLambdaEndpoint.forAsk(
   {
     schema: {
       input: z.object({ brand: z.string() }),
       output: z.object({ board: Surfboard.contract() }),
     },
-    invoke: async ({ event }) => ({
-      board: new Surfboard({ brand: event.brand, lengthInInches: 108 }),
+    invoke: async ({ payload }) => ({
+      board: new Surfboard({ brand: payload.brand, lengthInInches: 108 }),
     }),
   },
   { env: { access: 'prep' } },
@@ -169,14 +169,14 @@ export const getBoard = genLambdaEndpoint(
 /**
  * .what = getSponsor — surfaces the referenced Sponsor WHOLE (binds sponsor ref)
  */
-export const getSponsor = genLambdaEndpoint(
+export const getSponsor = genLambdaEndpoint.forAsk(
   {
     schema: {
       input: z.object({ uuid: z.string() }),
       output: z.object({ sponsor: Sponsor.contract() }),
     },
-    invoke: async ({ event }) => ({
-      sponsor: new Sponsor({ uuid: event.uuid, handle: 'oceanco' }),
+    invoke: async ({ payload }) => ({
+      sponsor: new Sponsor({ uuid: payload.uuid, handle: 'oceanco' }),
     }),
   },
   { env: { access: 'prep' } },

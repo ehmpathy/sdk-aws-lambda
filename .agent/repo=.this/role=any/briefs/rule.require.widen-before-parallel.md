@@ -106,6 +106,7 @@ export const forApiGateway = <TInput, TBody>(config: {
 - ⚖️ **`rule.prefer.wet-over-dry` (mechanic) — the COUNTERWEIGHT.** do not widen to serve a case no
   one has. applied alone, this rule permits a speculative widen; that one alone permits a needless
   peer. read the pair together
+- `rule.forbid.defended-exceptions` — the general form of the *"confession"* tell above
 - `rule.forbid.names-that-mash-dimensions` — a mashed name is often the tell of a needless peer
 - `rule.prefer.defaults-match-common-case` (ergonomist) — a widened contract must keep the common case a one-liner
 - `rule.require.retest-the-model-on-every-family` — the same failure at model grain: derived from one case, applied to two

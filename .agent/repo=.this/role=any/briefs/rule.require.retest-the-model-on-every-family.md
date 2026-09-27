@@ -171,6 +171,7 @@ schema: {
 
 ## .see also
 
+- `rule.forbid.defended-exceptions` — the general form of the *"a reconciliation is a confession"* tell above
 - `rule.forbid.ungrounded-type-params` — the structural-bind companion; a bind cannot hold a
   vocabulary the model gets wrong
 - `rule.require.widen-before-parallel` — the same failure at contract grain: a design derived

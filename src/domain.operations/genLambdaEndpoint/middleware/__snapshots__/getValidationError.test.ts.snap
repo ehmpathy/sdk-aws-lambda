@@ -1,0 +1,31 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`getValidationError given: [case5] a schema that declares its HEADERS strict when: [t0] a real api-gateway bag is parsed against it then: and the whole message reads well to the human who meets it 1`] = `
+"✋ ConstraintError: validation failed: headers: Unrecognized keys: "host", "x-forwarded-for", "x-amzn-trace-id" — a \`headers\` schema must NOT be \`.strict()\`: this sdk parses the WHOLE wire bag, and api gateway injects keys you did not declare, so a strict bag refuses every real request. drop \`.strict()\` — zod strips undeclared keys by default, and the sdk merges your validated keys back over the wire bag, so no key is lost. (\`.strict()\` on \`payload\` stays safe.)
+
+{
+  "issues": [
+    {
+      "path": "headers",
+      "message": "Unrecognized keys: \\"host\\", \\"x-forwarded-for\\", \\"x-amzn-trace-id\\"",
+      "code": "unrecognized_keys"
+    }
+  ],
+  "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
+}"
+`;
+
+exports[`getValidationError given: [case6] a schema that declares its PAYLOAD strict — the control when: [t0] a body with an undeclared key is parsed against it then: and the message a payload author meets holds no header advice 1`] = `
+"✋ ConstraintError: validation failed: payload: Unrecognized key: "surprise"
+
+{
+  "issues": [
+    {
+      "path": "payload",
+      "message": "Unrecognized key: \\"surprise\\"",
+      "code": "unrecognized_keys"
+    }
+  ],
+  "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
+}"
+`;

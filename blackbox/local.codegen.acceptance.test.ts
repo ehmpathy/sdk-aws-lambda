@@ -131,7 +131,7 @@ describe('codegen (local)', () => {
   // blocks + returns a non-schema payload → LambdaIntrospectionNotSupportedError
   const asNotSupportedSdk = (): LambdaClient => {
     const handlers = {
-      getLegacy: genLambdaEndpoint(
+      getLegacy: genLambdaEndpoint.forAsk(
         {
           schema: {
             input: z.object({ id: z.string() }),
@@ -170,7 +170,7 @@ describe('codegen (local)', () => {
       public static schema = z.object({});
     }
     const handlers = {
-      getGhost: genLambdaEndpoint(
+      getGhost: genLambdaEndpoint.forAsk(
         {
           schema: {
             input: z.object({ id: z.string() }),

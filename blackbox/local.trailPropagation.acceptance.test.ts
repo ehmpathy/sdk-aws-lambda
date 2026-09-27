@@ -13,7 +13,7 @@ describe('trail threading', () => {
       output: z.object({ receivedExid: z.string().nullable() }),
     };
 
-    const handler = genLambdaEndpoint({
+    const handler = genLambdaEndpoint.forAsk({
       schema,
       invoke: async ({ event }, { log }) => {
         // extract exid from log.trail context
@@ -57,7 +57,7 @@ describe('trail threading', () => {
       output: z.object({ hasExid: z.boolean() }),
     };
 
-    const handler = genLambdaEndpoint({
+    const handler = genLambdaEndpoint.forAsk({
       schema,
       invoke: async ({ event }, { log }) => {
         const exid = log.trail
@@ -101,7 +101,7 @@ describe('trail threading', () => {
       }),
     };
 
-    const innerHandler = genLambdaEndpoint({
+    const innerHandler = genLambdaEndpoint.forAsk({
       schema: innerSchema,
       invoke: async ({ event }, { log }) => {
         const innerExid =
@@ -120,16 +120,16 @@ describe('trail threading', () => {
       }),
     };
 
-    const outerHandler = genLambdaEndpoint({
+    const outerHandler = genLambdaEndpoint.forAsk({
       schema: outerSchema,
-      invoke: async ({ event }, { log }) => {
+      invoke: async ({ payload }, { log }) => {
         const outerExid =
           log.trail?.exid ?? null;
 
         // invoke inner handler with same trail via wrapped format
         const innerResult = await innerHandler(
           {
-            event: { value: event.value },
+            event: { value: payload.value },
             trail: outerExid ? { exid: outerExid } : {},
           },
           {} as Context,
@@ -182,7 +182,7 @@ describe('trail threading', () => {
       }),
     };
 
-    const handler = genLambdaEndpoint({
+    const handler = genLambdaEndpoint.forAsk({
       schema,
       invoke: async ({ event }, { log }) => {
         return {

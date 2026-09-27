@@ -21,7 +21,8 @@ import { createInProcessLambdaHarness } from '../src/__test_assets__/createInPro
 import { gen } from '../src/contract/cli/gen';
 import { LambdaDomainObjectNotCapturableError } from '../src/domain.objects/LambdaDomainObjectNotCapturableError';
 import { LambdaIntrospectionBlockedError } from '../src/domain.objects/LambdaIntrospectionBlockedError';
-import { genLambdaEndpoint } from '../src/domain.operations/genLambdaEndpoint/genLambdaEndpoint.forAskEndpoint/genLambdaEndpoint.forAskEndpoint';
+// the FAMILY, off the public surface — a blackbox suite reads what a consumer reads
+import { genLambdaEndpoint } from '../src/index';
 import { genServiceSdk } from '../src/domain.operations/genServiceSdk/genServiceSdk';
 
 /**
@@ -89,7 +90,7 @@ const genJobDobj = (opts: { withExtraField: boolean }) => {
 const asSdk = (opts: { withExtraField: boolean }): LambdaClient => {
   const Job = genJobDobj(opts);
   const handlers = {
-    getJob: genLambdaEndpoint(
+    getJob: genLambdaEndpoint.forAsk(
       {
         schema: {
           input: z.object({ uuid: z.string() }),
@@ -136,7 +137,7 @@ const asUncapturableSdk = (): LambdaClient => {
     public static schema = z.object({});
   }
   const handlers = {
-    getGhost: genLambdaEndpoint(
+    getGhost: genLambdaEndpoint.forAsk(
       {
         schema: {
           input: z.object({ id: z.string() }),
