@@ -19,13 +19,10 @@ import { genZodEventValidationMiddleware } from './middleware/genZodEventValidat
 
 /**
  * .what = wrapped payload format: event nested under `event` key with trail
- * .why = re-exported from its canonical owner (`lambdaEndpointWire/frame`) so the
- *        public barrel surfaces the ONE declaration, never a structural twin.
- *        F16 lifted this shape to the common ancestor of the three contexts that
- *        touch the frame — askLambdaEndpoint emits it over the wire,
- *        runLambdaEndpoint/serde emits it in-process, getUnwrappedEventWithExid
- *        reads it. a second local declaration here would be the exact duplication
- *        that lift removed (`rule.prefer.most-common-denominator`).
+ * .why = re-exported from its canonical owner (`lambdaEndpointWire/frame`), the common
+ *        ancestor of the three contexts that touch the frame — askLambdaEndpoint and
+ *        runLambdaEndpoint/serde emit it, getUnwrappedEventWithExid reads it. one
+ *        declaration, never a structural twin (`rule.prefer.most-common-denominator`)
  */
 export type { WrappedPayload };
 

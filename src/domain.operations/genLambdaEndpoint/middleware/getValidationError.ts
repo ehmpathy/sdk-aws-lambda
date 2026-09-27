@@ -23,8 +23,8 @@ export interface ValidationErrorMetadata {
  *   - *"introspect the schema with `{ introspect: 'schema' }`"* — `genIntrospectionMiddleware`
  *     gates on `env.access === 'prep'` (`genIntrospectionMiddleware.ts:63`), so the hint would
  *     be a dead end in prod
- *   - *"check the `deserialize` option"* — refuted in a prior round: it is meaningless at the
- *     ask-endpoint border, which shares this builder
+ *   - *"check the `deserialize` option"* — meaningless at the ask-endpoint border, which shares
+ *     this builder
  *   ⇒ so the hint names the ACT, which is true at both borders and in every env. a hint that is
  *     false in one env is worse than none, since a caller spends the trip before they learn it
  */

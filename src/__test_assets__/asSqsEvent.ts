@@ -1,5 +1,10 @@
 import type { SQSEvent, SQSMessageAttributes, SQSRecord } from 'aws-lambda';
 
+import {
+  AWS_ACCOUNT_SYNTHETIC,
+  AWS_REGION_SYNTHETIC,
+} from '../domain.objects/AwsIdentitySynthetic';
+
 /**
  * .what = the two facts a test actually varies about one sqs message
  * .why = every other field of `SQSRecord` is aws ledger data the sdk never reads, so a test
@@ -54,8 +59,8 @@ const asSqsRecord = (input: {
     }),
     md5OfBody: 'md5',
     eventSource: 'aws:sqs',
-    eventSourceARN: 'arn:aws:sqs:us-east-1:000000000000:test-queue',
-    awsRegion: 'us-east-1',
+    eventSourceARN: `arn:aws:sqs:${AWS_REGION_SYNTHETIC}:${AWS_ACCOUNT_SYNTHETIC}:test-queue`,
+    awsRegion: AWS_REGION_SYNTHETIC,
   }) satisfies SQSRecord;
 
 /**

@@ -4,7 +4,6 @@ exports[`introspection given: [case2] genLambdaEndpoint with introspection in pr
 {
   "input": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "additionalProperties": false,
     "properties": {
       "name": {
         "type": "string",
@@ -17,7 +16,6 @@ exports[`introspection given: [case2] genLambdaEndpoint with introspection in pr
   },
   "output": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "additionalProperties": false,
     "properties": {
       "salute": {
         "type": "string",
@@ -28,6 +26,12 @@ exports[`introspection given: [case2] genLambdaEndpoint with introspection in pr
     ],
     "type": "object",
   },
+}
+`;
+
+exports[`introspection given: [case2] genLambdaEndpoint with introspection in prep env when: [t1] invoked with normal payload then: the journey output matches snapshot 1`] = `
+{
+  "salute": "Hello, World!",
 }
 `;
 
@@ -54,7 +58,7 @@ exports[`introspection given: [case3] genLambdaEndpoint with introspection in pr
 exports[`introspection given: [case3b] genLambdaEndpoint with introspection in prod env (contemp caller) when: [t0] invoked with introspect payload (wrapped/contemp format) then: result matches snapshot 1`] = `
 {
   "error": {
-    "_serde": "LambdaEndpointError::contemp",
+    "_serde": "LambdaEndpointError::contemp@v1",
     "class": "ConstraintError",
     "details": {
       "access": "prod",
@@ -91,7 +95,7 @@ exports[`introspection given: [case4] genLambdaEndpoint without env config (anci
 exports[`introspection given: [case4b] genLambdaEndpoint without env config (contemp caller) when: [t0] invoked with introspect payload (wrapped/contemp format) then: result matches snapshot 1`] = `
 {
   "error": {
-    "_serde": "LambdaEndpointError::contemp",
+    "_serde": "LambdaEndpointError::contemp@v1",
     "class": "ConstraintError",
     "details": {
       "hint": "pass env config to genLambdaEndpoint",
@@ -107,7 +111,7 @@ exports[`introspection given: [case4b] genLambdaEndpoint without env config (con
 
 exports[`introspection given: [case5] forApiGateway with introspection in prep env when: [t0] invoked with introspect payload then: result matches snapshot 1`] = `
 {
-  "body": "{"input":{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"payload":{"type":"object","properties":{"data":{"type":"string"}},"required":["data"],"additionalProperties":false}},"required":["payload"],"additionalProperties":false},"output":{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"status":{"type":"number"},"headers":{"type":"object","propertyNames":{"type":"string"},"additionalProperties":{"type":"string"}},"payload":{"type":"object","properties":{"success":{"type":"boolean"}},"required":["success"],"additionalProperties":false}},"additionalProperties":false}}",
+  "body": "{"input":{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"payload":{"type":"object","properties":{"data":{"type":"string"}},"required":["data"]}},"required":["payload"]},"output":{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"status":{"type":"number"},"headers":{"type":"object","propertyNames":{"type":"string"},"additionalProperties":{"type":"string"}},"payload":{"type":"object","properties":{"success":{"type":"boolean"}},"required":["success"]}}}}",
   "headers": {
     "Content-Type": "application/json",
   },
@@ -119,10 +123,8 @@ exports[`introspection given: [case6] introspection with complex schema when: [t
 {
   "input": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "additionalProperties": false,
     "properties": {
       "options": {
-        "additionalProperties": false,
         "properties": {
           "limit": {
             "default": 10,
@@ -134,13 +136,9 @@ exports[`introspection given: [case6] introspection with complex schema when: [t
             "type": "boolean",
           },
         },
-        "required": [
-          "limit",
-        ],
         "type": "object",
       },
       "user": {
-        "additionalProperties": false,
         "properties": {
           "email": {
             "format": "email",
@@ -179,12 +177,10 @@ exports[`introspection given: [case6] introspection with complex schema when: [t
   },
   "output": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "additionalProperties": false,
     "properties": {
       "result": {
         "oneOf": [
           {
-            "additionalProperties": false,
             "properties": {
               "data": {
                 "items": {
@@ -204,7 +200,6 @@ exports[`introspection given: [case6] introspection with complex schema when: [t
             "type": "object",
           },
           {
-            "additionalProperties": false,
             "properties": {
               "message": {
                 "type": "string",
@@ -235,7 +230,6 @@ exports[`introspection given: [case7] introspection with async env config when: 
 {
   "input": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "additionalProperties": false,
     "properties": {
       "name": {
         "type": "string",
@@ -248,7 +242,6 @@ exports[`introspection given: [case7] introspection with async env config when: 
   },
   "output": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "additionalProperties": false,
     "properties": {
       "salute": {
         "type": "string",
@@ -266,7 +259,6 @@ exports[`introspection given: [case8] getOneLambdaContract via in-process harnes
 {
   "input": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "additionalProperties": false,
     "properties": {
       "include": {
         "items": {
@@ -291,10 +283,8 @@ exports[`introspection given: [case8] getOneLambdaContract via in-process harnes
   },
   "output": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "additionalProperties": false,
     "properties": {
       "metadata": {
-        "additionalProperties": false,
         "properties": {
           "fetchedAt": {
             "type": "string",
@@ -306,7 +296,6 @@ exports[`introspection given: [case8] getOneLambdaContract via in-process harnes
         "type": "object",
       },
       "user": {
-        "additionalProperties": false,
         "properties": {
           "email": {
             "format": "email",
@@ -342,7 +331,6 @@ exports[`introspection given: [case11] getAllLambdaContracts via in-process harn
   "getSettings": {
     "input": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "additionalProperties": false,
       "properties": {
         "userId": {
           "type": "string",
@@ -355,7 +343,6 @@ exports[`introspection given: [case11] getAllLambdaContracts via in-process harn
     },
     "output": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "additionalProperties": false,
       "properties": {
         "language": {
           "type": "string",
@@ -378,7 +365,6 @@ exports[`introspection given: [case11] getAllLambdaContracts via in-process harn
   "getUser": {
     "input": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "additionalProperties": false,
       "properties": {
         "userId": {
           "type": "string",
@@ -391,7 +377,6 @@ exports[`introspection given: [case11] getAllLambdaContracts via in-process harn
     },
     "output": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "additionalProperties": false,
       "properties": {
         "email": {
           "type": "string",
@@ -406,6 +391,129 @@ exports[`introspection given: [case11] getAllLambdaContracts via in-process harn
       ],
       "type": "object",
     },
+  },
+}
+`;
+
+exports[`introspection given: [case13] introspection of a domain-object schema with a defaulted field when: [t0] invoked with introspect payload then: result matches snapshot 1`] = `
+{
+  "input": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "properties": {
+      "board": {
+        "default": "foamboard",
+        "type": "string",
+      },
+      "surfer": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+          "uuid": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "uuid",
+          "name",
+        ],
+        "type": "object",
+        "x-domain-object": {
+          "kind": "entity",
+          "name": "Surfer",
+          "primary": [
+            "uuid",
+          ],
+        },
+      },
+    },
+    "required": [
+      "surfer",
+    ],
+    "type": "object",
+  },
+  "output": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "null",
+  },
+}
+`;
+
+exports[`introspection given: [case14] introspection of an endpoint with a dobj on BOTH borders when: [t0] invoked with introspect payload then: result matches snapshot 1`] = `
+{
+  "input": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "properties": {
+      "rider": {
+        "properties": {
+          "name": {
+            "type": "string",
+          },
+          "uuid": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "uuid",
+          "name",
+        ],
+        "type": "object",
+        "x-domain-object": {
+          "kind": "entity",
+          "name": "Seaturtle",
+          "primary": [
+            "uuid",
+          ],
+        },
+      },
+    },
+    "required": [
+      "rider",
+    ],
+    "type": "object",
+  },
+  "output": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "properties": {
+      "trophy": {
+        "properties": {
+          "rider": {
+            "properties": {
+              "uuid": {
+                "type": "string",
+              },
+            },
+            "required": [
+              "uuid",
+            ],
+            "type": "object",
+            "x-domain-object-ref": {
+              "by": "primary",
+              "of": "Seaturtle",
+            },
+          },
+          "uuid": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "uuid",
+          "rider",
+        ],
+        "type": "object",
+        "x-domain-object": {
+          "kind": "entity",
+          "name": "SurfTrophy",
+          "primary": [
+            "uuid",
+          ],
+        },
+      },
+    },
+    "required": [
+      "trophy",
+    ],
+    "type": "object",
   },
 }
 `;
