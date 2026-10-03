@@ -124,7 +124,8 @@ is that old shape, held under `@ts-expect-error`.
   family's `payload === event.payload` identity case closes that at runtime
 - the audit read covers the invoke-slot rows only; the config rows (decorated names) stay a
   reviewer find
-- the superset does **not** clamp the freeze: typescript ignores `readonly` in assignability, so a
+- the superset does **not** clamp the freeze: typescript ignores `readonly` on object properties
+  in assignability, and a mutable array, `Set`, or `Map` is assignable to its readonly peer, so a
   variant that drops `FrozenDeep` still satisfies it. each variant's own depth arm catches that
   (`rule.require.frozen-invoke-inputs`). `[case2][t2]` asserts the limit, so it goes red if
   typescript ever starts to compare `readonly`

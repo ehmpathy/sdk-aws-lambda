@@ -24,6 +24,9 @@ env.prod: null
 env.prep:
   - key: AWS_PROFILE
     is-optional-if-has: AWS_ACCESS_KEY_ID
+  # .what = feeds the route peer reviewers (`--brain openrouter/deepseek/flash`), as the
+  #         reviewer role's own FIREWORKS_API_KEY does from env.prep
+  - OPENROUTER_API_KEY
 env.test: null
 env.all:
   - key: AWS_PROFILE

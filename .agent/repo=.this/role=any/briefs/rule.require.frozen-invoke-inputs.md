@@ -61,9 +61,11 @@ is every slot of each variant's `invoke` input typed `FrozenDeep`? the tells:
 
 ## .the cost, paid on purpose
 
-`FrozenDeep<T>` is unassignable to a mutable parameter, so a handler that forwards `event` to
-`fulfilOrder(order: Order)` must declare its sink `readonly`. that cost is uniform across the
-family, so it is never an axis for one variant to sit out.
+typescript ignores `readonly` on object properties in assignability, so a frozen object still
+forwards to `fulfilOrder(order: Order)` — the guard there is the refused write, not the hand-off.
+a frozen **array**, `Set`, or `Map` does not: `readonly T[]`, `ReadonlySet`, and `ReadonlyMap` drop
+the mutators, so a sink that takes one must declare it readonly (or the handler copies it). that
+cost is uniform across the family, so it is never an axis for one variant to sit out.
 
 ## .the caveat
 
@@ -72,6 +74,11 @@ family, so it is never an axis for one variant to sit out.
   first rung, never the throw
 - node's `TypeError: Cannot assign to read only property …` names no remedy; only a `Proxy` could,
   and a `Proxy` is a different object, which breaks the projection
+- the walk is type-fns' `asFrozenDeep`, so the runtime matches the `FrozenDeep` type it ships beside.
+  it also refuses a builtin's mutators (`Date.setFullYear`, `Map.set`, `Set.add`, …) with a
+  `ConstraintError` that names the copy route. that refusal is a handler defect, so
+  `getIsFrozenMutatorRefusal` keeps it off the caller-fault path; a value it cannot seal (a typed
+  array with bytes, a global `RegExp`) fails before `invoke` as a `MalfunctionError`
 
 ## .the clamp each variant owes
 
@@ -98,8 +105,9 @@ response, so a `getError` at the call site reads the rendered body. name the def
 
 ## .see also
 
-- `setEventFrozen.ts` — the shared helper and its `FrozenDeep` type
+- `setEventFrozen.ts` — the shared helper; its `FrozenDeep` type is type-fns' own, re-exported from `src/index.ts`
 - `domain.terms/event.md` — the invariant in the term's words
 - `rule.require.consistent-variant-contracts` — its superset does NOT clamp the freeze
-  (typescript ignores `readonly` in assignability); the depth arm above does
+  (a mutable slot is assignable to its `FrozenDeep` peer — `readonly` props are ignored, and a
+  mutable array, `Set`, or `Map` widens to its readonly form); the depth arm above does
 - `rule.prefer.prevent-over-correct` (ergonomist) — rung 1 is the type, rung 4 the throw

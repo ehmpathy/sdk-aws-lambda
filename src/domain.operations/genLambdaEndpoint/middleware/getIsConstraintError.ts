@@ -1,5 +1,7 @@
 import { BadRequestError, ConstraintError } from 'helpful-errors';
 
+import { getIsFrozenMutatorRefusal } from './getIsFrozenMutatorRefusal';
+
 /**
  * .what = decides if error is a constraint error via thorough check
  * .why = robust detection for cross-boundary error response
@@ -13,6 +15,9 @@ export const getIsConstraintError = (input: { error: unknown }): boolean => {
 
   // not an error at all
   if (!(error instanceof Error)) return false;
+
+  // the invoke freeze's refusal is a handler defect, never a caller fault, though it wears the class
+  if (getIsFrozenMutatorRefusal({ error })) return false;
 
   // direct instanceof check (ConstraintError and BadRequestError for backwards compat)
   if (error instanceof ConstraintError) return true;

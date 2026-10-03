@@ -1,3 +1,4 @@
+import { type IsoTimeStamp, isIsoTimeStamp } from 'iso-time';
 import { given, then, when } from 'test-fns';
 
 import * as sdk from './index';
@@ -243,6 +244,22 @@ describe('[case1] the migrant swaps the import', () => {
         expect(envelope.errorType).toEqual('BadRequestError');
         expect(run).toEqual({ found: true });
         expect(typeof handler).toEqual('function');
+      });
+
+      /**
+       * .what = `FrozenDeep` stays importable from the root, now that type-fns owns it
+       *         (ehmpathy/sdk-aws-lambda#48 step 2)
+       * .why = a consumer that names `FrozenDeep` from this sdk must change no import. the
+       *        re-export is a type, so only this compile proves it — and the brand line proves
+       *        the root names the type with the primitive arm, never a stale twin of it
+       */
+      then('FrozenDeep is reachable from the root, and keeps a brand', () => {
+        const at = isIsoTimeStamp.assure('2026-10-01T12:00:00.000Z');
+
+        const frozen: sdk.FrozenDeep<{ at: IsoTimeStamp }> = { at };
+        const forwarded: IsoTimeStamp = frozen.at;
+
+        expect(forwarded).toEqual(at);
       });
     });
   });

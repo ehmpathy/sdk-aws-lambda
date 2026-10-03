@@ -2,11 +2,12 @@ import middy from '@middy/core';
 import type { Context, SQSEvent } from 'aws-lambda';
 import { MalfunctionError } from 'helpful-errors';
 import type { ContextLogTrail } from 'sdk-logs';
+import type { FrozenDeep } from 'type-fns';
 import type { ZodSchema } from 'zod';
 
 import type { ContextAwsLambdaServer } from '../../../domain.objects/ContextAwsLambdaServer';
 import { asContextLogTrail } from '../asContextLogTrail';
-import { type FrozenDeep, setEventFrozen } from '../setEventFrozen';
+import { setEventFrozen } from '../setEventFrozen';
 import type { TranslateLog } from '../TranslateLog';
 import { asSqsEventDecoded } from './asSqsEventDecoded';
 import { DESERIALIZE_DEFAULT } from './asSqsRecordDecoded';

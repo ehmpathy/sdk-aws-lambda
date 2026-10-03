@@ -1,4 +1,4 @@
-import type { FrozenDeep } from './setEventFrozen';
+import type { FrozenDeep } from 'type-fns';
 
 /**
  * .what = the shapes one family binds into the superset — its own types, per slot
@@ -39,11 +39,14 @@ export interface InvokeShapes {
  *
  * .note = every slot is `FrozenDeep`, because every value handed to an `invoke` is deep-frozen
  *         in every family (`rule.require.frozen-invoke-inputs`)
- * .note = the freeze is NOT clampable from here, measured: typescript ignores the `readonly`
- *         modifier in assignability, in both directions — `{ to: string }` is assignable to
- *         `{ readonly to: string }` and back. so a variant that drops `FrozenDeep` from a slot
- *         still satisfies this superset, and a bite check written for it goes TS2578 rather than
- *         red (`InvokeInputSuperset.test.ts [case2][t1]`). the freeze is held by each variant's
+ * .note = the freeze is NOT clampable from here, measured. per arm of `FrozenDeep`:
+ *         - an object property: typescript ignores `readonly` in assignability, in both
+ *           directions — `{ to: string }` is assignable to `{ readonly to: string }` and back
+ *         - an array, `Set`, or `Map`: the mutable form is assignable to its readonly peer
+ *           (`string[]` → `readonly string[]`); only the reverse fails
+ *         either way, a mutable slot satisfies a frozen one. so a variant that drops `FrozenDeep`
+ *         from a slot still satisfies this superset, and a bite check written for it goes TS2578
+ *         rather than red. each arm is run in `InvokeInputSuperset.test.ts [case2][t2]`. the freeze is held by each variant's
  *         own `@ts-expect-error` depth arm instead; this superset clamps a slot's NAME and its
  *         VALUE TYPE, and naught else
  */
