@@ -1377,4 +1377,52 @@ describe('forAsk', () => {
       });
     });
   });
+
+  /**
+   * .what = a handler that calls a mutator on a frozen `Date`, and lets the refusal escape
+   * .why = the freeze replaces a `Date`'s setters with throwers, and the throw it raises is a
+   *        type-fns `ConstraintError`. a `ConstraintError` is how this sdk names a CALLER fault, so
+   *        an unguarded classifier would answer the caller with a `BadRequestError` envelope for a
+   *        defect in the handler. the caller sent a valid request; the server must own the fault
+   */
+  given('[case16] a handler that calls a mutator on a frozen Date', () => {
+    const schema = {
+      input: z.object({ at: z.coerce.date() }),
+      output: z.object({ ok: z.boolean() }),
+    };
+
+    when('[t0] the refusal escapes `invoke`', () => {
+      const outcome = useThen('the invoke settles', async () => {
+        const handler = forAsk({
+          schema,
+          invoke: async ({ payload }) => {
+            // a deliberate defect: the handler writes through the frozen date
+            (payload.at as unknown as Date).setFullYear(1999);
+            return { ok: true };
+          },
+        });
+
+        return handler(
+          { at: '2026-10-03T00:00:00.000Z' },
+          createMockContext(),
+        ).then(
+          (answered: unknown) => ({ answered, rejected: null }),
+          (rejected: Error) => ({ answered: null, rejected }),
+        );
+      });
+
+      then('it is a server fault, never a caller-fault envelope', () => {
+        expect(outcome.answered).toBeNull();
+        expect(outcome.rejected).toBeInstanceOf(Error);
+        expect(getIsConstraintError({ error: outcome.rejected })).toBe(false);
+      });
+
+      then('the fault names the refused mutator', () => {
+        expect(
+          (outcome.rejected?.cause as Error | undefined)?.message ??
+            outcome.rejected?.message,
+        ).toContain('a frozen Date refuses .setFullYear()');
+      });
+    });
+  });
 });

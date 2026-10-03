@@ -1,5 +1,6 @@
 ignorePatterns:
   - ".build"
+  - ".agent/.actors" # gitignored per-actor brain state (plugin caches); never this package's source
 ignores:
   - depcheck
   - declapract
@@ -10,8 +11,10 @@ ignores:
   - husky
   - if-env
   - rhachet
+  # brain packages: loaded by name at review time (`--brain <vendor>/...`), never imported
   - rhachet-brains-anthropic
   - rhachet-brains-fireworksai
+  - rhachet-brains-openrouter
   - rhachet-brains-xai
   - "@tsconfig/node20"
   - "@tsconfig/strictest"

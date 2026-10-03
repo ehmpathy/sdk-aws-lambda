@@ -10,6 +10,12 @@
 
 // re-export from helpful-errors for convenience
 export { BadRequestError } from 'helpful-errors';
+/**
+ * .what = the type of every value a `genLambdaEndpoint.for*` variant hands its `invoke`
+ * .why = a consumer who declares a handler apart from the call site must be able to name it
+ * .note = `FrozenDeep` is type-fns' own, re-exported so no consumer import changes
+ */
+export type { FrozenDeep } from 'type-fns';
 
 /**
  * .what = releases every LambdaClient this sdk memoized on the caller's behalf
@@ -158,11 +164,6 @@ export {
 } from './domain.operations/genLambdaEndpoint/middleware/getValidatedOutput';
 export type { ValidationErrorMetadata } from './domain.operations/genLambdaEndpoint/middleware/getValidationError';
 export type { ZodIssueSummary } from './domain.operations/genLambdaEndpoint/middleware/getZodIssuesSummary';
-/**
- * .what = types reachable from the public `ForApiGatewayInput` signature
- * .why = a consumer who declares a handler apart from the call site must be able to name them
- */
-export type { FrozenDeep } from './domain.operations/genLambdaEndpoint/setEventFrozen';
 /**
  * .what = the `logTranslate` config type
  * .note = `TranslateLog` is public because `logTranslate` accepts it, and it replaces the

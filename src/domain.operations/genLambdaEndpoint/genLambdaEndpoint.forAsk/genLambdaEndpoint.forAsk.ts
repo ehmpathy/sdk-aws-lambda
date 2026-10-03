@@ -1,6 +1,7 @@
 import middy from '@middy/core';
 import type { Context } from 'aws-lambda';
 import type { ContextLogTrail } from 'sdk-logs';
+import type { FrozenDeep } from 'type-fns';
 import type { ZodSchema } from 'zod';
 
 import type { ContextAwsLambdaServer } from '../../../domain.objects/ContextAwsLambdaServer';
@@ -12,7 +13,7 @@ import { genIntrospectionMiddleware } from '../middleware/genIntrospectionMiddle
 import { genIoLoggerMiddleware } from '../middleware/genIoLoggerMiddleware';
 import { genTrailMiddleware } from '../middleware/genTrailMiddleware';
 import { getValidatedOutput } from '../middleware/getValidatedOutput';
-import { type FrozenDeep, setEventFrozen } from '../setEventFrozen';
+import { setEventFrozen } from '../setEventFrozen';
 import type { TranslateLog } from '../TranslateLog';
 import { genAskEventOnwireCaptureMiddleware } from './middleware/genAskEventOnwireCaptureMiddleware';
 import { genZodEventValidationMiddleware } from './middleware/genZodEventValidationMiddleware';

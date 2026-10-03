@@ -1,0 +1,116 @@
+🦉 the way speaks for itself
+
+🗿 route.stone.set
+   ├─ stone = 5.1.execution.from_vision
+   ├─ passage = allowed
+   ├─ guard
+   │  ├─ artifacts
+   │  │   ├─ $route/5.1.execution.from_vision.yield.md
+   │  │   └─ src/**/*
+   │  ├─ reviews
+   │  │   ├─ r1: repo-rules (l1, 3/3)
+   │  │   │   ├─ approved, cached
+   │  │   │   ├─ 0 blockers ✓
+   │  │   │   ├─ 4 nitpicks 🟠
+   │  │   │   ├─ given: .behavior/v2026_10_01.fix-frozen-deep-branded-primitives/.reviews/peer/5.1.execution.from_vision._.review.i006.09d3b95b3f59783a49.r001._.given.by_peer.repo-rules.md
+   │  │   │   └─ taken: .behavior/v2026_10_01.fix-frozen-deep-branded-primitives/.reviews/peer/5.1.execution.from_vision._.review.i006.09d3b95b3f59783a49.r001._.taken.by_self.repo-rules.md
+   │  │   ├─ r2: repo-rules-require-evidence (l1, 1/3)
+   │  │   │   ├─ approved, cached
+   │  │   │   ├─ 0 blockers ✓
+   │  │   │   ├─ 0 nitpicks ✓
+   │  │   │   ├─ given: .behavior/v2026_10_01.fix-frozen-deep-branded-primitives/.reviews/peer/5.1.execution.from_vision._.review.i009.5d62772d0bf8007fb0.r002._.given.by_peer.repo-rules-require-evidence.md
+   │  │   │   └─ taken: .behavior/v2026_10_01.fix-frozen-deep-branded-primitives/.reviews/peer/5.1.execution.from_vision._.review.i009.5d62772d0bf8007fb0.r002._.taken.by_self.repo-rules-require-evidence.md
+   │  │   ├─ r3: repo-rules-require-retest-review (l1, 1/3)
+   │  │   │   ├─ approved, cached
+   │  │   │   ├─ 0 blockers ✓
+   │  │   │   ├─ 0 nitpicks ✓
+   │  │   │   ├─ given: .behavior/v2026_10_01.fix-frozen-deep-branded-primitives/.reviews/peer/5.1.execution.from_vision._.review.i009.5d62772d0bf8007fb0.r003._.given.by_peer.repo-rules-require-retest-review.md
+   │  │   │   └─ taken: .behavior/v2026_10_01.fix-frozen-deep-branded-primitives/.reviews/peer/5.1.execution.from_vision._.review.i009.5d62772d0bf8007fb0.r003._.taken.by_self.repo-rules-require-retest-review.md
+   │  │   ├─ r4: repo-rules-require-snapshots-svc (l1, 1/3)
+   │  │   │   ├─ approved 26.5s
+   │  │   │   ├─ 0 blockers ✓
+   │  │   │   ├─ 0 nitpicks ✓
+   │  │   │   ├─ given: .behavior/v2026_10_01.fix-frozen-deep-branded-primitives/.reviews/peer/5.1.execution.from_vision._.review.i010.5d62772d0bf8007fb0.r004._.given.by_peer.repo-rules-require-snapshots-svc.md
+   │  │   │   └─ taken: .behavior/v2026_10_01.fix-frozen-deep-branded-primitives/.reviews/peer/5.1.execution.from_vision._.review.i010.5d62772d0bf8007fb0.r004._.taken.by_self.repo-rules-require-snapshots-svc.md
+   │  │   ├─ r5: repo-rules-require-sweep-widen (l1, 1/3)
+   │  │   │   ├─ approved 26.5s
+   │  │   │   ├─ 0 blockers ✓
+   │  │   │   ├─ 0 nitpicks ✓
+   │  │   │   ├─ given: .behavior/v2026_10_01.fix-frozen-deep-branded-primitives/.reviews/peer/5.1.execution.from_vision._.review.i010.5d62772d0bf8007fb0.r005._.given.by_peer.repo-rules-require-sweep-widen.md
+   │  │   │   └─ taken: .behavior/v2026_10_01.fix-frozen-deep-branded-primitives/.reviews/peer/5.1.execution.from_vision._.review.i010.5d62772d0bf8007fb0.r005._.taken.by_self.repo-rules-require-sweep-widen.md
+   │  │   ├─ r6: repo-rules-forbid-prefer (l1, 3/3)
+   │  │   │   ├─ approved, cached — set aside by dispute
+   │  │   │   ├─ disputed 🌙 — skipped this generation, no round spent
+   │  │   │   ├─ 0 blockers ✓
+   │  │   │   ├─ 1 nitpick, 1 disputed → 0 tallied ✓
+   │  │   │   ├─ given: .behavior/v2026_10_01.fix-frozen-deep-branded-primitives/.reviews/peer/5.1.execution.from_vision._.review.i006.09d3b95b3f59783a49.r004._.given.by_peer.repo-rules-forbid-prefer.md
+   │  │   │   └─ taken: .behavior/v2026_10_01.fix-frozen-deep-branded-primitives/.reviews/peer/5.1.execution.from_vision._.review.i006.09d3b95b3f59783a49.r004._.taken.by_self.repo-rules-forbid-prefer.md
+   │  │   ├─ r7: mech-failhides (l1, 3/3)
+   │  │   │   ├─ approved, cached
+   │  │   │   ├─ 0 blockers ✓
+   │  │   │   ├─ 0 nitpicks ✓
+   │  │   │   ├─ given: .behavior/v2026_10_01.fix-frozen-deep-branded-primitives/.reviews/peer/5.1.execution.from_vision._.review.i003.520e0f475bfe2d6f0e.r004._.given.by_peer.mech-failhides.md
+   │  │   │   └─ taken: .behavior/v2026_10_01.fix-frozen-deep-branded-primitives/.reviews/peer/5.1.execution.from_vision._.review.i003.520e0f475bfe2d6f0e.r004._.taken.by_self.mech-failhides.md
+   │  │   ├─ r8: mech-decode-friction (l1, 3/3)
+   │  │   │   ├─ approved, cached
+   │  │   │   ├─ 0 blockers ✓
+   │  │   │   ├─ 0 nitpicks ✓
+   │  │   │   ├─ given: .behavior/v2026_10_01.fix-frozen-deep-branded-primitives/.reviews/peer/5.1.execution.from_vision._.review.i003.520e0f475bfe2d6f0e.r005._.given.by_peer.mech-decode-friction.md
+   │  │   │   └─ taken: .behavior/v2026_10_01.fix-frozen-deep-branded-primitives/.reviews/peer/5.1.execution.from_vision._.review.i003.520e0f475bfe2d6f0e.r005._.taken.by_self.mech-decode-friction.md
+   │  │   ├─ r9: arch-opport-decomposition (l1, 3/3)
+   │  │   │   ├─ approved, cached
+   │  │   │   ├─ 0 blockers ✓
+   │  │   │   ├─ 1 nitpick 🟠
+   │  │   │   ├─ given: .behavior/v2026_10_01.fix-frozen-deep-branded-primitives/.reviews/peer/5.1.execution.from_vision._.review.i004.aeeea847b0f57309ad.r006._.given.by_peer.arch-opport-decomposition.md
+   │  │   │   └─ taken: .behavior/v2026_10_01.fix-frozen-deep-branded-primitives/.reviews/peer/5.1.execution.from_vision._.review.i004.aeeea847b0f57309ad.r006._.taken.by_self.arch-opport-decomposition.md
+   │  │   ├─ r10: arch-smell-scopeleaks (l1, 3/3)
+   │  │   │   ├─ approved, cached
+   │  │   │   ├─ 0 blockers ✓
+   │  │   │   ├─ 0 nitpicks ✓
+   │  │   │   ├─ given: .behavior/v2026_10_01.fix-frozen-deep-branded-primitives/.reviews/peer/5.1.execution.from_vision._.review.i004.aeeea847b0f57309ad.r007._.given.by_peer.arch-smell-scopeleaks.md
+   │  │   │   └─ taken: .behavior/v2026_10_01.fix-frozen-deep-branded-primitives/.reviews/peer/5.1.execution.from_vision._.review.i004.aeeea847b0f57309ad.r007._.taken.by_self.arch-smell-scopeleaks.md
+   │  │   ├─ r11: arch-hazards-maintenance (l1, 3/3)
+   │  │   │   ├─ approved, cached
+   │  │   │   ├─ 0 blockers ✓
+   │  │   │   ├─ 0 nitpicks ✓
+   │  │   │   ├─ given: .behavior/v2026_10_01.fix-frozen-deep-branded-primitives/.reviews/peer/5.1.execution.from_vision._.review.i004.aeeea847b0f57309ad.r008._.given.by_peer.arch-hazards-maintenance.md
+   │  │   │   └─ taken: .behavior/v2026_10_01.fix-frozen-deep-branded-primitives/.reviews/peer/5.1.execution.from_vision._.review.i004.aeeea847b0f57309ad.r008._.taken.by_self.arch-hazards-maintenance.md
+   │  │   ├─ r12: arch-hazards-behavior (l1, 3/3)
+   │  │   │   ├─ approved, cached
+   │  │   │   ├─ 0 blockers ✓
+   │  │   │   ├─ 1 nitpick 🟠
+   │  │   │   ├─ given: .behavior/v2026_10_01.fix-frozen-deep-branded-primitives/.reviews/peer/5.1.execution.from_vision._.review.i004.aeeea847b0f57309ad.r009._.given.by_peer.arch-hazards-behavior.md
+   │  │   │   └─ taken: .behavior/v2026_10_01.fix-frozen-deep-branded-primitives/.reviews/peer/5.1.execution.from_vision._.review.i004.aeeea847b0f57309ad.r009._.taken.by_self.arch-hazards-behavior.md
+   │  │   ├─ r13: behavior-intent-coverage (l1, 3/3)
+   │  │   │   ├─ exhausted 🌙, cached — set aside by dispute
+   │  │   │   ├─ disputed 🌙 — skipped this generation, no round spent
+   │  │   │   ├─ terminal — does not block higher levels
+   │  │   │   ├─ 1 blocker, 1 disputed → 0 tallied ✓
+   │  │   │   ├─ 3 nitpicks 🟠
+   │  │   │   ├─ given: .behavior/v2026_10_01.fix-frozen-deep-branded-primitives/.reviews/peer/5.1.execution.from_vision._.review.i006.09d3b95b3f59783a49.r011._.given.by_peer.behavior-intent-coverage.md
+   │  │   │   └─ taken: .behavior/v2026_10_01.fix-frozen-deep-branded-primitives/.reviews/peer/5.1.execution.from_vision._.review.i006.09d3b95b3f59783a49.r011._.taken.by_self.behavior-intent-coverage.md
+   │  │   ├─ r14: ergo-friction-hazards (l1, 3/3)
+   │  │   │   ├─ approved, cached
+   │  │   │   ├─ 0 blockers ✓
+   │  │   │   ├─ 2 nitpicks 🟠
+   │  │   │   ├─ given: .behavior/v2026_10_01.fix-frozen-deep-branded-primitives/.reviews/peer/5.1.execution.from_vision._.review.i004.aeeea847b0f57309ad.r011._.given.by_peer.ergo-friction-hazards.md
+   │  │   │   └─ taken: .behavior/v2026_10_01.fix-frozen-deep-branded-primitives/.reviews/peer/5.1.execution.from_vision._.review.i004.aeeea847b0f57309ad.r011._.taken.by_self.ergo-friction-hazards.md
+   │  │   ├─ r15: enroll-impl-behavior-intent (l3, 3/3)
+   │  │   │   ├─ approved, cached
+   │  │   │   ├─ 0 blockers ✓
+   │  │   │   ├─ 6 nitpicks 🟠
+   │  │   │   ├─ tallied by reviewer@fireworks/deepseek/v4-flash
+   │  │   │   ├─ given: .behavior/v2026_10_01.fix-frozen-deep-branded-primitives/.reviews/peer/5.1.execution.from_vision._.review.i004.aeeea847b0f57309ad.r012._.given.by_peer.enroll-impl-behavior-intent.md
+   │  │   │   └─ taken: .behavior/v2026_10_01.fix-frozen-deep-branded-primitives/.reviews/peer/5.1.execution.from_vision._.review.i004.aeeea847b0f57309ad.r012._.taken.by_self.enroll-impl-behavior-intent.md
+   │  │   └─ r16: enroll-impl-arch-defects (l3, 3/3)
+   │  │       ├─ approved, cached
+   │  │       ├─ 0 blockers ✓
+   │  │       ├─ 1 nitpick 🟠
+   │  │       ├─ given: .behavior/v2026_10_01.fix-frozen-deep-branded-primitives/.reviews/peer/5.1.execution.from_vision._.review.i005.a95eee883ed9c05dd1.r014._.given.by_peer.enroll-impl-arch-defects.md
+   │  │       └─ taken: .behavior/v2026_10_01.fix-frozen-deep-branded-primitives/.reviews/peer/5.1.execution.from_vision._.review.i005.a95eee883ed9c05dd1.r014._.taken.by_self.enroll-impl-arch-defects.md
+   │  └─ judges
+   │      └─ j1: $rhachet run --repo bhrain --skill route.stone.judge --mechanism reviewed? --stone $stone --route $route --allow-blockers 0 --allow-nitpicks 7
+   │          └─ finished 1.6s ✓
+   │
+   └─ the way continues, run
+      └─ rhx route.drive

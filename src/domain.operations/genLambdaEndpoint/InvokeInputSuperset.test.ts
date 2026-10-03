@@ -418,17 +418,6 @@ describe('the invoke-input superset, across every genLambdaEndpoint variant', ()
     });
 
     /**
-     * .what = the limit of this gate, asserted rather than assumed — it does not catch a
-     *         dropped `FrozenDeep`
-     * .why = typescript ignores the `readonly` modifier in assignability, in both directions.
-     *        so a variant that hands a mutable slot still satisfies the superset, and a reader
-     *        who takes `FrozenDeep` here for a clamp on the freeze is wrong
-     * .note = the freeze is held by each variant's own `@ts-expect-error` depth arm
-     *         (`rule.require.frozen-invoke-inputs`). this case keeps the limit on the record as
-     *         a run rather than as a claim, and it goes red the day typescript starts to
-     *         compare `readonly` — the day this gate could take the job over
-     */
-    /**
      * .what = the SENSE bite check — the exact shape `forAsk` once shipped: `event` bound to the
      *         validated body, with no `payload` slot
      * .why = conditions 1 and 2 passed it, because the gate's caller supplied the body as the
@@ -479,11 +468,53 @@ describe('the invoke-input superset, across every genLambdaEndpoint variant', ()
       },
     );
 
+    /**
+     * .what = the limit of this gate, asserted rather than assumed — it does not catch a
+     *         dropped `FrozenDeep`, on any arm of it
+     * .why = typescript ignores `readonly` on object properties in assignability, in both
+     *        directions, and a mutable array, `Set`, or `Map` is assignable to its readonly peer.
+     *        so a variant that hands a mutable slot still satisfies the superset, and a reader
+     *        who takes `FrozenDeep` here for a clamp on the freeze is wrong. each arm below is
+     *        one `FrozenDeep` arm, run rather than inferred from its neighbour
+     * .note = the freeze is held by each variant's own `@ts-expect-error` depth arm
+     *         (`rule.require.frozen-invoke-inputs`). this case keeps the limit on the record as
+     *         a run rather than as a claim, and it goes red the day typescript starts to
+     *         compare `readonly` — the day this gate could take the job over
+     */
     when('[t2] it names the right slot but hands it mutable', () => {
       then('the gate lets it pass — the freeze is not clamped here', () => {
         const verdict: SatisfiesInvokeInputSuperset<
           { payload: Payload },
           { headers: never; payload: Payload; event: never; record: never }
+        > = true;
+        expect(verdict).toEqual(true);
+      });
+
+      then('a mutable array slot passes too — the array arm', () => {
+        const verdict: SatisfiesInvokeInputSuperset<
+          { payload: string[] },
+          { headers: never; payload: string[]; event: never; record: never }
+        > = true;
+        expect(verdict).toEqual(true);
+      });
+
+      then('a mutable Set slot passes too — the Set arm', () => {
+        const verdict: SatisfiesInvokeInputSuperset<
+          { payload: Set<string> },
+          { headers: never; payload: Set<string>; event: never; record: never }
+        > = true;
+        expect(verdict).toEqual(true);
+      });
+
+      then('a mutable Map slot passes too — the Map arm', () => {
+        const verdict: SatisfiesInvokeInputSuperset<
+          { payload: Map<string, number> },
+          {
+            headers: never;
+            payload: Map<string, number>;
+            event: never;
+            record: never;
+          }
         > = true;
         expect(verdict).toEqual(true);
       });

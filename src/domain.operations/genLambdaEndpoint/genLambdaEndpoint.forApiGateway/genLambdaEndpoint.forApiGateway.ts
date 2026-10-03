@@ -5,6 +5,7 @@ import httpSecurityHeaders from '@middy/http-security-headers';
 import type { Context } from 'aws-lambda';
 import { MalfunctionError } from 'helpful-errors';
 import type { ContextLogTrail } from 'sdk-logs';
+import type { FrozenDeep } from 'type-fns';
 import type { ZodSchema } from 'zod';
 
 import type { ApiGatewayRequestEventOnwire } from '../../../domain.objects/ApiGatewayRequestEventOnwire';
@@ -18,7 +19,7 @@ import { genIntrospectionMiddleware } from '../middleware/genIntrospectionMiddle
 import { genIoLoggerMiddleware } from '../middleware/genIoLoggerMiddleware';
 import { genTrailMiddleware } from '../middleware/genTrailMiddleware';
 import { getValidatedOutput } from '../middleware/getValidatedOutput';
-import { type FrozenDeep, setEventFrozen } from '../setEventFrozen';
+import { setEventFrozen } from '../setEventFrozen';
 import type { TranslateLog } from '../TranslateLog';
 import type {
   ApiGatewayHeadersDeclared,
