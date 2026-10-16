@@ -4,6 +4,8 @@ import { genTempDir, getError, given, then, when } from 'test-fns';
 
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { asLambdaEvent } from '../asLambdaEvent/asLambdaEvent';
+import { getIsWrappedPayload } from '../lambdaEndpointWire/frame/getIsWrappedPayload';
 import { onReferenced } from './runLambdaEndpoint.onReferenced';
 import { onSerialized } from './runLambdaEndpoint.onSerialized';
 
@@ -82,6 +84,172 @@ const genLocalRepo = (input: {
 };
 
 describe('runLambdaEndpoint.onSerialized', () => {
+  given(
+    '[case19] an api gateway endpoint, met by slug at local, no struct',
+    () => {
+      // a plain js handler that echoes what an api gateway endpoint would see on its request,
+      // so the raw bytes of the CARRIER are asserted: the header, and no wrapper. the real
+      // endpoint is met in the next case
+      const handlerSource = `
+      exports.sendNotification = async (event) => ({
+        statusCode: 200,
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          exid: (event.headers || {})['x-trail-exid'] || null,
+          wrapped: Boolean(event.trail),
+          method: event.httpMethod || null,
+        }),
+      });
+    `;
+
+      when('[t0] a fromApiGateway event is run, with a caller trail', () => {
+        const dir = genLocalRepo({
+          service: 'svc-example',
+          function: 'sendNotification',
+          handlerSource,
+        });
+
+        then('it resolves an http response, never a throw', async () => {
+          const result = await onSerialized<
+            unknown,
+            { statusCode: number; body: string }
+          >(
+            {
+              which: { service: 'svc-example', function: 'sendNotification' },
+              event: asLambdaEvent.fromApiGateway({
+                httpMethod: 'POST',
+                body: { to: 'kai@example.com' },
+              }),
+              at: 'local',
+              from: dir,
+            },
+            CONTEXT_PINNED,
+          );
+
+          expect(result.statusCode).toEqual(200);
+
+          // the opt-in rode the request's headers — never a { event, trail } wrapper — and the
+          // caller's pinned exid is the value it carried, so the trace joins up
+          expect(JSON.parse(result.body)).toEqual({
+            exid: 'exid:pinned-for-snapshot',
+            wrapped: false,
+            method: 'POST',
+          });
+        });
+      });
+
+      when('[t1] the same event is run with struct ancient', () => {
+        const dir = genLocalRepo({
+          service: 'svc-example',
+          function: 'sendNotification',
+          handlerSource,
+        });
+
+        then('the event arrives raw: no opt-in header', async () => {
+          const result = await onSerialized<
+            unknown,
+            { statusCode: number; body: string }
+          >(
+            {
+              which: { service: 'svc-example', function: 'sendNotification' },
+              event: asLambdaEvent.fromApiGateway({ httpMethod: 'POST' }),
+              struct: { payload: 'ancient' },
+              at: 'local',
+              from: dir,
+            },
+            CONTEXT_PINNED,
+          );
+
+          expect(JSON.parse(result.body)).toEqual({
+            exid: null,
+            wrapped: false,
+            method: 'POST',
+          });
+        });
+      });
+    },
+  );
+
+  given(
+    '[case20] a real forApiGateway endpoint, met by slug at local, no struct',
+    () => {
+      // the handler is the sdk's own `forApiGateway`, required by absolute path. the temp repo
+      // has no node_modules, so zod is required from this repo's by absolute path too
+      const handlerSource = `
+      const { genLambdaEndpoint, asApiGatewayResponseSchema } = require(${JSON.stringify(
+        join(__dirname, '../../index'),
+      )});
+      const { z } = require(${JSON.stringify(join(__dirname, '../../../node_modules/zod'))});
+      exports.sendNotification = genLambdaEndpoint.forApiGateway({
+        schema: {
+          input: z.object({ payload: z.object({ to: z.string().email() }) }),
+          output: asApiGatewayResponseSchema({
+            payload: z.object({ sentTo: z.string() }),
+          }),
+        },
+        invoke: async ({ payload }) => {
+          if (payload.to === 'fatal@example.com') throw new Error('dependency dead');
+          return { payload: { sentTo: payload.to } };
+        },
+      });
+    `;
+      const dir = genLocalRepo({
+        service: 'svc-example',
+        function: 'sendNotification',
+        handlerSource,
+      });
+      const run = async (to: string) =>
+        onSerialized<unknown, { statusCode: number; body: string }>(
+          {
+            which: { service: 'svc-example', function: 'sendNotification' },
+            event: asLambdaEvent.fromApiGateway({
+              httpMethod: 'POST',
+              body: { to },
+            }),
+            at: 'local',
+            from: dir,
+          },
+          CONTEXT_PINNED,
+        );
+
+      when('[t0] a valid body is run', () => {
+        then('the handler answers its own 200', async () => {
+          const result = await run('kai@example.com');
+          expect(result.statusCode).toEqual(200);
+          expect(JSON.parse(result.body)).toEqual({
+            sentTo: 'kai@example.com',
+          });
+        });
+      });
+
+      when('[t1] a body the schema refuses is run', () => {
+        then(
+          'a 400 is RETURNED inside the http response, in the contemp dialect — never thrown',
+          async () => {
+            const result = await run('not-an-email');
+            expect(result.statusCode).toEqual(400);
+            expect(JSON.parse(result.body).error.class).toEqual(
+              'ConstraintError',
+            );
+          },
+        );
+      });
+
+      when('[t2] the handler throws', () => {
+        then(
+          'a redacted 500 is returned, and its correlationId is the caller exid',
+          async () => {
+            const result = await run('fatal@example.com');
+            expect(result.statusCode).toEqual(500);
+            expect(JSON.parse(result.body).correlationId).toEqual(
+              'exid:pinned-for-snapshot',
+            );
+          },
+        );
+      });
+    },
+  );
+
   given('[case8] one handler, met from both sides of the boundary', () => {
     // a handler that rejects a caller fault. the SAME handler, the SAME input.
     const handlerSource = `
@@ -976,6 +1144,93 @@ describe('runLambdaEndpoint.onSerialized', () => {
       });
     });
   });
+
+  /**
+   * .what = the cloud locus, for an event the builder declared as api gateway
+   * .why = the carrier choice, the single exid, and the absent wrapper are all decided
+   *        before the wire, so a sdk that captures the sent payload observes them with no aws
+   *        (`context.aws.lambda.sdk` is injectable)
+   */
+  given(
+    '[case21] a declared api gateway event, sent at the cloud locus',
+    () => {
+      const genSdkCaptured = (): {
+        sdk: never;
+        sent: Array<Record<string, unknown>>;
+      } => {
+        const sent: Array<Record<string, unknown>> = [];
+        return {
+          sent,
+          sdk: {
+            send: async (command: { input: { Payload: Uint8Array } }) => {
+              sent.push(
+                JSON.parse(Buffer.from(command.input.Payload).toString('utf8')),
+              );
+              return {
+                StatusCode: 200,
+                Payload: Buffer.from(JSON.stringify({ statusCode: 200 })),
+              };
+            },
+          } as never,
+        };
+      };
+
+      const event = asLambdaEvent.fromApiGateway({
+        httpMethod: 'POST',
+        body: { to: 'kai@example.com' },
+      });
+
+      when('[t0] sent with the default dialect', () => {
+        const captured = genSdkCaptured();
+        const exid = 'exid:pinned-for-cloud';
+
+        then('the payload holds the header, and no wrapper', async () => {
+          await onSerialized(
+            {
+              which: { service: 'svc-example', function: 'notify' },
+              event,
+              at: 'cloud',
+            },
+            {
+              ...genContextLogTrail({ trail: { exid, stack: [] }, env: null }),
+              env: { access: 'test' as const },
+              aws: { lambda: { sdk: captured.sdk } },
+            },
+          );
+
+          expect(captured.sent).toHaveLength(1);
+          const [payload] = captured.sent;
+          expect(getIsWrappedPayload(payload)).toEqual(false);
+          expect(payload).not.toHaveProperty('trail');
+          expect(payload!.headers).toMatchObject({ 'x-trail-exid': exid });
+        });
+      });
+
+      when('[t1] sent on the ancient struct', () => {
+        const captured = genSdkCaptured();
+
+        then('the payload carries no header: no opt-in', async () => {
+          await onSerialized(
+            {
+              which: { service: 'svc-example', function: 'notify' },
+              event,
+              at: 'cloud',
+              struct: { payload: 'ancient' },
+            },
+            {
+              ...CONTEXT,
+              aws: { lambda: { sdk: captured.sdk } },
+            },
+          );
+
+          expect(captured.sent).toHaveLength(1);
+          expect(JSON.stringify(captured.sent[0])).not.toContain(
+            'x-trail-exid',
+          );
+        });
+      });
+    },
+  );
 
   /**
    * .what = case=9 `[t1]` — the credential-free reject that NAMES THE FIX

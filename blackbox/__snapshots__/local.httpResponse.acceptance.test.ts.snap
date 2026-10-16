@@ -107,7 +107,7 @@ exports[`an api-gateway handler owns its own wire response given: [case7] a hand
 exports[`an api-gateway handler owns its own wire response given: [case8] a cors-configured handler, on BOTH its paths when: [t0] the request succeeds — the positive control then: the whole wire response is what a reviewer expects 1`] = `
 {
   "headers": {
-    "access-control-allow-headers": "content-type,authorization",
+    "access-control-allow-headers": "content-type,authorization,x-trail-exid",
     "access-control-allow-origin": "*",
     "content-type": "application/json",
     "origin-agent-cluster": "?1",

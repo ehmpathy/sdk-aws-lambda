@@ -12,6 +12,8 @@ import type { ApiGatewayRequestEventOnwire } from '../../../domain.objects/ApiGa
 import type { ApiGatewayResponse } from '../../../domain.objects/ApiGatewayResponse';
 import type { ApiGatewayResponseOnwire } from '../../../domain.objects/ApiGatewayResponseOnwire';
 import type { ContextAwsLambdaServer } from '../../../domain.objects/ContextAwsLambdaServer';
+import type { TrailCarrier } from '../../../domain.objects/TrailCarrier';
+import { setHandlerTrailCarrier } from '../../lambdaEndpointWire/frame/setHandlerTrailCarrier';
 import { asContextLogTrail } from '../asContextLogTrail';
 import { genConstraintErrorMiddleware } from '../middleware/genConstraintErrorMiddleware';
 import { genInternalServiceErrorMiddleware } from '../middleware/genInternalServiceErrorMiddleware';
@@ -29,11 +31,19 @@ import type {
 import { DESERIALIZE_DEFAULT } from './asApiGatewayRequestEventUnified';
 import { asApiGatewayResponseOnwire } from './asApiGatewayResponseOnwire';
 import { asApiGatewayResponseOnwireJson } from './asApiGatewayResponseOnwireJson';
+import { asCorsHeadersWithTrail } from './asCorsHeadersWithTrail';
 import { getAllResponseOnwireKeysFound } from './getAllResponseOnwireKeysFound';
 import { isApiGatewayResponse } from './isApiGatewayResponse';
 import { genApiGatewayRequestEventNormalizationMiddleware } from './middleware/genApiGatewayRequestEventNormalizationMiddleware';
 import { genContentTypeCoherenceMiddleware } from './middleware/genContentTypeCoherenceMiddleware';
 import { genZodInputValidationMiddleware } from './middleware/genZodInputValidationMiddleware';
+
+/**
+ * .what = the carrier this family reads: aws builds the envelope, so the opt-in rides its `headers`
+ * .why = one constant feeds the trail middleware that reads it and the stamp that tells
+ *        `runLambdaEndpoint` which carrier to write, so the two cannot disagree
+ */
+const CARRIER_API_GATEWAY: TrailCarrier = 'headers';
 
 /**
  * .what = the cors contract for an api-gateway handler
@@ -79,6 +89,9 @@ export interface CorsConfig {
    * .why = sets Access-Control-Allow-Headers header
    *
    * defaults to 'content-type,authorization'
+   *
+   * `x-trail-exid` is always appended, default or author-set, so a browser caller that opts into
+   * the contemp dialect passes its preflight
    */
   headers?: string;
 }
@@ -232,7 +245,15 @@ const corsInputToCorsConfig = (cors: CorsConfig) => {
      */
     ...(cors.origins === '*' ? { origin: '*' } : { origins: cors.origins }),
     credentials: cors.credentials,
-    headers: cors.headers ?? 'content-type,authorization',
+    /**
+     * .what = the allowed request headers, with the trail header always appended
+     * .why = a browser that sends `x-trail-exid` preflights it, and a preflight that does not
+     *        list it blocks the real request. the sdk expects the header on every endpoint, so
+     *        an author-set list gets it too, rather than drop it in silence
+     */
+    headers: asCorsHeadersWithTrail({
+      headers: cors.headers ?? 'content-type,authorization',
+    }),
 
     /**
      * .absent by choice = `disableBeforePreflightResponse: false` would turn on the vendor's
@@ -397,10 +418,10 @@ export const forApiGateway = <
      *         error (invariant.badrequesterror-not-lambda-error) — and the 500 body carries a
      *         generic message plus the correlation id, never the error's own message
      *
-     * .note = this family is always-ancient by construction, so the shared middleware's
-     *         `isContempCaller` branch resolves one way and needs no guard: an http payload is
-     *         an api-gateway envelope, which `getIsWrappedPayload` cannot match, and where trail
-     *         never ran `asContextTrailed` defaults the flag to `false`
+     * .note = the dialect follows the caller's opt-in, as in every family. a caller that sends
+     *         `x-trail-exid` is contemp and gets the nested body; one that sends none — a
+     *         browser, a legacy client — is ancient and gets the flat one. where trail never
+     *         ran, `asContextTrailed` defaults the flag to `false`
      */
     genConstraintErrorMiddleware({
       asOutputAfter: (payload) =>
@@ -441,7 +462,13 @@ export const forApiGateway = <
     genApiGatewayRequestEventNormalizationMiddleware({
       parsePayload: deserialize.payload,
     }),
-    genTrailMiddleware(),
+    /**
+     * .what = reads the caller's `x-trail-exid` from the headers entry 7 just reconciled
+     * .why = aws builds this envelope, so no caller can wrap it in `{ event, trail }`. the
+     *        opt-in rides the request's own headers, which exist only AFTER normalization — so
+     *        this stays at 8, below it (`invariant.ancient-vs-contemp-callers.md`)
+     */
+    genTrailMiddleware({ carrier: CARRIER_API_GATEWAY }),
     genIntrospectionMiddleware({
       schema: config.schema,
       env: context?.env,
@@ -468,10 +495,13 @@ export const forApiGateway = <
    * .removal = drops if middy gains typed inference across `.use`; every shape it spans is
    *            already named, so only the cast is owed
    */
-  return middy(
-    logic as unknown as (
-      event: ApiGatewayRequestEventOnwire,
-      context: Context,
-    ) => Promise<ApiGatewayResponseOnwire>,
-  ).use(middlewares);
+  return setHandlerTrailCarrier({
+    handler: middy(
+      logic as unknown as (
+        event: ApiGatewayRequestEventOnwire,
+        context: Context,
+      ) => Promise<ApiGatewayResponseOnwire>,
+    ).use(middlewares),
+    carrier: CARRIER_API_GATEWAY,
+  });
 };

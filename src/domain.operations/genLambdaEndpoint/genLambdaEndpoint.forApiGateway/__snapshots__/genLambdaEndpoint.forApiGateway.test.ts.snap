@@ -32,7 +32,7 @@ exports[`genLambdaEndpoint.forApiGateway given: [case3] cors configured when: [t
   "body": "{"result":"ok"}",
   "headers": {
     "Access-Control-Allow-Credentials": "true",
-    "Access-Control-Allow-Headers": "content-type,authorization",
+    "Access-Control-Allow-Headers": "content-type,authorization,x-trail-exid",
     "Access-Control-Allow-Origin": "https://example.com",
     "Content-Type": "application/json",
     "Origin-Agent-Cluster": "?1",
@@ -236,7 +236,7 @@ exports[`genLambdaEndpoint.forApiGateway given: [case18] a header schema that na
 {
   "body": "{"saw":"Bearer tok","forwarded":null}",
   "headers": {
-    "Access-Control-Allow-Headers": "content-type,authorization",
+    "Access-Control-Allow-Headers": "content-type,authorization,x-trail-exid",
     "Access-Control-Allow-Origin": "https://b.test",
     "Content-Type": "application/json",
     "Origin-Agent-Cluster": "?1",
@@ -267,7 +267,7 @@ exports[`genLambdaEndpoint.forApiGateway given: [case19] one webhook crosses eve
   "v1": {
     "body": "{"signature":"sig-abc","method":"POST","path":"/charge","amount":4200,"rawBodyViaEscapeHatch":"{\\"amount\\":4200}","rawMethodTop":"POST","rawMethodNested":null}",
     "headers": {
-      "Access-Control-Allow-Headers": "content-type,authorization",
+      "Access-Control-Allow-Headers": "content-type,authorization,x-trail-exid",
       "Access-Control-Allow-Origin": "*",
       "Content-Type": "application/json",
       "Origin-Agent-Cluster": "?1",
@@ -283,7 +283,7 @@ exports[`genLambdaEndpoint.forApiGateway given: [case19] one webhook crosses eve
   "v2": {
     "body": "{"signature":"sig-abc","method":"POST","path":"/charge","amount":4200,"rawBodyViaEscapeHatch":"{\\"amount\\":4200}","rawMethodTop":null,"rawMethodNested":"POST"}",
     "headers": {
-      "Access-Control-Allow-Headers": "content-type,authorization",
+      "Access-Control-Allow-Headers": "content-type,authorization,x-trail-exid",
       "Access-Control-Allow-Origin": "*",
       "Content-Type": "application/json",
       "Origin-Agent-Cluster": "?1",

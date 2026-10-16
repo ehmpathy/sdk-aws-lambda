@@ -924,10 +924,9 @@ describe('sdk-aws-lambda', () => {
         asLambdaEndpointOutput(
           await runLambdaEndpoint.onReferenced({
             handler,
-            // ancient, because an api-gateway envelope IS the event — aws never
-            // hands an http handler a `{ event, trail }` wrapper. the same reason
-            // `[case19]` declares it for sqs.
-            struct: { payload: 'ancient' },
+            // no `struct`: the default dialect. aws never hands an http handler a
+            // `{ event, trail }` wrapper, so the contemp opt-in rides the event's
+            // `x-trail-exid` header, and the call needs no workaround (#51)
             event: asLambdaEvent.fromApiGateway({
               body: { slug: 'surf-lesson' },
               httpMethod: 'POST',
@@ -973,12 +972,11 @@ describe('sdk-aws-lambda', () => {
       });
     });
 
-    when('[t1] the body fails the schema', () => {
+    when('[t1] the body fails the schema, in the default dialect', () => {
       const result = useThen('the handler completes', async () =>
         asLambdaEndpointOutput(
           await runLambdaEndpoint.onReferenced({
             handler,
-            struct: { payload: 'ancient' },
             event: asLambdaEvent.fromApiGateway({
               body: { slug: '' },
               httpMethod: 'POST',
@@ -993,9 +991,36 @@ describe('sdk-aws-lambda', () => {
         expect(result.statusCode).toEqual(400);
       });
 
-      // masked to statusCode + errorType — no exid is pinned on this call, so
+      // masked to statusCode + the envelope's class — no exid is pinned on this call, so
       // the raw error message would carry a freshly-generated one and permadiff
       then('the negative-path journey output matches snapshot', () => {
+        const errorBody = JSON.parse(asWireBody(result)) as {
+          error?: { class?: string };
+        };
+        expect({
+          statusCode: result.statusCode,
+          errorClass: errorBody.error?.class,
+        }).toMatchSnapshot();
+      });
+    });
+
+    // the raw wire, as aws delivers it to a browser's request: prod does not move
+    when('[t2] the body fails the schema, on the ancient struct', () => {
+      const result = useThen('the handler completes', async () =>
+        asLambdaEndpointOutput(
+          await runLambdaEndpoint.onReferenced({
+            handler,
+            struct: { payload: 'ancient' },
+            event: asLambdaEvent.fromApiGateway({
+              body: { slug: '' },
+              httpMethod: 'POST',
+            }),
+          }),
+        ),
+      );
+
+      then('it answers the flat ancient 400', () => {
+        expect(result.statusCode).toEqual(400);
         const errorBody = JSON.parse(asWireBody(result)) as {
           errorType?: string;
         };

@@ -171,6 +171,33 @@ const result = await askLambdaEndpoint<TRequest, TResponse>(
 
 the caller's `trail.exid` rides along, so logs correlate across the call.
 
+### ask an api gateway endpoint, over http
+
+```ts
+import { askLambdaEndpoint } from 'sdk-aws-lambda';
+
+const { status, body } = await askLambdaEndpoint.viaApiGateway<TResponse>(
+  { url: 'https://api.example.com/jobs', method: 'POST', body: { uuid } },
+  { log },
+);
+```
+
+takes the standard http request: `{ url, method, headers, body }`. an object `body` is sent as json.
+
+it resolves `{ status, headers, text, body }`. a 4xx throws a `ConstraintError`; a 5xx throws a
+`MalfunctionError` that carries the `correlationId`. your trail rides the request, so the endpoint's
+logs join yours.
+
+any other http client spreads the `x-trail-exid` header in to send the trail. the header also opts the
+caller in to the contemp error body (`{ error: { class, … } }`); without it the endpoint answers the flat
+`{ errorMessage, errorType }`:
+
+```ts
+import { asTrailExidHeaders } from 'sdk-aws-lambda';
+
+await fetch(url, { headers: { ...asTrailExidHeaders({ trail: { exid } }) } });
+```
+
 ## run an endpoint, in a test
 
 | you call | you hold | a caller fault arrives as |
@@ -234,11 +261,26 @@ await runLambdaEndpoint.onReferenced({
 
 | dialect | your handler receives | your handler answers |
 |---|---|---|
-| `contemp` (default) | `{ event, trail }` | the nested `{ error: { class, … } }` |
+| `contemp` (default) | `{ event, trail }` — for an event built with `asLambdaEvent.fromApiGateway`, the event itself with an `x-trail-exid` header | the nested `{ error: { class, … } }` |
 | `ancient` | the event, untouched | the flat `{ errorMessage, errorType }` |
 
 a `genLambdaEndpoint` handler never notices — its middleware unwraps the frame first. a plain
 handler does: under the contemp default it reads its own fields off a wrapper and finds them absent.
+
+an api gateway endpoint is the exception: aws delivers its event unwrapped, so `runLambdaEndpoint`
+carries the contemp opt-in in the event's `x-trail-exid` header instead of a wrapper. the endpoint a
+`genLambdaEndpoint` builder returned declares which carrier it reads, so any event you hand it is
+framed right: a built event, a spread copy, a hand-built or captured request.
+
+the one road that holds no endpoint is `runLambdaEndpoint.onSerialized({ at: 'cloud' })`: it reads a
+mark `asLambdaEvent.fromApiGateway` leaves on the event, so send the event as built. a copy (spread,
+`structuredClone`, a json round trip) loses the mark and fails loud with the fix: pass the change to
+`asLambdaEvent.fromApiGateway` (`headers`, `requestContext`, `path`, …) rather than a copy. a raw event
+captured from aws goes through `struct: { payload: 'ancient' }` and arrives as sent, with any
+`x-trail-exid` header it holds.
+
+a `forApiGateway` endpoint adds `x-trail-exid` to its cors `allow-headers`, since a browser caller
+that sends it triggers a preflight.
 
 ## build an event for a source
 

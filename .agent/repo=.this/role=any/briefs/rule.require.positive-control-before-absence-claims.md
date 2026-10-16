@@ -179,8 +179,36 @@ establish that, and did the same form ever return a hit?"*
 affordance**, **no pavement**, or **no prior art** — and cites no command beside it. that is an
 absence claim with a fulcrum wrapped around it, and it blocks more than a deletion ever does.
 
+## 🔴 .a novelty claim is an absence claim
+
+*"new to this sdk"*, *"no shape like it here"*, *"this would be the first"* — each asserts that no
+precedent exists. it carries no negative word, so it slips past the cue list above, and it is the
+claim most often made with no search at all.
+
+measured on #51's vision (2026-10-15): the driver graded `askLambdaEndpoint.viaApiGateway` at 85%
+confidence, low because a function with a member was *"legal in ts, new to this sdk"*. no command
+backed it. the sdk ships three family objects (`genLambdaEndpoint`, `runLambdaEndpoint`,
+`asLambdaEvent`), and `rule.forbid.unqualified-variant-exports` already rules the exact shape —
+an extant family with a shipped bare name is `Object.assign(viaInvoke, { viaInvoke, viaApiGateway })`.
+the wisher caught it in one line: *"thats how genLambdaEndpoint works already. how did you not see
+that?"*
+
+the miss had two causes, and both are closed:
+- the claim had no control. the control was one grep: `grepsafe --pattern '^export const [a-zA-Z]+ = \{' --path src`
+- this role's briefs never booted: the actor enrolled no `any` role, and the role had no `boot.yml`.
+  a rule that does not boot cannot be obeyed
+
+**the test, for a proposer:** before you write that a shape, pattern, or name is new here, grep
+`src/index.ts` and `src/domain.operations` for its nearest form, and read this role's briefs for a
+rule that already names it.
+
+**the tell, for a reviewer:** a confidence discount, a `rework` grade, or a con that rests on *"new"*,
+*"first"*, or *"no precedent"*, with no command beside it.
+
 ## .enforcement
 
+- a novelty claim (*"new to this repo"*, *"no precedent"*) used to lower a confidence or raise a
+  con, with no search recorded = **blocker**
 - an absence claim used to justify a deletion, with no positive control recorded = **blocker**
 - an absence claim used to justify a **deferral** — a `rework: dirty` grade, a "no precedent" note,
   a fulcrum raised on an affordance believed absent — with no positive control recorded =

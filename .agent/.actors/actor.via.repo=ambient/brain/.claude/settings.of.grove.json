@@ -1,0 +1,32 @@
+{
+  "cleanupPeriodDays": 36500,
+  "env": {
+    "DISABLE_AUTOUPDATER": "1",
+    "CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION": "false",
+    "ANTHROPIC_MODEL": "claude-opus-5-5[1m]",
+    "DISABLE_INSTALLATION_CHECKS": "1",
+    "CLAUDE_CODE_DISABLE_COMMAND_INJECTION_CHECK": "1",
+    "CLAUDE_CODE_ENABLE_TODO_TOOLS": "1",
+    "CLAUDE_CODE_SUBAGENT_MODEL": "claude-sonnet-5[1m]",
+    "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "50"
+  },
+  "permissions": {
+    "defaultMode": "auto"
+  },
+  "model": "claude-sonnet-5-5[1m]",
+  "disableClaudeAiConnectors": true,
+  "feedbackDrafts": "off",
+  "effortLevel": "medium",
+  "modelSettings": {
+    "claude-opus-5": {
+      "effortLevel": "medium"
+    },
+    "claude-opus-5-5": {
+      "effortLevel": "medium"
+    }
+  },
+  "tui": "fullscreen",
+  "skipWorkflowUsageWarning": true,
+  "verbose": true,
+  "skipAutoPermissionPrompt": true
+}

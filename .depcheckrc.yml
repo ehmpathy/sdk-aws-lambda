@@ -1,6 +1,7 @@
 ignorePatterns:
   - ".build"
   - ".agent/.actors" # gitignored per-actor brain state (plugin caches); never this package's source
+  - ".claude" # a link into the actor's brain state, which holds plugin caches; never this package's source
 ignores:
   - depcheck
   - declapract

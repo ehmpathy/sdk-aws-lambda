@@ -1,0 +1,30 @@
+# .what = which of this repo's own briefs load in FULL at session start, and which load as a ref
+#
+# .why  = a `.this` role dir boots only when it declares a boot.yml, and role=any boots for
+#         every actor only when that boot.yml declares a budget (rhachet
+#         `findsertRepoThisRoleAnyBootGuard`). with neither, the whole dir was a folder of
+#         notes no clone ever read. measured 2026-10-15 on #51: the driver called a
+#         function-with-members shape "new to this sdk" while
+#         `rule.forbid.unqualified-variant-exports`, in this dir, already ruled it
+#
+# .the test = say a brief if a clone must hold it before its first act in this repo; ref the
+#             rest, so each stays one read away at a fraction of the tokens
+
+budget:
+  tokens: 15_000
+
+always:
+  briefs:
+    say:
+      # the variant-family shape every new export here must take
+      - briefs/rule.forbid.unqualified-variant-exports.md
+      # a novelty or absence claim owes a search; the miss this file was written for
+      - briefs/rule.require.positive-control-before-absence-claims.md
+      # the dialect contract every endpoint family keeps
+      - briefs/invariant.ancient-vs-contemp-callers.md
+    ref:
+      - briefs/rule.*.md
+      - briefs/invariant.*.md
+      - briefs/define.*.md
+      - briefs/howto.*.md
+      - briefs/domain.terms/*.md

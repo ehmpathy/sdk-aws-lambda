@@ -7,7 +7,7 @@ describe('genTrailMiddleware', () => {
   const invokeMiddleware = async (
     event: unknown,
   ): Promise<{ context: ContextLogTrail; event: unknown }> => {
-    const middleware = genTrailMiddleware();
+    const middleware = genTrailMiddleware({ carrier: 'wrapper' });
     const request = {
       event,
       context: {} as Record<string, unknown>,
