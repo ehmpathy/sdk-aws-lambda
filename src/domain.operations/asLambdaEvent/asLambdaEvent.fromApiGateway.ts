@@ -5,6 +5,7 @@ import type {
 } from 'aws-lambda';
 
 import { AWS_ACCOUNT_SYNTHETIC } from '../../domain.objects/AwsIdentitySynthetic';
+import { setEventDeclaredAsApiGateway } from '../lambdaEndpointWire/frame/setEventDeclaredAsApiGateway';
 import {
   AWS_EVENT_AT_CLF,
   AWS_EVENT_AT_EPOCH_MS,
@@ -194,7 +195,7 @@ export const fromApiGateway = (input: {
   };
   const queryStringParameters = input.queryStringParameters ?? null;
 
-  return {
+  const event: APIGatewayProxyEvent = {
     body,
     headers,
     // 🔴 DERIVED, never hardcoded — aws sends the multi-value twin of every header
@@ -227,4 +228,18 @@ export const fromApiGateway = (input: {
     })(),
     resource: path,
   };
+
+  /**
+   * .what = declares the event as api gateway, so `runLambdaEndpoint` carries the contemp opt-in in
+   *         its headers rather than a `{ event, trail }` wrapper aws can never send
+   * .why = the sdk never sniffs an event's shape for this; the builder knows what it built
+   *        (`invariant.ancient-vs-contemp-callers.md`). the mark is non-enumerable, so the event
+   *        is byte-identical to what this returned before
+   *
+   * .note = the mark does not survive a copy (a spread, `structuredClone`, a json round trip). it matters
+   *         at one road: `runLambdaEndpoint.onSerialized({ at: 'cloud' })` holds no endpoint, so the event
+   *         is its only declaration. `onReferenced` and the local locus read the endpoint's own, so a
+   *         copy works there. at cloud, pass a change to this builder instead of a copy
+   */
+  return setEventDeclaredAsApiGateway({ event });
 };

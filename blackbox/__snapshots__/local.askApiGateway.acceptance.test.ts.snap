@@ -1,0 +1,105 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`askLambdaEndpoint.viaApiGateway given: [case1] an api gateway endpoint behind a local http harness when: [t0] a valid body is asked, with a trail exid then: the answer matches snapshot 1`] = `
+{
+  "body": {
+    "sentTo": "kai@example.com",
+  },
+  "headers": {
+    "content-type": "application/json",
+    "origin-agent-cluster": "?1",
+    "referrer-policy": "no-referrer",
+    "strict-transport-security": "max-age=15552000; includeSubDomains; preload",
+    "transfer-encoding": "chunked",
+    "x-content-type-options": "nosniff",
+    "x-dns-prefetch-control": "off",
+    "x-download-options": "noopen",
+    "x-permitted-cross-domain-policies": "none",
+  },
+  "status": 200,
+  "text": "{"sentTo":"kai@example.com"}",
+}
+`;
+
+exports[`askLambdaEndpoint.viaApiGateway given: [case1] an api gateway endpoint behind a local http harness when: [t1] a body the schema refuses is asked then: it throws a ConstraintError that names the field to fix 1`] = `
+{
+  "class": "ConstraintError",
+  "message": "✋ ConstraintError: validation failed: payload.to: Invalid email address
+
+{
+  "issues": [
+    {
+      "path": "payload.to",
+      "message": "Invalid email address",
+      "code": "invalid_format"
+    }
+  ],
+  "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
+}
+
+{
+  "url": "http://127.0.0.1:[port]/notifications",
+  "status": 400,
+  "exid": "exid:ord-7",
+  "correlationId": null,
+  "text": null,
+  "headers": {
+    "connection": "keep-alive",
+    "content-type": "application/json",
+    "date": "[date]",
+    "keep-alive": "timeout=5",
+    "transfer-encoding": "chunked"
+  }
+}",
+  "metadata": {
+    "correlationId": null,
+    "exid": "exid:ord-7",
+    "headers": {
+      "connection": "keep-alive",
+      "content-type": "application/json",
+      "date": "[date]",
+      "keep-alive": "timeout=5",
+      "transfer-encoding": "chunked",
+    },
+    "status": 400,
+    "text": null,
+    "url": "http://127.0.0.1:[port]/notifications",
+  },
+}
+`;
+
+exports[`askLambdaEndpoint.viaApiGateway given: [case1] an api gateway endpoint behind a local http harness when: [t2] the handler throws then: it throws a MalfunctionError that carries the correlationId 1`] = `
+{
+  "class": "MalfunctionError",
+  "message": "💥 MalfunctionError: the endpoint answered http 500
+
+{
+  "url": "http://127.0.0.1:[port]/notifications",
+  "status": 500,
+  "exid": "exid:ord-7",
+  "correlationId": "exid:ord-7",
+  "text": "{\\"errorMessage\\":\\"internal server error\\",\\"errorType\\":\\"InternalServiceError\\",\\"correlationId\\":\\"exid:ord-7\\"}",
+  "headers": {
+    "connection": "keep-alive",
+    "content-type": "application/json",
+    "date": "[date]",
+    "keep-alive": "timeout=5",
+    "transfer-encoding": "chunked"
+  }
+}",
+  "metadata": {
+    "correlationId": "exid:ord-7",
+    "exid": "exid:ord-7",
+    "headers": {
+      "connection": "keep-alive",
+      "content-type": "application/json",
+      "date": "[date]",
+      "keep-alive": "timeout=5",
+      "transfer-encoding": "chunked",
+    },
+    "status": 500,
+    "text": "{"errorMessage":"internal server error","errorType":"InternalServiceError","correlationId":"exid:ord-7"}",
+    "url": "http://127.0.0.1:[port]/notifications",
+  },
+}
+`;

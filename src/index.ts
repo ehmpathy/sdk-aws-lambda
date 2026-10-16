@@ -4,7 +4,8 @@
  * define endpoints, ask endpoints, auto-propagate trace-ids.
  *
  * .note = the trace-id propagates lambda to lambda, via the `{ event, trail }` wrapper
- *        `askLambdaEndpoint` sends. it does not cross an http or a queue boundary — those
+ *        `askLambdaEndpoint` sends, and across http, via the `x-trail-exid` header
+ *        `askLambdaEndpoint.viaApiGateway` sends. it does not yet cross a queue boundary — those
  *        triggers mint a fresh `exid` per invoke (`domain.terms/trail.md`)
  */
 
@@ -187,6 +188,12 @@ export {
   type GetOneLambdaContractInput,
   getOneLambdaContract,
 } from './domain.operations/getOneLambdaContract/getOneLambdaContract';
+/**
+ * .what = the headers that opt an http request into the contemp dialect, and carry its trail
+ * .why = any http client (fetch, axios, ky) spreads this into its request
+ *        (`domain.terms/x-trail-exid.md`)
+ */
+export { asTrailExidHeaders } from './domain.operations/lambdaEndpointWire/frame/asTrailExidHeaders';
 // test utils — the run boundary axis (run an endpoint by reference, or by slug)
 export { asLambdaContext } from './domain.operations/runLambdaEndpoint/context/asLambdaContext';
 // the narrows the union needs — a field read on `TOutput | Envelope` does not

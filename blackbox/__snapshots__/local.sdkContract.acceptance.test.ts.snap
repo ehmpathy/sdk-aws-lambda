@@ -263,7 +263,14 @@ exports[`sdk-aws-lambda given: [case20] an api-gateway event, built by the facto
 }
 `;
 
-exports[`sdk-aws-lambda given: [case20] an api-gateway event, built by the factory and RUN when: [t1] the body fails the schema then: the negative-path journey output matches snapshot 1`] = `
+exports[`sdk-aws-lambda given: [case20] an api-gateway event, built by the factory and RUN when: [t1] the body fails the schema, in the default dialect then: the negative-path journey output matches snapshot 1`] = `
+{
+  "errorClass": "ConstraintError",
+  "statusCode": 400,
+}
+`;
+
+exports[`sdk-aws-lambda given: [case20] an api-gateway event, built by the factory and RUN when: [t2] the body fails the schema, on the ancient struct then: it answers the flat ancient 400 1`] = `
 {
   "errorType": "BadRequestError",
   "statusCode": 400,

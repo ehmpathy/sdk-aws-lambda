@@ -120,7 +120,9 @@ the object and `[case9]` goes red.
 |---|---|
 | `forApiGateway` | http headers, lowercased |
 | `forSqs.*` | the sender's `messageAttributes`, keys verbatim (sqs names are case-sensitive) |
-| `forAsk` | — a direct invoke carries no metadata bag |
+| `forAsk` | — a direct invoke carries no metadata bag; the `{ event, trail }` wrapper stands in for one |
+
+the contemp opt-in and the `trail` ride this bag on every aws-delivered family — aws owns the envelope, so no caller can wrap it (`invariant.ancient-vs-contemp-callers.md`).
 
 http, kafka, and amqp call it headers; mqtt v5 calls it user properties; sqs and sns call it
 `messageAttributes`. one concept, one word here.

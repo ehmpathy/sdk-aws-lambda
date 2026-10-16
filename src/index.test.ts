@@ -175,6 +175,8 @@ describe('[case1] the migrant swaps the import', () => {
             'asLambdaEndpointErrorEnvelopeContemp',
             'asLambdaEndpointOutput',
             'asLambdaEvent',
+            // the http opt-in surface: the cast any http client spreads into its request
+            'asTrailExidHeaders',
             'askLambdaEndpoint',
             'delLambdaSdks',
             'genApiGatewayRequestEventNormalizationMiddleware',

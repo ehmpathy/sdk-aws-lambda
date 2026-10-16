@@ -54,25 +54,25 @@ this repo consumes the term; a rename here would fork a word it does not own.
 a family may carry one and not the other: `forAsk` has a `trail` on the wire and no metadata
 bag. the test for a collapse is *"is it the same concept?"* — one read of `LogTrail` settles it.
 
-## .what the code does today — only the wrapper is read
+## .what the code does today — one carrier per family
 
-```ts
-// genTrailMiddleware.ts — a `before` hook on every family
-const { exidFromPayload } = getUnwrappedEventWithExid({ payload: request.event });
-const exid = exidFromPayload ?? `exid:${randomUUID()}`;
-```
+`genTrailMiddleware({ carrier })` is a `before` hook on every family. the carrier names where that
+family's caller puts its trail:
 
-`getUnwrappedEventWithExid` matches one shape, the `{ event, trail }` wrapper `askLambdaEndpoint`
-sends:
+| carrier | the caller's exid rides | read by |
+|---|---|---|
+| `wrapper` | `{ event, trail: { exid } }` | `getUnwrappedEventWithExid` |
+| `headers` | the `x-trail-exid` header (`x-trail-exid.md`) | `getOneTrailExidFromHeaders`, on the reconciled bag |
 
-| family | inbound `exid` read? |
-|---|---|
-| `forAsk` | ✅ from `WrappedPayload.trail.exid` |
-| `forApiGateway` | ⛔ generated — the envelope cannot match the wrapper |
-| `forSqs.*` | ⛔ generated — `asSqsRecordDecoded.ts` reads no `exid` or `trail` |
+| family | carrier | inbound `exid` read? |
+|---|---|---|
+| `forAsk` | `wrapper` | ✅ from `WrappedPayload.trail.exid` |
+| `forApiGateway` | `headers` | ✅ from `x-trail-exid`; a `{ event, trail }` wrapper is refused, since aws never sends one |
+| `forSqs.*` | `wrapper` | ⛔ generated — `asSqsRecordDecoded.ts` reads no `exid` or `trail`, and an sqs envelope cannot match the wrapper |
 
-so a producer that sets an `exid` on an http header or an sqs `messageAttribute` is ignored, and a
-trace breaks at that boundary. that is unbuilt work. ⛔ never cite the per-transport lift as built.
+so a producer that sets an `exid` on an sqs `messageAttribute` is ignored, and a trace breaks at
+that boundary. the sqs lift is unbuilt: the send side comes first, then the batch-grain read. ⛔ never
+cite it as built.
 
 ## .the grain — one invoke, one lineage
 

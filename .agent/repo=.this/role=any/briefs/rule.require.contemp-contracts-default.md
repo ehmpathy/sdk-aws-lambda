@@ -17,14 +17,14 @@ ancient callers send flat payload and expect legacy semantics:
 
 ### explicit detection required
 
-backwards compat is not opt-in, it's detected:
-- `getIsWrappedPayload` checks for `{ event, trail }` structure
-- no wrapper = ancient caller = legacy semantics
-- wrapper present = contemp caller = modern semantics
+contemp is opt-in, per transport; ancient is what an absent opt-in means:
+- opt-in present (the wrapper for direct invoke, our header for an aws-delivered event) = contemp caller = modern semantics
+- opt-in absent = ancient caller = legacy semantics
+- see `invariant.ancient-vs-contemp-callers.md` for the carrier per transport
 
 ### no speculative compat
 
-never add backwards compat "just in case". if caller type is unknown, assume contemp.
+never add backwards compat "just in case". compat is owed to a caller with no opt-in — never to an opted-in caller, and never by a guess at what an opted-in caller "really" wants.
 
 ## .examples
 

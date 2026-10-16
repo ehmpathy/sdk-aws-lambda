@@ -1120,4 +1120,37 @@ describe('genLambdaEndpoint.forSqs.perRecord', () => {
       });
     });
   });
+
+  // the default dialect frames a `{ event, trail }` wrapper around every event that is not a
+  // declared api gateway event, and this family reads it, as it did before the headers carrier
+  given('[case17] the default dialect, with no struct', () => {
+    when('[t0] the handler runs', () => {
+      const captured = useThen('invoke receives the hand-off', async () => {
+        const seen: { input: InvokeInput; context: InvokeContext }[] = [];
+
+        const handler = perRecord({
+          schema: { input: SCHEMA_ORDER },
+          invoke: async (input, context) => {
+            seen.push({ input, context });
+          },
+        });
+
+        await runLambdaEndpoint.onReferenced({
+          handler,
+          trail: { exid: 'exid:caller-sqs' },
+          event: asSqsEvent({ messages: [MESSAGE_VALID] }),
+        });
+
+        return seen[0] ?? MalfunctionError.throw('invoke never ran', { seen });
+      });
+
+      then('the payload is the parsed, validated body', () => {
+        expect(captured.input.payload).toEqual({ orderId: 'ord-1' });
+      });
+
+      then('the caller trail exid reaches the handler', () => {
+        expect(captured.context.log.trail?.exid).toEqual('exid:caller-sqs');
+      });
+    });
+  });
 });

@@ -1,9 +1,19 @@
 import type middy from '@middy/core';
 
+import type { TrailCarrier } from '../../../domain.objects/TrailCarrier';
 import { genInternalServiceErrorMiddleware } from '../middleware/genInternalServiceErrorMiddleware';
 import { genIoLoggerMiddleware } from '../middleware/genIoLoggerMiddleware';
 import { genTrailMiddleware } from '../middleware/genTrailMiddleware';
 import type { TranslateLog } from '../TranslateLog';
+
+/**
+ * .what = the carrier both `forSqs` variants read: the `{ event, trail }` wrapper a test runner frames
+ * .why = one constant feeds the trail middleware that reads it and the stamp each variant leaves on its
+ *        handler, so `runLambdaEndpoint` writes what the endpoint reads. aws never sends a wrapper to an
+ *        sqs handler, so a deployed endpoint reads no trail until the `messageAttributes` lift lands
+ *        (`domain.terms/trail-carrier.md`)
+ */
+export const CARRIER_SQS: TrailCarrier = 'wrapper';
 
 /**
  * .what = the observability chain both `forSqs` variants run
@@ -68,6 +78,6 @@ export const genSqsEndpointMiddlewares = (input: {
    *         message it does not name (`rule.forbid.failhide`)
    */
   genInternalServiceErrorMiddleware({ asOutputAfter: false }),
-  genTrailMiddleware(),
+  genTrailMiddleware({ carrier: CARRIER_SQS }),
   genIoLoggerMiddleware({ logTranslate: input.logTranslate }),
 ];

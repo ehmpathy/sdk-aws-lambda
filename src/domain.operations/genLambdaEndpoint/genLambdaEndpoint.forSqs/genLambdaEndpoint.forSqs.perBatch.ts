@@ -6,12 +6,16 @@ import type { FrozenDeep } from 'type-fns';
 import type { ZodSchema } from 'zod';
 
 import type { ContextAwsLambdaServer } from '../../../domain.objects/ContextAwsLambdaServer';
+import { setHandlerTrailCarrier } from '../../lambdaEndpointWire/frame/setHandlerTrailCarrier';
 import { asContextLogTrail } from '../asContextLogTrail';
 import { setEventFrozen } from '../setEventFrozen';
 import type { TranslateLog } from '../TranslateLog';
 import { asSqsEventDecoded } from './asSqsEventDecoded';
 import { DESERIALIZE_DEFAULT } from './asSqsRecordDecoded';
-import { genSqsEndpointMiddlewares } from './genSqsEndpointMiddlewares';
+import {
+  CARRIER_SQS,
+  genSqsEndpointMiddlewares,
+} from './genSqsEndpointMiddlewares';
 import type {
   SqsEventDecoded,
   SqsHeadersDeclared,
@@ -226,7 +230,10 @@ export const perBatch = <THeaders extends SqsHeadersDeclared, TPayload>(
     };
   };
 
-  return middy(logic).use(
-    genSqsEndpointMiddlewares({ logTranslate: config.logTranslate }),
-  );
+  return setHandlerTrailCarrier({
+    handler: middy(logic).use(
+      genSqsEndpointMiddlewares({ logTranslate: config.logTranslate }),
+    ),
+    carrier: CARRIER_SQS,
+  });
 };

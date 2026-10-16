@@ -1,0 +1,24 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`genApiGatewayRequestEventNormalizationMiddleware given: [case6] a { event, trail } wrapper when: [t0] middleware invoked then: the refusal matches snapshot 1`] = `
+{
+  "message": "✋ ConstraintError: a { event, trail } wrapper reached an api gateway endpoint; aws never sends one
+
+{
+  "fix": [
+    "run the endpoint through runLambdaEndpoint with an event built by asLambdaEvent.fromApiGateway: it sends the opt-in as an x-trail-exid header",
+    "a copy of that event (spread, structuredClone, json round trip) loses its declaration at the cloud locus: pass the changes to asLambdaEvent.fromApiGateway (headers, requestContext, path, ...) instead of a copy",
+    "for a raw event captured from aws, pass struct: { payload: 'ancient' }: it arrives as is, with any x-trail-exid header it holds",
+    "to ask a deployed http endpoint over the network, use askLambdaEndpoint.viaApiGateway"
+  ]
+}",
+  "metadata": {
+    "fix": [
+      "run the endpoint through runLambdaEndpoint with an event built by asLambdaEvent.fromApiGateway: it sends the opt-in as an x-trail-exid header",
+      "a copy of that event (spread, structuredClone, json round trip) loses its declaration at the cloud locus: pass the changes to asLambdaEvent.fromApiGateway (headers, requestContext, path, ...) instead of a copy",
+      "for a raw event captured from aws, pass struct: { payload: 'ancient' }: it arrives as is, with any x-trail-exid header it holds",
+      "to ask a deployed http endpoint over the network, use askLambdaEndpoint.viaApiGateway",
+    ],
+  },
+}
+`;

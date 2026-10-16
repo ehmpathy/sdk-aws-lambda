@@ -1,5 +1,5 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyEventV2 } from 'aws-lambda';
-import { getError } from 'helpful-errors';
+import { ConstraintError, getError } from 'helpful-errors';
 import { given, then, when } from 'test-fns';
 
 import type { ApiGatewayRequestEventUnified } from '../ApiGatewayRequestEventUnified';
@@ -150,6 +150,42 @@ describe('genApiGatewayRequestEventNormalizationMiddleware', () => {
       then('it should throw MalfunctionError', async () => {
         const error = await getError(invokeMiddleware(invalidEvent));
         expect(error.message).toContain('neither v1 nor v2');
+      });
+    });
+  });
+
+  given('[case6] a { event, trail } wrapper', () => {
+    const wrapper = {
+      event: {
+        httpMethod: 'GET',
+        headers: {},
+        requestContext: { requestId: 'r' },
+      },
+      trail: { exid: 'exid:w' },
+    };
+
+    when('[t0] middleware invoked', () => {
+      then('it refuses, and the error names the two remedies', async () => {
+        const error = await getError(invokeMiddleware(wrapper));
+        expect(error.message).toContain(
+          'wrapper reached an api gateway endpoint',
+        );
+        expect(error.message).not.toContain('neither v1 nor v2');
+        const metadata =
+          error instanceof ConstraintError ? error.metadata : null;
+        expect(JSON.stringify(metadata)).toContain(
+          'asLambdaEvent.fromApiGateway',
+        );
+        expect(JSON.stringify(metadata)).toContain('x-trail-exid');
+      });
+
+      // the text a human reads at 3am, pinned so a reword shows in review
+      then('the refusal matches snapshot', async () => {
+        const error = await getError(invokeMiddleware(wrapper));
+        expect({
+          message: error.message,
+          metadata: error instanceof ConstraintError ? error.metadata : null,
+        }).toMatchSnapshot();
       });
     });
   });

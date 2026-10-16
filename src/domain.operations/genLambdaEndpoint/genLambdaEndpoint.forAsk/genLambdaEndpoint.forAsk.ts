@@ -5,7 +5,9 @@ import type { FrozenDeep } from 'type-fns';
 import type { ZodSchema } from 'zod';
 
 import type { ContextAwsLambdaServer } from '../../../domain.objects/ContextAwsLambdaServer';
+import type { TrailCarrier } from '../../../domain.objects/TrailCarrier';
 import type { WrappedPayload } from '../../lambdaEndpointWire/frame/getIsWrappedPayload';
+import { setHandlerTrailCarrier } from '../../lambdaEndpointWire/frame/setHandlerTrailCarrier';
 import { asContextLogTrail } from '../asContextLogTrail';
 import { genConstraintErrorMiddleware } from '../middleware/genConstraintErrorMiddleware';
 import { genInternalServiceErrorMiddleware } from '../middleware/genInternalServiceErrorMiddleware';
@@ -17,6 +19,14 @@ import { setEventFrozen } from '../setEventFrozen';
 import type { TranslateLog } from '../TranslateLog';
 import { genAskEventOnwireCaptureMiddleware } from './middleware/genAskEventOnwireCaptureMiddleware';
 import { genZodEventValidationMiddleware } from './middleware/genZodEventValidationMiddleware';
+
+/**
+ * .what = the carrier this family reads: a direct invoke owns its whole payload, so the `{ event, trail }`
+ *         wrapper stands in for a metadata bag
+ * .why = one constant feeds the trail middleware that reads it and the stamp that tells
+ *        `runLambdaEndpoint` which carrier to write, so the two cannot disagree
+ */
+const CARRIER_ASK: TrailCarrier = 'wrapper';
 
 /**
  * .what = wrapped payload format: event nested under `event` key with trail
@@ -198,7 +208,7 @@ export const forAsk = <TInput, TOutput, TInputBefore = TInput>(
     genConstraintErrorMiddleware({ asOutputAfter: (body) => body }),
     genInternalServiceErrorMiddleware({ asOutputAfter: false }),
     genAskEventOnwireCaptureMiddleware(),
-    genTrailMiddleware(),
+    genTrailMiddleware({ carrier: CARRIER_ASK }),
     genIoLoggerMiddleware({ logTranslate: input.logTranslate }),
     genIntrospectionMiddleware({
       schema: input.schema,
@@ -216,10 +226,13 @@ export const forAsk = <TInput, TOutput, TInputBefore = TInput>(
    *       builds the envelope — but typescript cannot track that through middy
    * .removal = if middy gains typed middleware inference, remove cast
    */
-  return middy(
-    logic as unknown as (
-      event: LambdaHandlerInput<TInputBefore>,
-      context: Context,
-    ) => Promise<TOutput>,
-  ).use(middlewares);
+  return setHandlerTrailCarrier({
+    handler: middy(
+      logic as unknown as (
+        event: LambdaHandlerInput<TInputBefore>,
+        context: Context,
+      ) => Promise<TOutput>,
+    ).use(middlewares),
+    carrier: CARRIER_ASK,
+  });
 };

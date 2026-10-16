@@ -6,6 +6,7 @@ import { askLambdaEndpoint } from '../askLambdaEndpoint/askLambdaEndpoint';
 import { asLambdaEndpoint } from '../asLambdaEndpoint/asLambdaEndpoint';
 import { getOneTrailExid } from '../lambdaEndpointWire/context/getOneTrailExid';
 import { throwIfCredentialsError } from '../lambdaEndpointWire/error/throwIfCredentialsError';
+import { getOneTrailCarrierOfEvent } from '../lambdaEndpointWire/frame/getOneTrailCarrierOfEvent';
 import { getParsedResponse } from '../lambdaEndpointWire/getParsedResponse';
 import { asLambdaEndpointDialect } from './dialect/asLambdaEndpointDialect';
 import type { WireDelivered } from './dialect/LambdaEndpointRunOutput';
@@ -14,6 +15,7 @@ import { assertHandlerIsRunnable } from './guard/assertHandlerIsRunnable';
 import { asLocalRunIdentity } from './local/asLocalRunIdentity';
 import { getOneHandlerFromServerlessYml } from './local/getOneHandlerFromServerlessYml';
 import { onReferenced } from './runLambdaEndpoint.onReferenced';
+import { asCarriedPayload } from './serde/asCarriedPayload';
 import { asWireFunctionErrorPayload } from './serde/asWireFunctionErrorPayload';
 import { asWirePayload } from './serde/asWirePayload';
 
@@ -164,15 +166,12 @@ export const onSerialized = async <TEvent, TOutput>(
   //    `LambdaCredentialsAbsentError extends ConstraintError` ⇒ caller fault, NO
   //    ALARM. to map it on the runtime path would suppress the prod alarm that
   //    names a broken role (`invariant.badrequesterror-not-lambda-error`).
-  if (at === 'cloud')
-    return askLambdaEndpoint<TEvent, WireDelivered<TOutput>>(
-      {
-        which: input.which,
-        event: input.event,
-        struct: structValidated,
-      },
-      context,
-    ).catch((error: unknown) =>
+  if (at === 'cloud') {
+    /**
+     * .what = names an absent-credentials fault for a developer at a terminal
+     * .why = both calls below reach aws, so both owe the same diagnosis
+     */
+    const asCredentialsFault = (error: unknown): never =>
       throwIfCredentialsError({
         error,
         message:
@@ -183,8 +182,49 @@ export const onSerialized = async <TEvent, TOutput>(
           access: context.env.access,
           at,
         },
-      }),
-    );
+      });
+
+    // 🔴 an event the builder declared as api gateway carries the opt-in in its `headers`,
+    //    since aws builds that envelope and a deployed `forApiGateway` endpoint refuses a
+    //    `{ event, trail }` wrapper. `askLambdaEndpoint` sends the event as is on the ancient
+    //    struct, so the carried event goes with that struct — the DIALECT is still the caller's
+    //    declaration, carried by the header rather than the frame
+    const carrier = getOneTrailCarrierOfEvent({ event: input.event });
+    if (carrier === 'headers') {
+      // 🔴 the exid is minted ONCE, here, and pinned onto the context `askLambdaEndpoint` reads
+      //    its own from. two mints would put one exid in the header and another in the call's
+      //    log and errors (`getOneTrailExid` states the parity this keeps)
+      const exid = getOneTrailExid({ log: context.log });
+      return askLambdaEndpoint<unknown, WireDelivered<TOutput>>(
+        {
+          which: input.which,
+          event: asCarriedPayload({
+            event: input.event,
+            trail: { exid },
+            dialect: dialectValidated,
+            carrier,
+          }),
+          struct: { payload: 'ancient' },
+        },
+        {
+          ...context,
+          log: {
+            ...context.log,
+            trail: { exid, stack: context.log.trail?.stack ?? [] },
+          },
+        },
+      ).catch(asCredentialsFault);
+    }
+
+    return askLambdaEndpoint<TEvent, WireDelivered<TOutput>>(
+      {
+        which: input.which,
+        event: input.event,
+        struct: structValidated,
+      },
+      context,
+    ).catch(asCredentialsFault);
+  }
 
   // the local locus: look the handler up, run it, then hydrate exactly as the wire does
   const endpoint = asLambdaEndpoint({

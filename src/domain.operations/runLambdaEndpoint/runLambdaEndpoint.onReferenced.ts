@@ -1,12 +1,14 @@
 import type { Context } from 'aws-lambda';
 
 import type { LambdaEndpointDialect } from '../../domain.objects/LambdaEndpointDialect';
+import { getOneTrailCarrierOfEvent } from '../lambdaEndpointWire/frame/getOneTrailCarrierOfEvent';
+import { getOneTrailCarrierOfHandler } from '../lambdaEndpointWire/frame/getOneTrailCarrierOfHandler';
 import { asLambdaContext } from './context/asLambdaContext';
 import { asLambdaEndpointDialect } from './dialect/asLambdaEndpointDialect';
 import type { LambdaEndpointRunOutput } from './dialect/LambdaEndpointRunOutput';
 import { assertEventIsGiven } from './guard/assertEventIsGiven';
 import { assertHandlerIsRunnable } from './guard/assertHandlerIsRunnable';
-import { asFramedPayload } from './serde/asFramedPayload';
+import { asCarriedPayload } from './serde/asCarriedPayload';
 import { asWireStripped } from './serde/asWireStripped';
 
 /**
@@ -55,6 +57,13 @@ export type LambdaEndpointHandlerReferenced<TEvent, TOutput> = (
  * frame first. a PLAIN handler does, and the failure is QUIET: contemp-framed, it
  * reads `event.uuid` off the wrapper, finds `undefined`, and takes its own reject
  * branch — a rejection envelope on the success case, with no type error anywhere.
+ *
+ * ⚠️ an event built by `asLambdaEvent.fromApiGateway` is the one exception to the wrapper: aws builds
+ *    that envelope and no caller can wrap it, so contemp rides the `x-trail-exid` request header
+ *    instead, and the event is never wrapped. `ancient` sends it raw, with no header. a hand-built
+ *    api gateway object carries no declaration, so it gets the wrapper and an api gateway endpoint
+ *    refuses it — build it with `asLambdaEvent.fromApiGateway`
+ *    (`invariant.ancient-vs-contemp-callers.md`).
  *
  * ⇒ so a legacy `createStandardHandler` handler needs `struct: { payload: 'ancient' }`.
  *   the frame is DERIVED from `struct.payload`, never from `trail`, so the two
@@ -150,15 +159,24 @@ export const onReferenced = async <
     declared: input.struct?.payload,
   });
 
+  // the carrier is the receiver's: a handler a `genLambdaEndpoint` builder returned declares it, so a
+  // copy of a built event still reaches its family framed right. a plain handler declares none, and
+  // the event's own declaration decides, read BEFORE the strip — it is a non-enumerable mark, and the
+  // json strip would drop it
+  const carrier =
+    getOneTrailCarrierOfHandler({ handler: input.handler }) ??
+    getOneTrailCarrierOfEvent({ event: input.event });
+
   // strip inbound, so no live object reaches the handler that the wire could not deliver
   // `of: 'event'` — a refusal here is the CALLER's payload, so it raises a ConstraintError
   const eventStripped = asWireStripped({ value: input.event, of: 'event' });
 
   // frame the payload, so the endpoint reads the dialect the caller declared
-  const payload = asFramedPayload({
+  const payload = asCarriedPayload({
     event: eventStripped,
     trail: input.trail ?? null,
     dialect,
+    carrier,
   });
 
   const context = asLambdaContext(input.context);
