@@ -1,0 +1,9 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`genLambdaEndpoint.forSqs.perRecord given: [case10] a handler that THROWS when: [t1] the handler refuses the message with ConstraintError then: the escaped error, as serialized, is pinned 1`] = `
+{
+  "message": "✋ ConstraintError: the order id is malformed",
+  "name": "ConstraintError",
+  "stack": "<denied: volatile>",
+}
+`;

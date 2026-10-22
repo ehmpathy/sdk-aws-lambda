@@ -1,6 +1,7 @@
 import type middy from '@middy/core';
 
 import type { TrailCarrier } from '../../../domain.objects/TrailCarrier';
+import { genErrorNameMiddleware } from '../middleware/genErrorNameMiddleware';
 import { genInternalServiceErrorMiddleware } from '../middleware/genInternalServiceErrorMiddleware';
 import { genIoLoggerMiddleware } from '../middleware/genIoLoggerMiddleware';
 import { genTrailMiddleware } from '../middleware/genTrailMiddleware';
@@ -43,6 +44,7 @@ export const CARRIER_SQS: TrailCarrier = 'wrapper';
  *            0   | onError              | LAST  — logs the fault loudly, then rethrows
  *            1   | before               | FIRST — produces `context.log`
  *            2   | before/after/onError | reads `context.log`
+ *            3   | onError              | FIRST — names the throw from its class (sdk-aws-lambda#73)
  *
  *        so trail (1) sits below the io logger (2) and `handler.input` logs. the api-gateway
  *        family carries the inverse order and its `handler.input` never fires — a live, recorded
@@ -80,4 +82,12 @@ export const genSqsEndpointMiddlewares = (input: {
   genInternalServiceErrorMiddleware({ asOutputAfter: false }),
   genTrailMiddleware({ carrier: CARRIER_SQS }),
   genIoLoggerMiddleware({ logTranslate: input.logTranslate }),
+  /**
+   * .what = names an escaped throw from its class, LAST so its `onError` runs FIRST
+   * .why = 🔴 this family rethrows every fault, a caller fault included, so the aws runtime labels
+   *        each by `.name`. a helpful-errors `ConstraintError` with no `.name` reached the wire as
+   *        `'Error'` and read as a server fault (sdk-aws-lambda#73). it must run before index 0's
+   *        `onError`, which rethrows and so aborts the chain
+   */
+  genErrorNameMiddleware(),
 ];

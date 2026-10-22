@@ -138,3 +138,39 @@ exports[`runLambdaEndpoint.onSerialized given: [case18] a callback-style handler
   "messageNamesCallbackStyle": true,
 }
 `;
+
+exports[`runLambdaEndpoint.onSerialized given: [case22] a throw that escapes a handler, met at local when: [t0] a forSqs.perRecord endpoint refuses a message with ConstraintError then: the caller reads a caller fault — a ConstraintError 1`] = `
+{
+  "class": "ConstraintError",
+  "isCallerFault": true,
+  "messageNamesCause": true,
+  "wireLabel": null,
+}
+`;
+
+exports[`runLambdaEndpoint.onSerialized given: [case22] a throw that escapes a handler, met at local when: [t1] the same endpoint faults with MalfunctionError then: the caller reads a server fault, never a caller fault 1`] = `
+{
+  "class": "LambdaEndpointError",
+  "isCallerFault": false,
+  "messageNamesCause": true,
+  "wireLabel": "MalfunctionError",
+}
+`;
+
+exports[`runLambdaEndpoint.onSerialized given: [case22] a throw that escapes a handler, met at local when: [t2] a raw handler, never named, throws a ConstraintError then: the caller reads a server fault — exactly what the aws runtime answers for it 1`] = `
+{
+  "class": "LambdaEndpointError",
+  "isCallerFault": false,
+  "messageNamesCause": true,
+  "wireLabel": "Error",
+}
+`;
+
+exports[`runLambdaEndpoint.onSerialized given: [case22] a throw that escapes a handler, met at local when: [t3] a forAsk endpoint faults with MalfunctionError then: the caller reads a server fault, labeled MalfunctionError on the wire 1`] = `
+{
+  "class": "LambdaEndpointError",
+  "isCallerFault": false,
+  "messageNamesCause": true,
+  "wireLabel": "MalfunctionError",
+}
+`;

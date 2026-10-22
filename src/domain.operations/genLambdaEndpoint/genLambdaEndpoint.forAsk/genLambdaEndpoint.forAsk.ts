@@ -10,6 +10,7 @@ import type { WrappedPayload } from '../../lambdaEndpointWire/frame/getIsWrapped
 import { setHandlerTrailCarrier } from '../../lambdaEndpointWire/frame/setHandlerTrailCarrier';
 import { asContextLogTrail } from '../asContextLogTrail';
 import { genConstraintErrorMiddleware } from '../middleware/genConstraintErrorMiddleware';
+import { genErrorNameMiddleware } from '../middleware/genErrorNameMiddleware';
 import { genInternalServiceErrorMiddleware } from '../middleware/genInternalServiceErrorMiddleware';
 import { genIntrospectionMiddleware } from '../middleware/genIntrospectionMiddleware';
 import { genIoLoggerMiddleware } from '../middleware/genIoLoggerMiddleware';
@@ -199,6 +200,7 @@ export const forAsk = <TInput, TOutput, TInputBefore = TInput>(
   // 4. io logger - logs input/output for debug
   // 5. introspection (onBefore) - intercepts introspect requests, returns schema
   // 6. validation (onBefore) - validates the body, then writes the envelope into `request.event`
+  // 7. error name (onError) - names a throw from its class; last index, so it runs FIRST on error
   const middlewares = [
     /**
      * .note = this family's response IS its payload, so a caller fault renders as the body
@@ -218,6 +220,12 @@ export const forAsk = <TInput, TOutput, TInputBefore = TInput>(
       asOutputAfter: (schema) => schema,
     }),
     genZodEventValidationMiddleware({ schema: input.schema.input }),
+    /**
+     * .what = names an escaped throw from its class
+     * .why = LAST in the array so its `onError` runs FIRST — a server fault is rethrown from the
+     *        internal error middleware's `onError`, which aborts the chain (see the middleware)
+     */
+    genErrorNameMiddleware(),
   ];
 
   /**

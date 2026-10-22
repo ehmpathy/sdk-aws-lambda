@@ -14,7 +14,7 @@
  *
  *    | site | what it wanted |
  *    |---|---|
- *    | `runLambdaEndpoint.onSerialized.ts` (`asWireFunctionErrorPayload`) | `message` · `stack` · `constructor.name` |
+ *    | `runLambdaEndpoint.onSerialized.ts` (`asWireFunctionErrorPayload`) | `message` · `stack` · `name` |
  *    | `serde/asWireStripped.ts` | the whole `Error`, to hang as a `cause` |
  *    | `local/getOneHandlerFromServerlessYml.ts` | `message`, to branch on a text match |
  *

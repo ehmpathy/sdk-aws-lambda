@@ -1,0 +1,48 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`asWireFunctionErrorPayload given: [case3] a thrown value that is not error-like at all when: [t1] each other non-error kind is thrown then: each is labelled by its typeof, its message by String() 1`] = `
+[
+  {
+    "errorMessage": "404",
+    "errorType": "number",
+    "stackTrace": [],
+    "value": "404",
+  },
+  {
+    "errorMessage": "false",
+    "errorType": "boolean",
+    "stackTrace": [],
+    "value": "false",
+  },
+  {
+    "errorMessage": "null",
+    "errorType": "object",
+    "stackTrace": [],
+    "value": "null",
+  },
+  {
+    "errorMessage": "undefined",
+    "errorType": "undefined",
+    "stackTrace": [],
+    "value": "undefined",
+  },
+  {
+    "errorMessage": "10",
+    "errorType": "bigint",
+    "stackTrace": [],
+    "value": "10",
+  },
+  {
+    "errorMessage": "Symbol(quota)",
+    "errorType": "symbol",
+    "stackTrace": [],
+    "value": "Symbol(quota)",
+  },
+  {
+    "errorMessage": "function quota() {}",
+    "errorType": "function",
+    "stackTrace": [],
+    "value": "function quota() {}",
+  },
+]
+`;

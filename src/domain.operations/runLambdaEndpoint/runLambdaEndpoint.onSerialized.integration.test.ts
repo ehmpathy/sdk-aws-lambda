@@ -1408,4 +1408,174 @@ describe('runLambdaEndpoint.onSerialized', () => {
       });
     });
   });
+
+  /**
+   * .what = the clamp for sdk-aws-lambda#73 — a throw that ESCAPES a handler, at the local locus
+   * .why = 🔴 the aws runtime labels an escaped throw by `.name`, and helpful-errors 1.7.3 leaves
+   *        `.name` at 'Error'. so a `ConstraintError` an sqs endpoint rethrows read as a server
+   *        fault on the cloud while the local locus — which read the class — called it a caller
+   *        fault. the local gate stayed green over a red prod. both halves are clamped here:
+   *        `genLambdaEndpoint` names the throw (`[t0]`, `[t1]`), and the local locus reads `.name`
+   *        exactly as the runtime does, so a handler that names naught reads as prod reads it (`[t2]`)
+   */
+  given('[case22] a throw that escapes a handler, met at local', () => {
+    const handlerSource = `
+      const { genLambdaEndpoint } = require(${JSON.stringify(join(__dirname, '../../index'))});
+      const { z } = require(${JSON.stringify(join(__dirname, '../../../node_modules/zod'))});
+      const { ConstraintError, MalfunctionError } = require(${JSON.stringify(
+        join(__dirname, '../../../node_modules/helpful-errors'),
+      )});
+      exports.consumeOrder = genLambdaEndpoint.forSqs.perRecord({
+        schema: {
+          input: z.object({
+            headers: z.object({}).passthrough(),
+            payload: z.object({ orderId: z.string() }),
+          }),
+        },
+        invoke: async ({ payload }) => {
+          if (payload.orderId === 'malformed') throw new ConstraintError('order id malformed');
+          throw new MalfunctionError('upstream down');
+        },
+      });
+      exports.consumeOrderRaw = async () => {
+        throw new ConstraintError('order id malformed');
+      };
+      exports.getOrder = genLambdaEndpoint.forAsk({
+        schema: {
+          input: z.object({ orderId: z.string() }),
+          output: z.object({ orderId: z.string() }),
+        },
+        invoke: async () => {
+          throw new MalfunctionError('upstream down');
+        },
+      });
+    `;
+    const run = async (input: {
+      function: string;
+      orderId: string;
+      via: 'sqs' | 'ask';
+    }) => {
+      const dir = genLocalRepo({
+        service: 'svc-orders',
+        function: input.function,
+        handlerSource,
+      });
+      return getError(
+        onSerialized(
+          {
+            which: { service: 'svc-orders', function: input.function },
+            event:
+              input.via === 'sqs'
+                ? asLambdaEvent.fromSqs({
+                    messages: [JSON.stringify({ orderId: input.orderId })],
+                  })
+                : { orderId: input.orderId },
+            at: 'local',
+            from: dir,
+          },
+          CONTEXT,
+        ),
+      );
+    };
+
+    // the wire label a server fault arrived with — `getParsedResponse` keeps it on the metadata
+    const asWireLabel = (error: Error): unknown =>
+      (error as unknown as { metadata?: { errorType?: unknown } }).metadata
+        ?.errorType;
+
+    /**
+     * .what = the facts a caller acts on, as a stable projection
+     * .why = the hydrated message carries volatile metadata, so the snapshot pins the class, the
+     *        fault side, whether the cause survived, and the wire label — never the raw bytes
+     */
+    const asCallerView = (input: {
+      error: Error;
+      cause: string;
+    }): Record<string, unknown> => ({
+      class: input.error.constructor.name,
+      isCallerFault: input.error instanceof ConstraintError,
+      messageNamesCause: input.error.message.includes(input.cause),
+      wireLabel: asWireLabel(input.error) ?? null,
+    });
+
+    when(
+      '[t0] a forSqs.perRecord endpoint refuses a message with ConstraintError',
+      () => {
+        then(
+          'the caller reads a caller fault — a ConstraintError',
+          async () => {
+            const error = await run({
+              function: 'consumeOrder',
+              orderId: 'malformed',
+              via: 'sqs',
+            });
+            expect(error).toBeInstanceOf(ConstraintError);
+            expect(error.message).toContain('order id malformed');
+            expect(
+              asCallerView({ error, cause: 'order id malformed' }),
+            ).toMatchSnapshot();
+          },
+        );
+      },
+    );
+
+    when('[t1] the same endpoint faults with MalfunctionError', () => {
+      then(
+        'the caller reads a server fault, never a caller fault',
+        async () => {
+          const error = await run({
+            function: 'consumeOrder',
+            orderId: 'ord-1',
+            via: 'sqs',
+          });
+          expect(error).not.toBeInstanceOf(ConstraintError);
+          expect(error.message).toContain('upstream down');
+          expect(asWireLabel(error)).toEqual('MalfunctionError');
+          expect(
+            asCallerView({ error, cause: 'upstream down' }),
+          ).toMatchSnapshot();
+        },
+      );
+    });
+
+    when('[t2] a raw handler, never named, throws a ConstraintError', () => {
+      then(
+        'the caller reads a server fault — exactly what the aws runtime answers for it',
+        async () => {
+          // the raw handler has no guard, so its `.name` is the inherited 'Error'. the cloud
+          // labels it 'Error' and the caller reads a server fault; the local locus must agree
+          const error = await run({
+            function: 'consumeOrderRaw',
+            orderId: 'malformed',
+            via: 'sqs',
+          });
+          expect(error).not.toBeInstanceOf(ConstraintError);
+          expect(error.message).toContain('order id malformed');
+          expect(asWireLabel(error)).toEqual('Error');
+          expect(
+            asCallerView({ error, cause: 'order id malformed' }),
+          ).toMatchSnapshot();
+        },
+      );
+    });
+
+    when('[t3] a forAsk endpoint faults with MalfunctionError', () => {
+      then(
+        'the caller reads a server fault, labeled MalfunctionError on the wire',
+        async () => {
+          const error = await run({
+            function: 'getOrder',
+            orderId: 'ord-1',
+            via: 'ask',
+          });
+          expect(error).not.toBeInstanceOf(ConstraintError);
+          expect(error.message).toContain('upstream down');
+          expect(asWireLabel(error)).toEqual('MalfunctionError');
+          expect(
+            asCallerView({ error, cause: 'upstream down' }),
+          ).toMatchSnapshot();
+        },
+      );
+    });
+  });
 });

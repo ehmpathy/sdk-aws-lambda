@@ -16,6 +16,7 @@ import type { TrailCarrier } from '../../../domain.objects/TrailCarrier';
 import { setHandlerTrailCarrier } from '../../lambdaEndpointWire/frame/setHandlerTrailCarrier';
 import { asContextLogTrail } from '../asContextLogTrail';
 import { genConstraintErrorMiddleware } from '../middleware/genConstraintErrorMiddleware';
+import { genErrorNameMiddleware } from '../middleware/genErrorNameMiddleware';
 import { genInternalServiceErrorMiddleware } from '../middleware/genInternalServiceErrorMiddleware';
 import { genIntrospectionMiddleware } from '../middleware/genIntrospectionMiddleware';
 import { genIoLoggerMiddleware } from '../middleware/genIoLoggerMiddleware';
@@ -387,6 +388,8 @@ export const forApiGateway = <
   // 8. trail                   (before)   - injects trail context
   // 9. introspection           (before)   - short-circuits an introspect request
   // 10. input validation       (before)   - validates { headers, payload } against schema.input
+  // 11. error name             (onError)  - names a throw from its class; last index, so it runs
+  //                                         FIRST on the error path and every builder reads the name
   //
   // the order carries the load, on two axes — middy holds the hook phases in opposite orders, and
   // a break on either axis no-ops silently: no throw, no log, no type error. state your entry's
@@ -420,7 +423,7 @@ export const forApiGateway = <
      *
      * .note = the dialect follows the caller's opt-in, as in every family. a caller that sends
      *         `x-trail-exid` is contemp and gets the nested body; one that sends none — a
-     *         browser, a legacy client — is ancient and gets the flat one. where trail never
+     *         browser, a legacy caller — is ancient and gets the flat one. where trail never
      *         ran, `asContextTrailed` defaults the flag to `false`
      */
     genConstraintErrorMiddleware({
@@ -484,6 +487,13 @@ export const forApiGateway = <
         asApiGatewayResponseOnwireJson({ status: 200, payload: schema }),
     }),
     genZodInputValidationMiddleware({ schema: config.schema.input }),
+    /**
+     * .what = names a throw from its class, LAST so its `onError` runs FIRST
+     * .why = every family registers it, so one guarantee holds across them. here every fault is
+     *        answered (400 / 500), so no name reaches a wire — the hook keeps the shape uniform
+     *        and hands the error builders and the io logger the named error
+     */
+    genErrorNameMiddleware(),
   ];
 
   /**

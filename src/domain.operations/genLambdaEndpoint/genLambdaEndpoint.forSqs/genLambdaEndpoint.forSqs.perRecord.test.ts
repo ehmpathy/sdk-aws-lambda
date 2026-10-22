@@ -1,5 +1,5 @@
 import type { SQSEvent } from 'aws-lambda';
-import { MalfunctionError } from 'helpful-errors';
+import { ConstraintError, MalfunctionError } from 'helpful-errors';
 import { getError, given, then, useThen, when } from 'test-fns';
 import { z } from 'zod';
 
@@ -670,6 +670,56 @@ describe('genLambdaEndpoint.forSqs.perRecord', () => {
         expect(outcome.message).toContain(
           'the downstream warehouse api is down',
         );
+      });
+    });
+
+    /**
+     * .what = the escaped throw carries its class as `.name`
+     * .why = 🔴 the aws runtime labels an escaped throw by `.name`, and a helpful-errors class
+     *        leaves it at 'Error'. this family rethrows a caller fault on purpose, so an unnamed
+     *        `ConstraintError` read as a server fault on the cloud (sdk-aws-lambda#73)
+     */
+    when('[t1] the handler refuses the message with ConstraintError', () => {
+      const outcome = useThen('the invocation is refused', async () => {
+        const handler = perRecord({
+          schema: { input: SCHEMA_ORDER },
+          invoke: async () => {
+            throw new ConstraintError('the order id is malformed');
+          },
+        });
+
+        const error = await getError(
+          async () =>
+            await runLambdaEndpoint.onReferenced({
+              handler,
+              struct: { payload: 'ancient' },
+              event: asSqsEvent({ messages: [MESSAGE_VALID] }),
+            }),
+        );
+
+        // read the facts here, where the raw error is (see `[case2]`)
+        return {
+          isConstraintError: error instanceof ConstraintError,
+          name: error.name,
+          // the escaped error as the runtime serializes it, the volatile stack denied
+          serialized: {
+            ...(JSON.parse(JSON.stringify(error)) as Record<string, unknown>),
+            stack: '<denied: volatile>',
+          },
+        };
+      });
+
+      then(
+        'the throw escapes named ConstraintError, the label aws reads',
+        () => {
+          expect(outcome.isConstraintError).toEqual(true);
+          expect(outcome.name).toEqual('ConstraintError');
+        },
+      );
+
+      then('the escaped error, as serialized, is pinned', () => {
+        // a reshape of the label, the message, or any field the runtime prints shows as a diff
+        expect(outcome.serialized).toMatchSnapshot();
       });
     });
   });
