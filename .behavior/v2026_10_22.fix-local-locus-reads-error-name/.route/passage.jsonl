@@ -129,3 +129,8 @@
 {"stone":"5.1.execution.from_vision","status":"arrived","reason":"entered guard reviews"}
 {"stone":"5.1.execution.from_vision","status":"blocked","blocker":"review.peer.constraint","reason":"reviewer constraint"}
 {"stone":"5.1.execution.from_vision","status":"blocked"}
+{"stone":"5.1.execution.from_vision","status":"arrived","reason":"entered guard reviews"}
+{"stone":"5.1.execution.from_vision","status":"blocked","blocker":"review.peer.unabsorbed","reason":"peer review awaits feedbackAbsorption: enroll-impl-arch-defects, enroll-impl-behavior-intent"}
+{"stone":"5.1.execution.from_vision","status":"absorbed","reason":"absorbed review.peer: enroll-impl-arch-defects"}
+{"stone":"5.1.execution.from_vision","status":"absorbed","reason":"absorbed review.peer: enroll-impl-behavior-intent"}
+{"stone":"5.1.execution.from_vision","status":"blocked"}
