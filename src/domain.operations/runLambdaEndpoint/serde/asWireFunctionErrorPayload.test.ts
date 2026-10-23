@@ -8,20 +8,15 @@ import { asWireFunctionErrorPayload } from './asWireFunctionErrorPayload';
 describe('asWireFunctionErrorPayload', () => {
   given('[case1] a real Error thrown by a handler', () => {
     when('[t0] the throw is cast into a wire payload', () => {
+      // .verdict = the local locus reads `error.name`, as the runtime does (wish, sdk-aws-lambda#73)
       then('the three aws fields are carried, labelled by .name', () => {
-        // a named ConstraintError — `genLambdaEndpoint` names every throw that
-        // escapes it, so this is the shape that reaches the serde in practice
+        // a real helpful-errors 1.7.3 ConstraintError: its `.name` is the inherited 'Error', so
+        // the wire names it 'Error', exactly as the cloud does. the class does not cross the wire
         const error = new ConstraintError('the uuid is malformed');
-        Object.defineProperty(error, 'name', {
-          value: 'ConstraintError',
-          enumerable: false,
-          writable: true,
-          configurable: true,
-        });
         const payload = asWireFunctionErrorPayload(error);
 
         expect(payload.errorMessage).toContain('the uuid is malformed');
-        expect(payload.errorType).toEqual('ConstraintError');
+        expect(payload.errorType).toEqual('Error');
         expect(payload.stackTrace.length).toBeGreaterThan(0);
       });
     });
@@ -36,6 +31,36 @@ describe('asWireFunctionErrorPayload', () => {
 
         expect(asWireFunctionErrorPayload(stackless).stackTrace).toEqual([]);
       });
+
+      then(
+        'errorType is handled, as the runtime answers when its stack read throws',
+        () => {
+          const stackless = new Error('no stack here');
+          // biome-ignore lint/performance/noDelete: the absent-stack case is the subject
+          delete (stackless as { stack?: string }).stack;
+
+          expect(asWireFunctionErrorPayload(stackless).errorType).toEqual(
+            'handled',
+          );
+        },
+      );
+
+      then(
+        "the whole payload is the runtime's catch arm: its fixed message, no trace",
+        () => {
+          const stackless = new Error('no stack here');
+          // biome-ignore lint/performance/noDelete: the absent-stack case is the subject
+          delete (stackless as { stack?: string }).stack;
+
+          // the cloud never reads this error's own message, since its stack read threw first
+          expect(asWireFunctionErrorPayload(stackless)).toEqual({
+            errorMessage:
+              'callback called with Error argument, but there was a problem while retrieving one or more of its message, name, and stack',
+            errorType: 'handled',
+            stackTrace: [],
+          });
+        },
+      );
     });
   });
 
@@ -88,6 +113,7 @@ describe('asWireFunctionErrorPayload', () => {
     });
 
     when('[t1] a foreign helpful-errors class that never set .name', () => {
+      // .verdict = the local locus reads `error.name`, as the runtime does (wish, sdk-aws-lambda#73)
       then('it reads the inherited Error, exactly as the cloud does', () => {
         // a real foreign `ConstraintError` on helpful-errors 1.7.3: `.name` is the inherited
         // 'Error' and the class lives only on `constructor` — which the runtime never reads
@@ -106,6 +132,7 @@ describe('asWireFunctionErrorPayload', () => {
 
   given('[case3] a thrown value that is not error-like at all', () => {
     when('[t0] a bare string is thrown', () => {
+      // .verdict = the local locus labels a throw as the runtime does (wish, sdk-aws-lambda#73)
       then('it is labelled by its typeof, as the aws runtime labels it', () => {
         // a handler may `throw 'oops'`. the runtime's `toRapidResponse` answers
         // `errorType: typeof error` for a non-error, so the local cast does too.
@@ -119,31 +146,34 @@ describe('asWireFunctionErrorPayload', () => {
     });
 
     when('[t1] each other non-error kind is thrown', () => {
-      then('each is labelled by its typeof, its message by String()', () => {
-        const thrown = [
-          404,
-          false,
-          null,
-          undefined,
-          10n,
-          Symbol('quota'),
-          function quota() {},
-        ];
-        const rows = thrown.map((value) => ({
-          value: String(value),
-          ...asWireFunctionErrorPayload(value),
-        }));
-        expect(rows.map((row) => row.errorType)).toEqual([
-          'number',
-          'boolean',
-          'object', // `typeof null`, as the runtime writes it
-          'undefined',
-          'bigint',
-          'symbol',
-          'function',
-        ]);
-        expect(rows).toMatchSnapshot();
-      });
+      then(
+        'each is labelled, and its message written, as the runtime writes them',
+        () => {
+          const thrown = [
+            404,
+            false,
+            null,
+            undefined,
+            10n,
+            Symbol('quota'),
+            function quota() {},
+          ];
+          const rows = thrown.map((value) => ({
+            value: String(value),
+            ...asWireFunctionErrorPayload(value),
+          }));
+          expect(rows.map((row) => row.errorType)).toEqual([
+            'number',
+            'boolean',
+            'string', // the runtime's fail arm swaps a null rejection for the string 'handled'
+            'string', // and the same for `undefined`
+            'bigint',
+            'symbol',
+            'function',
+          ]);
+          expect(rows).toMatchSnapshot();
+        },
+      );
     });
 
     when('[t2] a plain object is thrown', () => {
@@ -155,6 +185,26 @@ describe('asWireFunctionErrorPayload', () => {
           stackTrace: [],
         });
       });
+    });
+
+    when('[t3] an object whose toString throws is thrown', () => {
+      then(
+        'the cast answers the runtime catch arm, and never throws itself',
+        () => {
+          // the runtime's `error.toString()` throws, so its catch answers 'handled'
+          const thrown = {
+            toString: () => {
+              throw new Error('nope');
+            },
+          };
+          expect(asWireFunctionErrorPayload(thrown)).toEqual({
+            errorMessage:
+              'callback called with Error argument, but there was a problem while retrieving one or more of its message, name, and stack',
+            errorType: 'handled',
+            stackTrace: [],
+          });
+        },
+      );
     });
   });
 
@@ -197,6 +247,20 @@ describe('asWireFunctionErrorPayload', () => {
           'object',
         );
       });
+
+      // the label conforms; the message and stack stay, a deliberate local gain over `${error}`
+      then('its message and stack are kept, never lost to String()', () => {
+        expect(
+          asWireFunctionErrorPayload({
+            message: 'no name here',
+            stack: 'at handler',
+          }),
+        ).toEqual({
+          errorMessage: 'no name here',
+          errorType: 'object',
+          stackTrace: ['at handler'],
+        });
+      });
     });
 
     when('[t3] an error-like bag carries a .name but no stack', () => {
@@ -208,16 +272,46 @@ describe('asWireFunctionErrorPayload', () => {
         };
         expect(asWireFunctionErrorPayload(bag).errorType).toEqual('object');
       });
+
+      then('its message is kept and its stack is empty', () => {
+        expect(
+          asWireFunctionErrorPayload({
+            name: 'ConstraintError',
+            message: 'the uuid is malformed',
+          }),
+        ).toEqual({
+          errorMessage: 'the uuid is malformed',
+          errorType: 'object',
+          stackTrace: [],
+        });
+      });
     });
 
     when('[t4] a function carries a .message and a .stack', () => {
       then('errorType is its typeof, as the runtime answers', () => {
-        // `_isError` needs `typeof error === 'object'`; a function is `'function'` on the cloud
+        // an anonymous arrow's `.name` is `''`, which fails `_isError`, so the cloud answers `'function'`
         const fault = Object.assign(() => undefined, {
           message: 'a function fault',
           stack: 'at handler',
         });
         expect(asWireFunctionErrorPayload(fault).errorType).toEqual('function');
+      });
+    });
+
+    when('[t5] a ConstraintError carries its own class as .name', () => {
+      then('its class crosses the wire, as helpful-errors#47 makes it', () => {
+        // the shape helpful-errors#47 ships: `.name` set from the class. the wire label reads
+        // `.name`, so this class survives on both loci, with no change to this sdk
+        const error = new ConstraintError('the uuid is malformed');
+        Object.defineProperty(error, 'name', {
+          value: 'ConstraintError',
+          enumerable: false,
+          writable: true,
+          configurable: true,
+        });
+        expect(asWireFunctionErrorPayload(error).errorType).toEqual(
+          'ConstraintError',
+        );
       });
     });
   });

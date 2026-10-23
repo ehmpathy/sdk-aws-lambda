@@ -102,7 +102,7 @@
     "husky": "8.0.3",
     "iso-time": "1.11.7",
     "jest": "30.2.0",
-    "rhachet": "1.50.0",
+    "rhachet": "1.50.1",
     "rhachet-brains-anthropic": "0.4.3",
     "rhachet-brains-fireworksai": "0.2.3",
     "rhachet-brains-openrouter": "0.1.3",

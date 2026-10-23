@@ -109,8 +109,9 @@ the sdk always supplies a `headers` object (`{}` when the transport carried none
 unconditionally — `genZodInputValidationMiddleware.ts` and `setSqsRecordValidated.ts`; the control
 `genZodEventValidationMiddleware.ts` has no `headers` slot.
 
-stakes are worse at sqs: a validation failure fails the invocation, so the message redrives and
-dead-letters. a fixture whose messages all carry the header cannot tell the two forms apart — only a
+stakes are worse at sqs: a validation failure is a caller fault, so the message is refused and
+deleted, and one `sqs.record.refused` warn is its only trace (`invariant.constraint-errors-never-redrive-sqs`).
+a fixture whose messages all carry the header cannot tell the two forms apart — only a
 message with **no** attributes can. clamped by `forSqs.perRecord` `[case9]`; move `.optional()` onto
 the object and `[case9]` goes red.
 

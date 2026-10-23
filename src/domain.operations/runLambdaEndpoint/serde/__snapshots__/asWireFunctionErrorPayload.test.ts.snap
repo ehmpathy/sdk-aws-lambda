@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
-exports[`asWireFunctionErrorPayload given: [case3] a thrown value that is not error-like at all when: [t1] each other non-error kind is thrown then: each is labelled by its typeof, its message by String() 1`] = `
+exports[`asWireFunctionErrorPayload given: [case3] a thrown value that is not error-like at all when: [t1] each other non-error kind is thrown then: each is labelled, and its message written, as the runtime writes them 1`] = `
 [
   {
     "errorMessage": "404",
@@ -15,14 +15,14 @@ exports[`asWireFunctionErrorPayload given: [case3] a thrown value that is not er
     "value": "false",
   },
   {
-    "errorMessage": "null",
-    "errorType": "object",
+    "errorMessage": "handled",
+    "errorType": "string",
     "stackTrace": [],
     "value": "null",
   },
   {
-    "errorMessage": "undefined",
-    "errorType": "undefined",
+    "errorMessage": "handled",
+    "errorType": "string",
     "stackTrace": [],
     "value": "undefined",
   },

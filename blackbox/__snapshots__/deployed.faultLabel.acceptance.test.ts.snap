@@ -1,0 +1,112 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`e2e: deployed raw handler, its escaped throw labelled on both loci given: [case1] a raw handler that throws, once per runtime label branch when: [t0] each fault is met at the cloud locus and at the local locus then: the error each cloud caller receives matches the snapshot 1`] = `
+{
+  "endpoint": LambdaEndpoint {
+    "access": "prod",
+    "function": "throwFault",
+    "service": "svc-faultlabel",
+    "slug": "svc-faultlabel-prod-throwFault",
+  },
+  "rows": [
+    {
+      "error": {
+        "class": "LambdaEndpointError",
+        "messageHeadline": "LambdaEndpointError: ✋ ConstraintError: order id malformed",
+        "metadata": {
+          "errorType": "Error",
+          "exid": "<exid>",
+          "stackTrace": "<stackTrace>",
+        },
+      },
+      "isCallerFault": false,
+      "kind": "constraint",
+      "labelExpected": "Error",
+    },
+    {
+      "error": {
+        "class": "LambdaEndpointError",
+        "messageHeadline": "LambdaEndpointError: 💥 MalfunctionError: upstream down",
+        "metadata": {
+          "errorType": "Error",
+          "exid": "<exid>",
+          "stackTrace": "<stackTrace>",
+        },
+      },
+      "isCallerFault": false,
+      "kind": "malfunction",
+      "labelExpected": "Error",
+    },
+    {
+      "error": {
+        "class": "LambdaEndpointError",
+        "messageHeadline": "LambdaEndpointError: quota spent",
+        "metadata": {
+          "errorType": "QuotaError",
+          "exid": "<exid>",
+          "stackTrace": "<stackTrace>",
+        },
+      },
+      "isCallerFault": false,
+      "kind": "named",
+      "labelExpected": "QuotaError",
+    },
+    {
+      "error": {
+        "class": "LambdaEndpointError",
+        "messageHeadline": "LambdaEndpointError: quota spent",
+        "metadata": {
+          "errorType": "string",
+          "exid": "<exid>",
+          "stackTrace": "<stackTrace>",
+        },
+      },
+      "isCallerFault": false,
+      "kind": "string",
+      "labelExpected": "string",
+    },
+    {
+      "error": {
+        "class": "LambdaEndpointError",
+        "messageHeadline": "LambdaEndpointError: handled",
+        "metadata": {
+          "errorType": "string",
+          "exid": "<exid>",
+          "stackTrace": "<stackTrace>",
+        },
+      },
+      "isCallerFault": false,
+      "kind": "null",
+      "labelExpected": "string",
+    },
+    {
+      "error": {
+        "class": "LambdaEndpointError",
+        "messageHeadline": "LambdaEndpointError: quota spent",
+        "metadata": {
+          "errorType": "quotaFault",
+          "exid": "<exid>",
+          "stackTrace": "<stackTrace>",
+        },
+      },
+      "isCallerFault": false,
+      "kind": "namedFunction",
+      "labelExpected": "quotaFault",
+    },
+    {
+      "error": {
+        "class": "LambdaEndpointError",
+        "messageHeadline": "LambdaEndpointError: callback called with Error argument, but there was a problem while retrieving one or more of its message, name, and stack",
+        "metadata": {
+          "errorType": "handled",
+          "exid": "<exid>",
+          "stackTrace": "<stackTrace>",
+        },
+      },
+      "isCallerFault": false,
+      "kind": "stackless",
+      "labelExpected": "handled",
+    },
+  ],
+}
+`;

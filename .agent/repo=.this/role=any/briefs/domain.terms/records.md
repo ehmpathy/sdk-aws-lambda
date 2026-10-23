@@ -74,7 +74,8 @@ invoke: async ({ records }) => ({ successes: recordsThatSucceeded })
 ```
 
 `SqsRecordSuccessRef` is `{ id: string }`, and a record satisfies it as-is. every record not named
-is retried, so a forgotten record redrives rather than vanishes (`[case4]`). an answer the sdk
+is retried, so a forgotten record redrives rather than vanishes (`[case4]`) — save one the schema
+refused, which is acknowledged and never retried (`[case2]`). an answer the sdk
 cannot read — no array, an entry with no `id`, an id it did not hand over — throws, so the whole
 batch is retried (`[case9]`, `[case11]`, `[case16]`).
 

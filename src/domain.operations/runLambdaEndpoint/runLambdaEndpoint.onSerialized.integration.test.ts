@@ -1410,15 +1410,15 @@ describe('runLambdaEndpoint.onSerialized', () => {
   });
 
   /**
-   * .what = the clamp for sdk-aws-lambda#73 — a throw that ESCAPES a handler, at the local locus
+   * .what = the clamp for sdk-aws-lambda#73 — a throw met at the local locus
    * .why = 🔴 the aws runtime labels an escaped throw by `.name`, and helpful-errors 1.7.3 leaves
-   *        `.name` at 'Error'. so a `ConstraintError` an sqs endpoint rethrows read as a server
-   *        fault on the cloud while the local locus — which read the class — called it a caller
-   *        fault. the local gate stayed green over a red prod. both halves are clamped here:
-   *        `genLambdaEndpoint` names the throw (`[t0]`, `[t1]`), and the local locus reads `.name`
-   *        exactly as the runtime does, so a handler that names naught reads as prod reads it (`[t2]`)
+   *        `.name` at 'Error'. the local locus read the class instead, so a `ConstraintError` an
+   *        sqs endpoint rethrew read as a caller fault locally and a server fault on the cloud —
+   *        the local gate stayed green over a red prod. both halves are clamped here: an sqs
+   *        endpoint never lets a caller fault escape (`[t0]`), and the local locus labels a throw
+   *        exactly as the runtime does, whatever its `.name` (`[t1]`, `[t2]`, `[t3]`)
    */
-  given('[case22] a throw that escapes a handler, met at local', () => {
+  given('[case22] a throw met by a handler, at local', () => {
     const handlerSource = `
       const { genLambdaEndpoint } = require(${JSON.stringify(join(__dirname, '../../index'))});
       const { z } = require(${JSON.stringify(join(__dirname, '../../../node_modules/zod'))});
@@ -1440,6 +1440,11 @@ describe('runLambdaEndpoint.onSerialized', () => {
       exports.consumeOrderRaw = async () => {
         throw new ConstraintError('order id malformed');
       };
+      exports.consumeOrderRawNamed = async () => {
+        throw Object.assign(new ConstraintError('order id malformed'), {
+          name: 'ConstraintError',
+        });
+      };
       exports.getOrder = genLambdaEndpoint.forAsk({
         schema: {
           input: z.object({ orderId: z.string() }),
@@ -1449,8 +1454,18 @@ describe('runLambdaEndpoint.onSerialized', () => {
           throw new MalfunctionError('upstream down');
         },
       });
+      exports.getOrderRefused = genLambdaEndpoint.forAsk({
+        schema: {
+          input: z.object({ orderId: z.string() }),
+          output: z.object({ orderId: z.string() }),
+        },
+        invoke: async () => {
+          throw new ConstraintError('order id malformed');
+        },
+      });
     `;
-    const run = async (input: {
+    // invokes one function of the local repo, at the local locus
+    const invoke = (input: {
       function: string;
       orderId: string;
       via: 'sqs' | 'ask';
@@ -1460,65 +1475,85 @@ describe('runLambdaEndpoint.onSerialized', () => {
         function: input.function,
         handlerSource,
       });
-      return getError(
-        onSerialized(
-          {
-            which: { service: 'svc-orders', function: input.function },
-            event:
-              input.via === 'sqs'
-                ? asLambdaEvent.fromSqs({
-                    messages: [JSON.stringify({ orderId: input.orderId })],
-                  })
-                : { orderId: input.orderId },
-            at: 'local',
-            from: dir,
-          },
-          CONTEXT,
-        ),
+      return onSerialized(
+        {
+          which: { service: 'svc-orders', function: input.function },
+          event:
+            input.via === 'sqs'
+              ? asLambdaEvent.fromSqs({
+                  messages: [JSON.stringify({ orderId: input.orderId })],
+                })
+              : { orderId: input.orderId },
+          at: 'local',
+          from: dir,
+        },
+        CONTEXT,
       );
     };
+
+    // the same, for a case that expects the invoke to fail
+    const run = async (input: Parameters<typeof invoke>[0]) =>
+      getError(invoke(input));
 
     // the wire label a server fault arrived with — `getParsedResponse` keeps it on the metadata
     const asWireLabel = (error: Error): unknown =>
       (error as unknown as { metadata?: { errorType?: unknown } }).metadata
         ?.errorType;
 
-    /**
-     * .what = the facts a caller acts on, as a stable projection
-     * .why = the hydrated message carries volatile metadata, so the snapshot pins the class, the
-     *        fault side, whether the cause survived, and the wire label — never the raw bytes
-     */
-    const asCallerView = (input: {
-      error: Error;
-      cause: string;
-    }): Record<string, unknown> => ({
-      class: input.error.constructor.name,
-      isCallerFault: input.error instanceof ConstraintError,
-      messageNamesCause: input.error.message.includes(input.cause),
-      wireLabel: asWireLabel(input.error) ?? null,
-    });
+    // the hydrated message up to its metadata block — the prose a caller reads, with the
+    // volatile stack frames (absolute paths, line numbers) masked out
+    const asMessageHeadline = (input: { error: Error }): string =>
+      input.error.message.split('\n')[0] ?? '';
 
+    /**
+     * .what = the hydrated error, whole, with its volatile fields masked
+     * .why = a deny-list keeps every field the caller receives, so a field this test never named
+     *        still shows as a diff (`rule.require.snapshots-deny-volatile-not-allow-expected`).
+     *        the generated exid and the stack frames (absolute paths, line numbers) move per run;
+     *        the message past its headline repeats the metadata, so the headline stands for it
+     */
+    const asErrorMasked = (input: {
+      error: Error;
+    }): Record<string, unknown> => {
+      const metadata =
+        (input.error as unknown as { metadata?: Record<string, unknown> })
+          .metadata ?? {};
+      return {
+        class: input.error.constructor.name,
+        messageHeadline: asMessageHeadline({ error: input.error }),
+        metadata: {
+          ...metadata,
+          ...('exid' in metadata ? { exid: '<exid>' } : {}),
+          ...('stackTrace' in metadata ? { stackTrace: '<stackTrace>' } : {}),
+        },
+      };
+    };
+
+    /**
+     * .what = the svc-quotes walk, at the local locus: the refusal never escapes
+     * .why = the endpoint acknowledges the caller fault in-process, so the invoke succeeds and
+     *        sqs would delete the message once — no label is written, so none can disagree with
+     *        the cloud (`invariant.constraint-errors-never-redrive-sqs`)
+     */
     when(
       '[t0] a forSqs.perRecord endpoint refuses a message with ConstraintError',
       () => {
-        then(
-          'the caller reads a caller fault — a ConstraintError',
-          async () => {
-            const error = await run({
-              function: 'consumeOrder',
-              orderId: 'malformed',
-              via: 'sqs',
-            });
-            expect(error).toBeInstanceOf(ConstraintError);
-            expect(error.message).toContain('order id malformed');
-            expect(
-              asCallerView({ error, cause: 'order id malformed' }),
-            ).toMatchSnapshot();
-          },
-        );
+        then('the invoke succeeds — no fault reaches the caller', async () => {
+          const output = await invoke({
+            function: 'consumeOrder',
+            orderId: 'malformed',
+            via: 'sqs',
+          });
+          // `perRecord` returns no value; the wire carries a void success as `null`
+          expect(output).toEqual(null);
+        });
       },
     );
 
+    /**
+     * .what = a server fault escapes, labeled by `.name` — the inherited 'Error' on 1.7.3
+     * .why = the cloud writes exactly this label for this throw, so the local locus must too
+     */
     when('[t1] the same endpoint faults with MalfunctionError', () => {
       then(
         'the caller reads a server fault, never a caller fault',
@@ -1530,10 +1565,8 @@ describe('runLambdaEndpoint.onSerialized', () => {
           });
           expect(error).not.toBeInstanceOf(ConstraintError);
           expect(error.message).toContain('upstream down');
-          expect(asWireLabel(error)).toEqual('MalfunctionError');
-          expect(
-            asCallerView({ error, cause: 'upstream down' }),
-          ).toMatchSnapshot();
+          expect(asWireLabel(error)).toEqual('Error');
+          expect(asErrorMasked({ error })).toMatchSnapshot();
         },
       );
     });
@@ -1542,8 +1575,8 @@ describe('runLambdaEndpoint.onSerialized', () => {
       then(
         'the caller reads a server fault — exactly what the aws runtime answers for it',
         async () => {
-          // the raw handler has no guard, so its `.name` is the inherited 'Error'. the cloud
-          // labels it 'Error' and the caller reads a server fault; the local locus must agree
+          // no sdk family wraps the raw handler, so its throw escapes with the inherited `.name`
+          // 'Error'. the cloud labels it 'Error' and the caller reads a server fault; local agrees
           const error = await run({
             function: 'consumeOrderRaw',
             orderId: 'malformed',
@@ -1552,16 +1585,14 @@ describe('runLambdaEndpoint.onSerialized', () => {
           expect(error).not.toBeInstanceOf(ConstraintError);
           expect(error.message).toContain('order id malformed');
           expect(asWireLabel(error)).toEqual('Error');
-          expect(
-            asCallerView({ error, cause: 'order id malformed' }),
-          ).toMatchSnapshot();
+          expect(asErrorMasked({ error })).toMatchSnapshot();
         },
       );
     });
 
     when('[t3] a forAsk endpoint faults with MalfunctionError', () => {
       then(
-        'the caller reads a server fault, labeled MalfunctionError on the wire',
+        'the caller reads a server fault, labeled by its `.name` as the cloud labels it',
         async () => {
           const error = await run({
             function: 'getOrder',
@@ -1570,12 +1601,50 @@ describe('runLambdaEndpoint.onSerialized', () => {
           });
           expect(error).not.toBeInstanceOf(ConstraintError);
           expect(error.message).toContain('upstream down');
-          expect(asWireLabel(error)).toEqual('MalfunctionError');
-          expect(
-            asCallerView({ error, cause: 'upstream down' }),
-          ).toMatchSnapshot();
+          expect(asWireLabel(error)).toEqual('Error');
+          expect(asErrorMasked({ error })).toMatchSnapshot();
         },
       );
     });
+
+    /**
+     * .what = the positive control for `[t2]`: a family answers a caller fault by class
+     * .why = `forAsk` answers a `ConstraintError` as a response body, so no label is read and
+     *        the `.name` rule cannot flip it — only a throw no family answers is labelled
+     */
+    when('[t4] a forAsk endpoint refuses with ConstraintError', () => {
+      then('the caller reads a caller fault, as on the cloud', async () => {
+        const error = await run({
+          function: 'getOrderRefused',
+          orderId: 'ord-1',
+          via: 'ask',
+        });
+        expect(error).toBeInstanceOf(ConstraintError);
+        expect(error.message).toContain('order id malformed');
+        expect(asErrorMasked({ error })).toMatchSnapshot();
+      });
+    });
+
+    /**
+     * .what = the positive control for `[t2]` once helpful-errors carries `.name`
+     * .why = the same raw throw, with the `.name` helpful-errors#47 sets, must reach the caller
+     *        as a caller fault. so the `[t2]` server fault is the dependency's state, never a
+     *        rule of the label mirror
+     */
+    when(
+      '[t5] a raw handler throws a ConstraintError whose `.name` names its class',
+      () => {
+        then('the caller reads a caller fault', async () => {
+          const error = await run({
+            function: 'consumeOrderRawNamed',
+            orderId: 'malformed',
+            via: 'sqs',
+          });
+          expect(error).toBeInstanceOf(ConstraintError);
+          expect(error.message).toContain('order id malformed');
+          expect(asErrorMasked({ error })).toMatchSnapshot();
+        });
+      },
+    );
   });
 });

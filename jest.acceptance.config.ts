@@ -32,6 +32,8 @@ const config: Config = {
     '!**/.agent/**',
     '!**/.log/**',
   ],
+  // .note = the stray-snapshot half of that trap; see `jest.unit.config.ts`
+  modulePathIgnorePatterns: ['<rootDir>/.agent/', '<rootDir>/.log/'],
   setupFilesAfterEnv: ['./jest.acceptance.env.ts'],
 
   // use 50% of threads to leave headroom for other processes

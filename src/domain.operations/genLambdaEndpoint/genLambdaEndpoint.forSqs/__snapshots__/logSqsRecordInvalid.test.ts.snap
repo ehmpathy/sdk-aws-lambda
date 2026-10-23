@@ -1,0 +1,16 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`logSqsRecordInvalid given: [case1] a record whose schema callback threw a raw Error when: [t0] the fault is logged then: the line an on-call engineer reads is pinned 1`] = `
+[
+  {
+    "message": "sqs.record.invalid",
+    "metadata": {
+      "class": "Error",
+      "consequence": "retried — a fault of ours, so sqs redrives this record alone",
+      "errorMessage": "the refine callback broke",
+      "id": "msg-3",
+      "stack": "<stack>",
+    },
+  },
+]
+`;

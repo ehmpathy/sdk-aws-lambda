@@ -46,6 +46,11 @@
  *   optional on a real `Error` and absent on a plain thrown object; `.name` is
  *   present on a bare `{ name }` bag. `.message` as a string is the one field
  *   every `Error` carries and few impostors do.
+ *
+ * .note = this is the COARSE narrow, for a site that reads fields. the wire LABEL
+ *   follows a stricter rule — the aws runtime's `_isError` trio — which lives in
+ *   `serde/asErrorTypeOfErrorLike.ts`. the two answer different questions, so
+ *   neither replaces the other.
  */
 export const isErrorLike = (value: unknown): value is Error =>
   typeof (value as { message?: unknown })?.message === 'string';

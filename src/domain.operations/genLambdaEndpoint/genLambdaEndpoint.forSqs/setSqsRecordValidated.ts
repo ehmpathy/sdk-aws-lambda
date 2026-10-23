@@ -16,15 +16,16 @@ import type {
  *        the record stale, silently (`domain.terms/headers.md`)
  *
  * .why one transformer for both variants = they differ in what they do with a failure, never in
- *        what counts as one. `perRecord` lets the throw escape, so the invoke fails and sqs
- *        redrives the message; `perBatch` catches it and reports that id as a batch item failure.
- *        a second implementation would let the two definitions of valid drift
+ *        what counts as one. a refusal is a caller fault, so each variant acknowledges it:
+ *        `perRecord` catches it around the whole serve and returns; `perBatch` catches it per
+ *        record and leaves that id out of `batchItemFailures`. a second implementation would let
+ *        the two definitions of valid drift
  *        (`rule.forbid.parallel-codepaths`)
  *
  * .why it throws rather than returns a result = the validation error carries the zod issue
  *        summary, and a `{ ok, error }` return would make every caller restate the throw.
- *        `perBatch`, the one caller that must not propagate it, catches it at its own record
- *        boundary — which is where the disposition belongs
+ *        each caller catches it at its own boundary — the serve for `perRecord`, the record for
+ *        `perBatch` — which is where the disposition belongs
  *
  * .defect = LIVE, NOT FIXED — `getValidationError`'s strict-headers hint names api gateway, and
  *        one of its four clauses is false here: "api gateway injects keys you did not declare".

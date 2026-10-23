@@ -37,11 +37,14 @@ const SSO_EXPORT_TIMEOUT_MS = 30000;
  *        `useKeyrack` practice already carries for every other aws-dependent repo.
  * .note = a failed export is CALLER-must-fix (a stale/absent sso login), so it throws a
  *         `ConstraintError` (exit 2) that NAMES the fix and PRESERVES the real cause on the
- *         chain. the profile is passed as an argv element, never interpolated into a shell
- *         string, so a profile with shell metacharacters cannot be interpreted (no injection).
+ *         chain. the fix it names is the paved `rhx keyrack unlock` for the same owner and env
+ *         that sourced the profile: it refreshes the sso session with no browser prompt where
+ *         one is cached. the raw `aws sso login` stays only as the last resort. the profile is
+ *         passed as an argv element, never interpolated into a shell string, so a profile with
+ *         shell metacharacters cannot be interpreted (no injection).
  */
 export const exportAwsCredentialsFromSsoProfile = (
-  input: { profile: string },
+  input: { profile: string; keyrack: { owner: string; env: string } },
   context: { exec?: typeof execFileSync } = {},
 ): Record<string, string> => {
   const exec = context.exec ?? execFileSync;
@@ -62,8 +65,11 @@ export const exportAwsCredentialsFromSsoProfile = (
       ) as string;
     } catch (error) {
       throw new ConstraintError(
-        `failed to export aws credentials from sso profile '${input.profile}'. run: aws sso login --profile ${input.profile}`,
-        { cause: error instanceof Error ? error : undefined },
+        `failed to export aws credentials from sso profile '${input.profile}'. run: rhx keyrack unlock --owner ${input.keyrack.owner} --env ${input.keyrack.env}`,
+        {
+          hint: `last resort, if the unlock cannot refresh the session: aws sso login --profile ${input.profile}`,
+          cause: error instanceof Error ? error : undefined,
+        },
       );
     }
   })();
@@ -84,7 +90,7 @@ export const exportAwsCredentialsFromSsoProfile = (
  */
 const AWS_CRED_KEY_PREFIX = 'AWS_';
 export const spliceAwsStaticCredsIntoEnv = (
-  input: { profile: string },
+  input: { profile: string; keyrack: { owner: string; env: string } },
   context: {
     env: NodeJS.ProcessEnv;
     exportCreds?: typeof exportAwsCredentialsFromSsoProfile;
@@ -92,7 +98,7 @@ export const spliceAwsStaticCredsIntoEnv = (
 ): void => {
   const exportCreds = context.exportCreds ?? exportAwsCredentialsFromSsoProfile;
 
-  const creds = exportCreds({ profile: input.profile });
+  const creds = exportCreds({ profile: input.profile, keyrack: input.keyrack });
   for (const [key, value] of Object.entries(creds))
     if (key.startsWith(AWS_CRED_KEY_PREFIX)) context.env[key] = value;
 
@@ -152,5 +158,8 @@ export const useKeyrack = (input?: {
   }
 
   const awsSsoProfile = getOneAwsSsoProfileFromEnv({}, { env: process.env });
-  spliceAwsStaticCredsIntoEnv({ profile: awsSsoProfile }, { env: process.env });
+  spliceAwsStaticCredsIntoEnv(
+    { profile: awsSsoProfile, keyrack: { owner, env } },
+    { env: process.env },
+  );
 };

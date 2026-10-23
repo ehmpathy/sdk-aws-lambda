@@ -1,4 +1,14 @@
 import { isErrorLike } from '../error/isErrorLike';
+import { asErrorTypeOfErrorLike } from './asErrorTypeOfErrorLike';
+
+/**
+ * .what = the message the aws node runtime writes when its own reads of a thrown value throw
+ * .why = `toRapidResponse`'s catch arm answers `errorType: 'handled'` with this fixed text and
+ *        no trace (`aws-lambda-nodejs-runtime-interface-client`, `src/Errors.js`), so a local
+ *        run shows the caller the same words the cloud does
+ */
+const RUNTIME_HANDLED_MESSAGE =
+  'callback called with Error argument, but there was a problem while retrieving one or more of its message, name, and stack';
 
 /**
  * .what = casts a thrown handler fault into the envelope aws puts on the wire
@@ -47,15 +57,20 @@ export const asWireFunctionErrorPayload = (
    *        `constructor.name` instead labels a helpful-errors `ConstraintError`
    *        (whose `.name` is the inherited `'Error'`) as a caller fault locally
    *        while the cloud labels it a server fault — a green local run over a
-   *        red prod (sdk-aws-lambda#73). `genLambdaEndpoint` names a throw from
-   *        its class before it escapes (`genErrorNameMiddleware`); a handler
-   *        built without it reads here exactly as it reads on the cloud.
+   *        red prod (sdk-aws-lambda#73). so a throw reads here exactly as it
+   *        reads on the cloud, whatever its `.name`.
    * .note = never `instanceof Error`: it fails across realms, and this runs where
    *         two meet (the local locus loads the handler through
    *         `getOneHandlerFromServerlessYml`; jest gives each module its own vm
    *         context). the reason lives at `isErrorLike`
    * .note = the LABEL mirror is exact, the lossy parts included: `errorType`
-   *         may be any `typeof` (`'object'`, `'undefined'`, `'symbol'`, …), and a
+   *         may be any `typeof` (`'object'`, `'symbol'`, …) or the runtime's own
+   *         `'handled'` (a stackless native error), which carries the runtime's
+   *         one fixed message and no trace. a thrown `null` or `undefined` never
+   *         reaches `toRapidResponse`: the runtime's `CallbackContext.fail` swaps
+   *         it for the string `'handled'` first, so the wire reads
+   *         `errorType: 'string'`, `errorMessage: 'handled'` (measured by
+   *         `blackbox/deployed.faultLabel.acceptance.test.ts`). and a
    *         thrown object with no message reads `errorMessage: '[object Object]'`,
    *         as the runtime's own `${error}` writes it. a local cast that read
    *         better than prod would hide what prod shows; to carry a cause, throw
@@ -63,34 +78,30 @@ export const asWireFunctionErrorPayload = (
    *         message and stack here — the label, which decides the fault side,
    *         is the field held to the cloud's bytes
    */
-  if (!isErrorLike(error))
+  // the runtime's fail arm swaps a null or undefined rejection for the string 'handled'
+  const thrown = error === null || error === undefined ? 'handled' : error;
+
+  // the runtime's catch arm writes one fixed message and no trace, whatever was thrown
+  const errorType = asErrorTypeOfErrorLike({ error: thrown });
+  if (errorType === 'handled')
     return {
-      errorMessage: String(error),
-      errorType: typeof error,
+      errorMessage: RUNTIME_HANDLED_MESSAGE,
+      errorType,
+      stackTrace: [],
+    };
+
+  if (!isErrorLike(thrown))
+    return {
+      errorMessage: String(thrown),
+      errorType,
       stackTrace: [],
     };
 
   return {
-    errorMessage: error.message,
-    errorType: asErrorTypeOfErrorLike({ error }),
+    errorMessage: thrown.message,
+    errorType,
     // `stack` is optional on a real Error
-    stackTrace: typeof error.stack === 'string' ? error.stack.split('\n') : [],
+    stackTrace:
+      typeof thrown.stack === 'string' ? thrown.stack.split('\n') : [],
   };
 };
-
-/**
- * .what = the wire label of an error-like value, as the runtime writes it
- * .why = the runtime's `_isError` labels by `.name` only an object whose `name`,
- *        `message` and `stack` are all strings; any other value it labels
- *        `typeof error`. a `{ name, message }` bag with no `stack` is `'object'` on
- *        the cloud, so it must be `'object'` here too, or a caller fault flips side
- */
-const asErrorTypeOfErrorLike = (input: {
-  error: { name?: unknown; message?: unknown; stack?: unknown };
-}): string =>
-  typeof input.error === 'object' &&
-  typeof input.error.name === 'string' &&
-  typeof input.error.message === 'string' &&
-  typeof input.error.stack === 'string'
-    ? input.error.name
-    : typeof input.error;

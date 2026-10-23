@@ -263,7 +263,7 @@ exports[`forAsk given: [case14] a \`.pipe()\` type-shift at the OUTPUT border, a
   ],
   "hint": "the handler returned a value its own declared output schema refuses — correct each path named in \`issues\`. ⚠️ a plain object is NOT the cause: \`X.contract()\` coerces, so a bag whose fields are correct parses here. \`new X({ … })\` is the TYPE-level contract, and it checks these same paths at construction instead"
 }",
-  "errorName": "MalfunctionError",
+  "errorName": "Error",
   "settlesAs": "REJECTED",
 }
 `;
