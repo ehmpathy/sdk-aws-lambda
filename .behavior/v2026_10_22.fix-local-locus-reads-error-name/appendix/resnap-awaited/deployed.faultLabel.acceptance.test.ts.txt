@@ -248,32 +248,27 @@ describe('e2e: deployed raw handler, its escaped throw labelled on both loci', (
         const asMetadata = (masked: Record<string, unknown>) =>
           (masked.metadata ?? {}) as Record<string, unknown>;
 
-        // the endpoint, the class, and the fault side are the same on every row, so each is hoisted once and asserted per row
+        // the endpoint is the one field no throw can change, so it alone is hoisted; the class and
+        // the fault side stay per row, since the `constraint` row flips both on the helpful-errors bump
         const endpoint = asMetadata(rows.views[0]?.cloudMasked ?? {}).endpoint;
-        const errorClass = rows.views[0]?.cloudMasked.class;
-        for (const row of rows.views) {
+        for (const row of rows.views)
           expect(asMetadata(row.cloudMasked).endpoint).toEqual(endpoint);
-          expect(row.cloudMasked.class).toEqual(errorClass);
-          expect(row.cloud.isCallerFault).toEqual(false);
-        }
         expect({
           endpoint,
-          class: errorClass,
-          isCallerFault: false,
           rows: rows.views.map((row) => {
             const { endpoint: _hoisted, ...metadataRest } = asMetadata(
               row.cloudMasked,
             );
-            const { class: _hoistedClass, ...errorRest } = row.cloudMasked;
             return {
               kind: row.kind,
               labelExpected: row.label,
+              isCallerFault: row.cloud.isCallerFault,
               ...(row.kind === 'constraint'
                 ? {
-                    note: "helpful-errors 1.7.3 leaves .name at 'Error', so a raw ConstraintError is a server fault here; it flips to a caller fault on the helpful-errors bump (F24)",
+                    note: "helpful-errors 1.7.3 leaves .name at 'Error', so a raw ConstraintError is a server fault here; it flips to a caller fault once helpful-errors#47 ships",
                   }
                 : {}),
-              error: { ...errorRest, metadata: metadataRest },
+              error: { ...row.cloudMasked, metadata: metadataRest },
             };
           }),
         }).toMatchSnapshot();

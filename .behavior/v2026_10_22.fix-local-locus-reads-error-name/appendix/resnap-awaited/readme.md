@@ -5,7 +5,15 @@ the aws sso unlock for `ehmpath/test` timed out (no human at the browser prompt)
 | parked copy | the edit | the review point it answers |
 |---|---|---|
 | `local.sqsQueue.acceptance.test.ts.txt` | `[case3][t2]` snapshots `{ response, refusedIds }`, so it cannot read as `[t1]`'s served batch | 5.3 i005 r011 nitpick.2 |
-| `deployed.faultLabel.acceptance.test.ts.txt` | the snapshot then is named for its claim; `class` and `isCallerFault` hoisted; a `note` on the `constraint` row (F24) | 5.3 i005 r011 nitpick.3, nitpick.4 |
+| `deployed.faultLabel.acceptance.test.ts.txt` | the snapshot then is named for its claim; the endpoint hoisted; `class` and `isCallerFault` kept per row, since the `constraint` row flips both on the bump; a `note` on that row that names helpful-errors#47 | 5.3 i005 r011 nitpick.3, nitpick.4; i006 r011 nitpick.5, nitpick.6 |
+
+## also owed in the same commit — conceded at 5.3 i006, each needs an acceptance resnap
+
+| file | the edit | the review point |
+|---|---|---|
+| `blackbox/local.sqsQueue.acceptance.test.ts` | `[case6][t0]` and `[t1]` settle through `asInvokeSettled`, as `[case7]` does, so a regression shows its cause | i006 r010 nitpick.4, r011 nitpick.3 |
+| `blackbox/local.sqsQueue.acceptance.test.ts` | `[case1]` snapshots `seen[0]`, not the whole array, so the snapshot is not keyed `"0"` | i006 r011 nitpick.2 |
+| `logSqsRecordInvalid.ts` | the `sqs.record.invalid` consequence uses "redriven", the one word the refusal line uses | i006 r011 nitpick.4 |
 
 ## to land them
 

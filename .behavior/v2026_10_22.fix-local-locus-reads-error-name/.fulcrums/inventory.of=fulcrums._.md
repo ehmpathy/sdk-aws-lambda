@@ -25,4 +25,5 @@
 | F21 | the eight case-list unit tests keep the `describe` + `TEST_CASES.map(test)` shape `rule.prefer.data-driven` prescribes, over a bdd rewrap | clean | best-guessed | 88% |
 | F22 | the bundle's `ConstraintError2` suffix is masked in the deployed snapshot; the helpful-errors dedupe (`with-simple-cache` pulls 1.5.3) is deferred to a dream | clean | best-guessed | 85% |
 | F23 | a contract snapshot is kept beside an exact `toEqual` of the same value — two lanes ask opposite things | clean | best-guessed | 85% || F24 | no helpful-errors pin; the clamps read the shipped 1.7.3, a `.name`-set positive control beside them — asked of the commander | clean | best-guessed | 80% |
-| F25 | snapshots keep a hydrated error's undefined keys; an unchanged code path (the redrive log) gets no new snapshot | clean | best-guessed | 85% |
+| F25 | snapshots keep a hydrated error's undefined keys; an unchanged code path (the redrive log) gets no new snapshot | clean | best-guessed | 85% || F26 | the local label mirrors the whole runtime rule (`.name`, else `typeof`, else `handled`), not `.name` alone | clean | best-guessed | 90% |
+| F27 | the test harness sso error fix rides this pr | clean | ruled — the director | 95% |
