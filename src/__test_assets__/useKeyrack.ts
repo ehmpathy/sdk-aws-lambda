@@ -22,9 +22,45 @@ const asCredentialsRecordFromExportLines = (input: {
       .map((match) => [match[1]!, match[2]!] as const),
   );
 
+/**
+ * .what = read the aws cli's own refusal off a failed `execFileSync`: its stderr, exit status,
+ *         signal, and error code.
+ * .why = jest prints a thrown error's message and metadata, never its `cause`. without this
+ *        the log names a failed export but hides why it failed (a timeout, an expired token, a
+ *        contended sso cache), and the cause cannot be diagnosed from the log.
+ */
+const asCliRefusalFromExecError = (input: {
+  error: unknown;
+}): {
+  stderr: string | null;
+  status: number | null;
+  signal: string | null;
+  code: string | null;
+} => {
+  // note: node types a thrown exec error as `unknown`; each field is guarded by typeof below
+  const error = (input.error ?? {}) as {
+    stderr?: unknown;
+    status?: unknown;
+    signal?: unknown;
+    code?: unknown;
+  };
+  const stderr =
+    typeof error.stderr === 'string' || Buffer.isBuffer(error.stderr)
+      ? String(error.stderr).trim()
+      : null;
+  return {
+    stderr: stderr || null,
+    status: typeof error.status === 'number' ? error.status : null,
+    signal: typeof error.signal === 'string' ? error.signal : null,
+    code: typeof error.code === 'string' ? error.code : null,
+  };
+};
+
 // an sso refresh is network-bound (identity-provider round-trip); a slow-but-valid refresh must
 // not read as a dead login. bound it generously, and name the budget so it is not a magic number.
-const SSO_EXPORT_TIMEOUT_MS = 30000;
+// measured: one export, alone in jest's global setup on a fresh sso session, ran past 30s and
+// was killed (`SIGTERM`, `ETIMEDOUT`). 120s holds that measure with headroom.
+const SSO_EXPORT_TIMEOUT_MS = 120000;
 
 /**
  * .what = export the aws credentials of an sso profile into a `{ KEY: VALUE }` record, via
@@ -68,6 +104,7 @@ export const exportAwsCredentialsFromSsoProfile = (
         `failed to export aws credentials from sso profile '${input.profile}'. run: rhx keyrack unlock --owner ${input.keyrack.owner} --env ${input.keyrack.env}`,
         {
           hint: `last resort, if the unlock cannot refresh the session: aws sso login --profile ${input.profile}`,
+          cli: asCliRefusalFromExecError({ error }),
           cause: error instanceof Error ? error : undefined,
         },
       );
@@ -134,32 +171,44 @@ export const getOneAwsSsoProfileFromEnv = (
  *   3. keyrack.source for the tier (sets AWS_PROFILE)
  *   4. if static creds are already present, clear AWS_PROFILE so the sdk prefers them, and return
  *   5. else, export the sso profile's static creds via the guard above
+ * .note = step 4 is what makes `jest.keyrack.globalsetup.ts` cure the export race: that setup
+ *         runs this once in the parent, so each per-file call finds static creds and skips the
+ *         cli. `context` exists so a unit test can clamp that skip with no aws call
  */
-export const useKeyrack = (input?: {
-  env?: 'test' | 'prep' | 'prod';
-  owner?: string;
-  mode?: 'strict' | 'lenient';
-}): void => {
+export const useKeyrack = (
+  input?: {
+    env?: 'test' | 'prep' | 'prod';
+    owner?: string;
+    mode?: 'strict' | 'lenient';
+  },
+  context: {
+    env?: NodeJS.ProcessEnv;
+    source?: typeof keyrack.source;
+    exportCreds?: typeof exportAwsCredentialsFromSsoProfile;
+  } = {},
+): void => {
   const env = input?.env ?? 'test';
   const owner = input?.owner ?? 'ehmpath';
   const mode = input?.mode ?? 'lenient';
+  const processEnv = context.env ?? process.env;
+  const source = context.source ?? keyrack.source;
 
-  if (process.env.CI) return;
+  if (processEnv.CI) return;
 
   const keyrackYmlPath = join(process.cwd(), '.agent/keyrack.yml');
   if (!existsSync(keyrackYmlPath)) return;
 
-  keyrack.source({ env, owner, mode });
+  source({ env, owner, mode });
 
-  if (process.env.AWS_ACCESS_KEY_ID) {
-    delete process.env.AWS_PROFILE;
-    delete process.env.AWS_DEFAULT_PROFILE;
+  if (processEnv.AWS_ACCESS_KEY_ID) {
+    delete processEnv.AWS_PROFILE;
+    delete processEnv.AWS_DEFAULT_PROFILE;
     return;
   }
 
-  const awsSsoProfile = getOneAwsSsoProfileFromEnv({}, { env: process.env });
+  const awsSsoProfile = getOneAwsSsoProfileFromEnv({}, { env: processEnv });
   spliceAwsStaticCredsIntoEnv(
     { profile: awsSsoProfile, keyrack: { owner, env } },
-    { env: process.env },
+    { env: processEnv, exportCreds: context.exportCreds },
   );
 };

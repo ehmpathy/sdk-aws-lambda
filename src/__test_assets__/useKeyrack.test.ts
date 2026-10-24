@@ -53,4 +53,76 @@ describe('exportAwsCredentialsFromSsoProfile', () => {
       });
     });
   });
+
+  // .why = jest prints an error's message and metadata, never its `cause`. the export once
+  //        failed with a bare headline and no reason; the reason (our own 30s kill) surfaced
+  //        only once the cli's refusal rode the metadata
+  given('[case2] an export the 30s bound kills', () => {
+    // a fake injected via context: the shape node's execFileSync throws on a timeout
+    const execTimedOut = (() => {
+      throw Object.assign(new Error('spawnSync aws ETIMEDOUT'), {
+        code: 'ETIMEDOUT',
+        signal: 'SIGTERM',
+        status: null,
+        stderr: '',
+      });
+    }) as unknown as typeof execFileSync;
+
+    when('[t0] the export is attempted', () => {
+      then(
+        'the error metadata names the signal and code jest prints',
+        async () => {
+          const error = await getError(async () =>
+            exportAwsCredentialsFromSsoProfile(
+              {
+                profile: 'ehmpathy.demo.ehmpath',
+                keyrack: { owner: 'ehmpath', env: 'test' },
+              },
+              { exec: execTimedOut },
+            ),
+          );
+          expect(error).toBeInstanceOf(ConstraintError);
+          expect((error as ConstraintError).metadata?.cli).toEqual({
+            stderr: null,
+            status: null,
+            signal: 'SIGTERM',
+            code: 'ETIMEDOUT',
+          });
+        },
+      );
+    });
+  });
+
+  given('[case3] an export the cli itself refuses', () => {
+    const execRefused = (() => {
+      throw Object.assign(new Error('Command failed: aws'), {
+        status: 255,
+        signal: null,
+        stderr: 'the sso token for this profile has expired\n',
+      });
+    }) as unknown as typeof execFileSync;
+
+    when('[t0] the export is attempted', () => {
+      then(
+        'the error metadata carries the cli stderr verbatim, trimmed',
+        async () => {
+          const error = await getError(async () =>
+            exportAwsCredentialsFromSsoProfile(
+              {
+                profile: 'ehmpathy.demo.ehmpath',
+                keyrack: { owner: 'ehmpath', env: 'test' },
+              },
+              { exec: execRefused },
+            ),
+          );
+          expect((error as ConstraintError).metadata?.cli).toEqual({
+            stderr: 'the sso token for this profile has expired',
+            status: 255,
+            signal: null,
+            code: null,
+          });
+        },
+      );
+    });
+  });
 });
