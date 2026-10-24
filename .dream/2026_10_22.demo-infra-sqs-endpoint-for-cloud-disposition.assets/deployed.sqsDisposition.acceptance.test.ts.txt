@@ -1,0 +1,461 @@
+/**
+ * .what = the sqs disposition, read off a real queue: aws deletes what the sdk acknowledges, and
+ *         redrives what it fails
+ * .why = 🔴 the sdk's half is its return value — a successful invoke, or an id left out of
+ *        `batchItemFailures`. what aws DOES with that value is aws's contract, and only a real
+ *        queue measures it. each queue here has a dead-letter queue at `maxReceiveCount: 1`, so a
+ *        message aws redrove lands there on its second receive, and a message aws deleted never
+ *        can (`invariant.constraint-errors-never-redrive-sqs`)
+ *
+ * this test:
+ * 1. bundles and deploys a `perRecord` and a `perBatch` endpoint
+ * 2. creates two run-scoped queues, each with its own dead-letter queue, and wires each to its lambda
+ * 3. sends one message of each disposition
+ * 4. asserts the dead-letter queue holds exactly the redriven messages, and the queue drains
+ * 5. deletes the queue triggers and the queues
+ */
+import * as path from 'node:path';
+
+import {
+  CreateEventSourceMappingCommand,
+  DeleteEventSourceMappingCommand,
+  GetEventSourceMappingCommand,
+  LambdaClient,
+  ListEventSourceMappingsCommand,
+} from '@aws-sdk/client-lambda';
+import {
+  CreateQueueCommand,
+  DeleteQueueCommand,
+  GetQueueAttributesCommand,
+  ReceiveMessageCommand,
+  SendMessageBatchCommand,
+  SQSClient,
+} from '@aws-sdk/client-sqs';
+import {
+  DeclaredAwsIamPolicyDocument,
+  DeclaredAwsIamRole,
+  DeclaredAwsIamRolePolicyAttachedInline,
+  DeclaredAwsLambda,
+  genDeclaredAwsLambdaCode,
+  setIamRolePolicyAttachedInline,
+} from 'declastruct-aws';
+import { RefByUnique } from 'domain-objects';
+import { given, then, useBeforeAll, useThen, when } from 'test-fns';
+
+import { getOneDeployContext } from './__test_assets__/getOneDeployContext';
+import {
+  LAMBDA_DEPLOY_HOOK_BUDGET_MS,
+  setLambdaLive,
+} from './__test_assets__/setLambdaLive';
+import { setLambdaRole } from './__test_assets__/setLambdaRole';
+import { setLambdaZip } from './__test_assets__/setLambdaZip';
+import { withRetry } from './__test_assets__/withRetry';
+
+const HANDLER_SOURCE = path.join(
+  __dirname,
+  '__test_assets__',
+  'sqsDispositionHandlers.ts',
+);
+const BUILD_DIR = path.join(__dirname, '..', '.build');
+const BUNDLE_NAME = 'sqsDispositionHandlers';
+
+const ROLE_NAME = 'sdk-aws-lambda-e2e-sqsdisposition-role';
+const QUEUE_PREFIX = 'sdk-aws-lambda-e2e-sqs';
+const REGION = 'us-east-1';
+
+// a run-scoped suffix, so a message left by a prior run can never read as this run's
+const RUN_ID = `${Date.now()}`;
+
+// two deploys, two triggers to enable, and a redrive cycle per queue
+const SUITE_BUDGET_MS = LAMBDA_DEPLOY_HOOK_BUDGET_MS * 2 + 6 * 60_000;
+jest.setTimeout(SUITE_BUDGET_MS);
+
+// the lambda must finish within the queue's visibility timeout, which aws checks at wire-up
+const LAMBDA_TIMEOUT_S = 5;
+const QUEUE_VISIBILITY_S = 10;
+
+const sqs = new SQSClient({ region: REGION });
+const lambda = new LambdaClient({ region: REGION });
+
+/**
+ * .what = waits until a probe answers a value the predicate accepts, or the budget runs out
+ * .why = every fact this suite reads settles on aws's clock — a trigger turns on, a message is
+ *        redriven — so each read polls with a bound, and a timeout names what it waited for
+ */
+const waitFor = async <T>(input: {
+  probe: () => Promise<T>;
+  until: (value: T) => boolean;
+  budgetMs: number;
+  what: string;
+}): Promise<T> => {
+  const startedAt = Date.now();
+  for (;;) {
+    const value = await input.probe();
+    if (input.until(value)) return value;
+    if (Date.now() - startedAt > input.budgetMs)
+      throw new Error(
+        `waitFor: ${input.what} did not settle within ${input.budgetMs}ms; last value = ${JSON.stringify(value)}`,
+      );
+    await new Promise((done) => setTimeout(done, 3_000));
+  }
+};
+
+/**
+ * .what = creates a queue with a dead-letter queue behind it, at one receive before redrive
+ * .why = with `maxReceiveCount: 1`, every message aws redrives moves to the dead-letter queue on
+ *        its next receive, so the dead-letter queue is the exact set aws chose not to delete
+ */
+const genQueueWithDeadLetter = async (input: {
+  slug: string;
+}): Promise<{ queueUrl: string; queueArn: string; deadLetterUrl: string }> => {
+  const deadLetter = await sqs.send(
+    new CreateQueueCommand({
+      QueueName: `${QUEUE_PREFIX}-${input.slug}-dlq-${RUN_ID}`,
+      tags: { managedBy: 'sdk-aws-lambda', purpose: 'e2e-acceptance-test' },
+    }),
+  );
+  const deadLetterAttributes = await sqs.send(
+    new GetQueueAttributesCommand({
+      QueueUrl: deadLetter.QueueUrl,
+      AttributeNames: ['QueueArn'],
+    }),
+  );
+  const queue = await sqs.send(
+    new CreateQueueCommand({
+      QueueName: `${QUEUE_PREFIX}-${input.slug}-${RUN_ID}`,
+      Attributes: {
+        VisibilityTimeout: `${QUEUE_VISIBILITY_S}`,
+        RedrivePolicy: JSON.stringify({
+          deadLetterTargetArn: deadLetterAttributes.Attributes?.QueueArn,
+          maxReceiveCount: 1,
+        }),
+      },
+      tags: { managedBy: 'sdk-aws-lambda', purpose: 'e2e-acceptance-test' },
+    }),
+  );
+  const queueAttributes = await sqs.send(
+    new GetQueueAttributesCommand({
+      QueueUrl: queue.QueueUrl,
+      AttributeNames: ['QueueArn'],
+    }),
+  );
+  return {
+    queueUrl: queue.QueueUrl ?? '',
+    queueArn: queueAttributes.Attributes?.QueueArn ?? '',
+    deadLetterUrl: deadLetter.QueueUrl ?? '',
+  };
+};
+
+/**
+ * .what = wires a queue to a lambda, after it removes every prior trigger on that lambda
+ * .why = a trigger left by a crashed run would point the lambda at a queue that no longer exists;
+ *        a removal first makes the wire-up converge (`rule.require.idempotent-procedures`)
+ * .note = retried, because iam takes seconds to grant the role the queue read it just received
+ */
+const setQueueTrigger = async (input: {
+  functionName: string;
+  queueArn: string;
+  batchSize: number;
+  reportBatchItemFailures: boolean;
+}): Promise<{ uuid: string }> => {
+  const prior = await lambda.send(
+    new ListEventSourceMappingsCommand({ FunctionName: input.functionName }),
+  );
+  for (const trigger of prior.EventSourceMappings ?? [])
+    if (trigger.UUID)
+      await lambda.send(
+        new DeleteEventSourceMappingCommand({ UUID: trigger.UUID }),
+      );
+
+  const created = await withRetry(
+    () =>
+      lambda.send(
+        new CreateEventSourceMappingCommand({
+          FunctionName: input.functionName,
+          EventSourceArn: input.queueArn,
+          BatchSize: input.batchSize,
+          MaximumBatchingWindowInSeconds: input.batchSize > 1 ? 2 : undefined,
+          FunctionResponseTypes: input.reportBatchItemFailures
+            ? ['ReportBatchItemFailures']
+            : undefined,
+          Enabled: true,
+        }),
+      ),
+    {
+      maxAttempts: 10,
+      backoffMs: 3_000,
+      shouldRetry: (error) => error.message.includes('permission'),
+      onRetry: ({ attempt, waitMs }) =>
+        console.log(
+          `⏳ ${input.functionName}: queue trigger awaits iam (attempt ${attempt}, ${waitMs}ms)`,
+        ),
+    },
+  );
+  const uuid = created.UUID ?? '';
+
+  await waitFor({
+    probe: async () =>
+      (await lambda.send(new GetEventSourceMappingCommand({ UUID: uuid })))
+        .State,
+    until: (state) => state === 'Enabled',
+    budgetMs: 3 * 60_000,
+    what: `the queue trigger of ${input.functionName}`,
+  });
+  return { uuid };
+};
+
+/**
+ * .what = every message body in a queue, read until two polls in a row find no new one
+ * .why = a received message is hidden for the given visibility, so each body is read once
+ */
+const getAllQueueBodies = async (input: {
+  queueUrl: string;
+}): Promise<string[]> => {
+  const bodies: string[] = [];
+  for (let idle = 0; idle < 2; ) {
+    const received = await sqs.send(
+      new ReceiveMessageCommand({
+        QueueUrl: input.queueUrl,
+        MaxNumberOfMessages: 10,
+        WaitTimeSeconds: 5,
+        VisibilityTimeout: 120,
+      }),
+    );
+    const found = (received.Messages ?? []).map((message) => message.Body ?? '');
+    if (found.length === 0) idle += 1;
+    bodies.push(...found);
+  }
+  return bodies.sort();
+};
+
+/**
+ * .what = the count of messages a queue still holds, visible or in flight
+ */
+const getQueueDepth = async (input: { queueUrl: string }): Promise<number> => {
+  const attributes = await sqs.send(
+    new GetQueueAttributesCommand({
+      QueueUrl: input.queueUrl,
+      AttributeNames: [
+        'ApproximateNumberOfMessages',
+        'ApproximateNumberOfMessagesNotVisible',
+      ],
+    }),
+  );
+  return (
+    Number(attributes.Attributes?.ApproximateNumberOfMessages ?? '0') +
+    Number(attributes.Attributes?.ApproximateNumberOfMessagesNotVisible ?? '0')
+  );
+};
+
+/**
+ * .what = sends each body as one message, then waits until the dead-letter queue holds the
+ *         count expected and the queue has drained, and reads both
+ */
+const getDispositionOf = async (input: {
+  queue: { queueUrl: string; deadLetterUrl: string };
+  bodies: string[];
+  deadLetterCountExpected: number;
+}): Promise<{ deadLettered: string[]; depthLeft: number }> => {
+  await sqs.send(
+    new SendMessageBatchCommand({
+      QueueUrl: input.queue.queueUrl,
+      Entries: input.bodies.map((body, index) => ({
+        Id: `m${index}`,
+        MessageBody: body,
+      })),
+    }),
+  );
+  await waitFor({
+    probe: () => getQueueDepth({ queueUrl: input.queue.deadLetterUrl }),
+    until: (depth) => depth >= input.deadLetterCountExpected,
+    budgetMs: 3 * 60_000,
+    what: 'the dead-letter queue',
+  });
+  const depthLeft = await waitFor({
+    probe: () => getQueueDepth({ queueUrl: input.queue.queueUrl }),
+    until: (depth) => depth === 0,
+    budgetMs: 2 * 60_000,
+    what: 'the queue drain',
+  });
+  return {
+    deadLettered: await getAllQueueBodies({
+      queueUrl: input.queue.deadLetterUrl,
+    }),
+    depthLeft,
+  };
+};
+
+describe('e2e: deployed sqs endpoints, their disposition read off a real queue', () => {
+  const deployed = useBeforeAll(async () => {
+    // bundle once; both lambdas run this file
+    const { zipPath } = await setLambdaZip({
+      handlerSource: HANDLER_SOURCE,
+      buildDir: BUILD_DIR,
+      bundleName: BUNDLE_NAME,
+    });
+
+    // the role, plus the queue read a queue trigger needs
+    const { context } = await getOneDeployContext();
+    const { ref: roleRef } = await setLambdaRole(
+      {
+        name: ROLE_NAME,
+        description: 'role for the sdk-aws-lambda sqs disposition acceptance test',
+      },
+      context,
+    );
+    await setIamRolePolicyAttachedInline(
+      {
+        upsert: DeclaredAwsIamRolePolicyAttachedInline.as({
+          name: 'sqs-consume',
+          role: RefByUnique.as<typeof DeclaredAwsIamRole>({ name: ROLE_NAME }),
+          document: DeclaredAwsIamPolicyDocument.as({
+            statements: [
+              {
+                effect: 'Allow',
+                action: [
+                  'sqs:ReceiveMessage',
+                  'sqs:DeleteMessage',
+                  'sqs:GetQueueAttributes',
+                  'sqs:ChangeMessageVisibility',
+                ],
+                resource: `arn:aws:sqs:${REGION}:*:${QUEUE_PREFIX}-*`,
+              },
+            ],
+          }),
+        }),
+      },
+      context,
+    );
+
+    // one lambda per cardinality, each live before its trigger is wired
+    const asLambda = (input: { name: string; handler: string }) =>
+      DeclaredAwsLambda.as({
+        name: input.name,
+        runtime: 'nodejs20.x',
+        handler: `${BUNDLE_NAME}.${input.handler}`,
+        timeout: LAMBDA_TIMEOUT_S,
+        memory: 128,
+        role: roleRef,
+        envars: { NODE_ENV: 'test' },
+        code: genDeclaredAwsLambdaCode({ zipUri: zipPath }),
+        tags: { managedBy: 'declastruct', purpose: 'e2e-acceptance-test' },
+      });
+    const perRecordName = 'svc-sqsdisposition-prod-consumeOrder';
+    const perBatchName = 'svc-sqsdisposition-prod-consumeBatch';
+    await setLambdaLive(
+      { lambda: asLambda({ name: perRecordName, handler: 'consumeOrder' }), region: REGION },
+      context,
+    );
+    await setLambdaLive(
+      { lambda: asLambda({ name: perBatchName, handler: 'consumeBatch' }), region: REGION },
+      context,
+    );
+
+    // two run-scoped queues, each wired to its lambda
+    const perRecordQueue = await genQueueWithDeadLetter({ slug: 'record' });
+    const perBatchQueue = await genQueueWithDeadLetter({ slug: 'batch' });
+    const perRecordTrigger = await setQueueTrigger({
+      functionName: perRecordName,
+      queueArn: perRecordQueue.queueArn,
+      batchSize: 1,
+      reportBatchItemFailures: false,
+    });
+    const perBatchTrigger = await setQueueTrigger({
+      functionName: perBatchName,
+      queueArn: perBatchQueue.queueArn,
+      batchSize: 10,
+      reportBatchItemFailures: true,
+    });
+
+    return {
+      perRecordQueue,
+      perBatchQueue,
+      triggers: [perRecordTrigger.uuid, perBatchTrigger.uuid],
+    };
+  });
+
+  // the queues and triggers are scoped to this run, so they are removed with it
+  afterAll(async () => {
+    for (const uuid of deployed.triggers ?? [])
+      await lambda.send(new DeleteEventSourceMappingCommand({ UUID: uuid }));
+    for (const queue of [deployed.perRecordQueue, deployed.perBatchQueue])
+      for (const queueUrl of [queue?.queueUrl, queue?.deadLetterUrl])
+        if (queueUrl) await sqs.send(new DeleteQueueCommand({ QueueUrl: queueUrl }));
+  });
+
+  given('[case1] a perRecord endpoint behind a real queue', () => {
+    when('[t0] one message of each disposition is sent', () => {
+      const outcome = useThen('aws settles every message', async () =>
+        getDispositionOf({
+          queue: deployed.perRecordQueue,
+          bodies: [
+            JSON.stringify({ orderId: 'ord-ok' }),
+            JSON.stringify({ orderId: 'ord-withdrawn' }),
+            JSON.stringify({ orderId: 404 }),
+            JSON.stringify({ orderId: 'ord-down' }),
+          ],
+          deadLetterCountExpected: 1,
+        }),
+      );
+
+      then('aws redrove the server fault alone, so it dead-lettered', () => {
+        expect(outcome.deadLettered).toEqual([
+          JSON.stringify({ orderId: 'ord-down' }),
+        ]);
+      });
+
+      then('aws deleted the handler refusal and the schema refusal, never redriven', () => {
+        expect(outcome.deadLettered).not.toContain(
+          JSON.stringify({ orderId: 'ord-withdrawn' }),
+        );
+        expect(outcome.deadLettered).not.toContain(
+          JSON.stringify({ orderId: 404 }),
+        );
+      });
+
+      then('the queue drained, so no message is left to retry', () => {
+        expect(outcome.depthLeft).toEqual(0);
+      });
+
+      then('the disposition matches the snapshot', () => {
+        expect(outcome).toMatchSnapshot();
+      });
+    });
+  });
+
+  given('[case2] a perBatch endpoint behind a real queue', () => {
+    when('[t0] one message of each disposition is sent', () => {
+      const outcome = useThen('aws settles every message', async () =>
+        getDispositionOf({
+          queue: deployed.perBatchQueue,
+          bodies: [
+            JSON.stringify({ orderId: 'ord-ok' }),
+            JSON.stringify({ orderId: 404 }),
+            JSON.stringify({ orderId: 'ord-poison' }),
+          ],
+          deadLetterCountExpected: 1,
+        }),
+      );
+
+      then('aws redrove the unreported record alone, so it dead-lettered', () => {
+        expect(outcome.deadLettered).toEqual([
+          JSON.stringify({ orderId: 'ord-poison' }),
+        ]);
+      });
+
+      then('aws deleted the schema refusal the sdk left out of batchItemFailures', () => {
+        expect(outcome.deadLettered).not.toContain(
+          JSON.stringify({ orderId: 404 }),
+        );
+      });
+
+      then('the queue drained, so no message is left to retry', () => {
+        expect(outcome.depthLeft).toEqual(0);
+      });
+
+      then('the disposition matches the snapshot', () => {
+        expect(outcome).toMatchSnapshot();
+      });
+    });
+  });
+});

@@ -497,13 +497,19 @@
             "command": "node -e \"import('rhachet-roles-bhuild').then(m => m.cli.radioTaskHeld())\" -- --when hook.onStop",
             "timeout": 10,
             "author": "repo=bhuild/role=dispatcher"
+          },
+          {
+            "type": "command",
+            "command": "./node_modules/.bin/rhachet roles cost --all --when hook.onStop",
+            "timeout": 60,
+            "author": "repo=.this/role=any"
           }
         ]
       }
     ]
   },
   "claudeMdExcludes": [
-    "/home/camper/.claude/CLAUDE.md",
+    "/home/vlad/.claude/CLAUDE.md",
     "**/CLAUDE.local.md"
   ],
   "statusLine": {
