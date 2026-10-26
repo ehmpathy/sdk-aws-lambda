@@ -10,19 +10,24 @@ import { setHandlerTrailCarrier } from '../../lambdaEndpointWire/frame/setHandle
 import { asContextLogTrail } from '../asContextLogTrail';
 import { setEventFrozen } from '../setEventFrozen';
 import type { TranslateLog } from '../TranslateLog';
+import { asSqsBatchResponse } from './asSqsBatchResponse';
 import { asSqsEventDecoded } from './asSqsEventDecoded';
 import { DESERIALIZE_DEFAULT } from './asSqsRecordDecoded';
+import { asSqsRecordIds } from './asSqsRecordIds';
 import {
   CARRIER_SQS,
   genSqsEndpointMiddlewares,
 } from './genSqsEndpointMiddlewares';
+import { getAllSqsIdsRetried } from './getAllSqsIdsRetried';
+import { getAllSqsIdsUnclaimable } from './getAllSqsIdsUnclaimable';
+import { getAllSqsSuccessRefsMalformed } from './getAllSqsSuccessRefsMalformed';
 import type {
   SqsEventDecoded,
   SqsHeadersDeclared,
   SqsHeadersMerged,
   SqsRecordDecoded,
 } from './SqsEventDecoded';
-import { setSqsRecordValidated } from './setSqsRecordValidated';
+import { setSqsRecordsValidated } from './setSqsRecordsValidated';
 
 /**
  * .what = the one fact sqs needs to delete a message: its `id`
@@ -44,7 +49,8 @@ export type ForSqsPerBatchInput<
   schema: {
     /**
      * .what = the pair one message carries — `{ headers?, payload }`, applied per record
-     * .note = a record this refuses never reaches `invoke`, and is retried
+     * .note = a record this refuses never reaches `invoke`. the refusal is a caller fault, so it
+     *         is logged as `sqs.record.refused` and acknowledged — sqs deletes it, with no retry
      */
     input: ZodSchema<{ headers?: THeaders; payload: TPayload }>;
   };
@@ -54,6 +60,8 @@ export type ForSqsPerBatchInput<
       /**
        * .what = the messages that passed validation — a filter over `event.records`, never a
        *         copy (`domain.terms/records.md`)
+       * .note = empty when the schema refuses every message — the handler still runs. a throw
+       *         here redrives the refused records with the batch, so do not throw on `[]`
        */
       records: FrozenDeep<
         SqsRecordDecoded<{
@@ -83,6 +91,8 @@ export type ForSqsPerBatchInput<
      * .what = the records this handler processed, so sqs may delete them
      * .why = fail safe. a record not named here is retried, so a forgotten record redrives rather
      *        than vanishes (`rule.forbid.failhide`)
+     * .note = a record named here that the handler chose to drop leaves no sdk log line; log it
+     *         yourself where an operator needs the trace
      */
     successes: readonly FrozenDeep<SqsRecordSuccessRef>[];
   }>;
@@ -104,8 +114,9 @@ export type ForSqsPerBatchInput<
  * .why = a handler that acts on many messages at once cannot be expressed one record at a time,
  *        and a partial-batch response lets one poison message fail alone
  *
- * .note = fail safe by construction: every record not reported as a success is retried, and an
- *         answer the sdk cannot read throws, which retries the whole batch
+ * .note = fail safe by construction: every record neither reported as a success nor refused by
+ *         the schema is retried, and an answer the sdk cannot read throws, which retries the
+ *         whole batch
  * .note = deploy precondition: the event source must declare
  *         `functionResponseTypes: ['ReportBatchItemFailures']`, or sqs deletes every message
  */
@@ -131,27 +142,14 @@ export const perBatch = <THeaders extends SqsHeadersDeclared, TPayload>(
 
     const decoded = asSqsEventDecoded({ wire: event }, { deserialize });
 
-    // validate each record; a refusal is logged and left out, so it is retried alone
-    const recordsValidated: SqsRecordDecoded<{
-      headers: SqsHeadersMerged<THeaders>;
-      payload: TPayload;
-    }>[] = [];
-    for (const record of decoded.records) {
-      try {
-        recordsValidated.push(
-          setSqsRecordValidated({ record, schema: config.schema.input }),
-        );
-      } catch (error) {
-        if (!(error instanceof Error)) throw error;
-        log.warn('sqs.record.invalid', {
-          id: record.id,
-          errorMessage: error.message,
-        });
-      }
-    }
+    // validate each record; a caller fault is acknowledged, a server fault retried alone
+    const { recordsValidated, idsRefused } = setSqsRecordsValidated(
+      { records: decoded.records, schema: config.schema.input },
+      { log },
+    );
 
     // the only ids a handler may claim; read before its turn, so no write it makes can widen them
-    const idsClaimable = new Set(recordsValidated.map((record) => record.id));
+    const idsClaimable = asSqsRecordIds({ records: recordsValidated });
 
     /**
      * .what = seals the envelope before the handler's turn (`rule.require.frozen-invoke-inputs`)
@@ -169,6 +167,13 @@ export const perBatch = <THeaders extends SqsHeadersDeclared, TPayload>(
       },
     });
 
+    /**
+     * .what = hands the batch to the handler; a throw escapes unchanged, whatever its class
+     * .why = a throw names no record, so it carries no verdict on any one of them — the handler
+     *        may have served some before it threw. to acknowledge the batch would delete records
+     *        of unknown outcome, so the throw is forwarded and the whole batch redrives. a
+     *        handler that refuses one record acknowledges it by name, in `successes`
+     */
     const answer = await config.invoke(
       { records: frozen.records, event: frozen.event },
       { log },
@@ -186,25 +191,24 @@ export const perBatch = <THeaders extends SqsHeadersDeclared, TPayload>(
       );
 
     // refuse an entry with no string `id`; the throw retries the whole batch
-    const refsMalformed = answer.successes
-      .map((success, index) => ({ index, success }))
-      .filter(({ success }) => typeof success?.id !== 'string');
+    const refsMalformed = getAllSqsSuccessRefsMalformed({
+      successes: answer.successes,
+    });
     if (refsMalformed.length)
       MalfunctionError.throw(
         'forSqs.perBatch handler answered with a success that carries no `id`',
         {
-          indexes: refsMalformed.map(({ index }) => index),
-          got: refsMalformed.map(({ success }) =>
-            success === null ? 'null' : typeof success,
-          ),
+          indexes: refsMalformed.map((ref) => ref.index),
+          got: refsMalformed.map((ref) => ref.got),
           fix: 'return the records themselves — `return { successes: recordsThatSucceeded }` — rather than bare id strings',
         },
       );
 
     // refuse a claim on a record the handler was not handed; the throw retries the whole batch
-    const idsUnclaimable = answer.successes
-      .map((success) => success.id)
-      .filter((id) => !idsClaimable.has(id));
+    const idsUnclaimable = getAllSqsIdsUnclaimable({
+      successes: answer.successes,
+      idsClaimable,
+    });
     if (idsUnclaimable.length)
       MalfunctionError.throw(
         'forSqs.perBatch handler claimed a success for a record it was not handed',
@@ -215,19 +219,13 @@ export const perBatch = <THeaders extends SqsHeadersDeclared, TPayload>(
         },
       );
 
-    // every record not claimed as a success is retried; deduped, since sqs reads each id once
-    const idsSucceeded = new Set(answer.successes.map((success) => success.id));
-    const idsFailed = [
-      ...new Set(
-        decoded.records
-          .map((record) => record.id)
-          .filter((id) => !idsSucceeded.has(id)),
-      ),
-    ];
-
-    return {
-      batchItemFailures: idsFailed.map((id) => ({ itemIdentifier: id })),
-    };
+    // answer sqs: a record neither claimed nor refused is retried
+    const idsRetried = getAllSqsIdsRetried({
+      records: decoded.records,
+      successes: answer.successes,
+      idsRefused,
+    });
+    return asSqsBatchResponse({ idsRetried });
   };
 
   return setHandlerTrailCarrier({

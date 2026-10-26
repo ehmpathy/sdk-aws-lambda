@@ -3,6 +3,9 @@ import { join } from 'path';
 
 import { given, then, when } from 'test-fns';
 
+import acceptanceConfig from './jest.acceptance.config';
+import integrationConfig from './jest.integration.config';
+
 /**
  * .what = the boot contract of `jest.integration.env.ts`, clamped from inside the suite it boots
  * .why = that file's two credential guarantees are CONFIG, so a revert of either leaves every
@@ -131,6 +134,26 @@ describe('jest.integration.env', () => {
         expect(declarations.length).toBeGreaterThan(0);
         for (const declaration of declarations)
           expect(declaration.waivedBy).toEqual('AWS_ACCESS_KEY_ID');
+      });
+    });
+  });
+
+  /**
+   * .what = both aws suites export the sso creds once, in `globalSetup`, never per file
+   * .why = a per-file export raced: 22 concurrent cli calls on a thorough run, the slow ones
+   *        killed at 30s (`SIGTERM`, `ETIMEDOUT`). a revert of either config line brings the
+   *        race back with every test green on a quiet box, so the declaration itself is clamped.
+   *        the skip it relies on is clamped at `useKeyrack.integration.test.ts`
+   */
+  given('[case3] the jest configs of both aws suites', () => {
+    when('[t0] their global setup is read', () => {
+      then('each names the one-shot keyrack export', () => {
+        expect(integrationConfig.globalSetup).toEqual(
+          './jest.keyrack.globalsetup.ts',
+        );
+        expect(acceptanceConfig.globalSetup).toEqual(
+          './jest.keyrack.globalsetup.ts',
+        );
       });
     });
   });

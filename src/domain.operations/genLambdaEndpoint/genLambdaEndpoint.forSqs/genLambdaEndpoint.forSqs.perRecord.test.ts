@@ -1,5 +1,9 @@
 import type { SQSEvent } from 'aws-lambda';
-import { MalfunctionError } from 'helpful-errors';
+import {
+  BadRequestError,
+  ConstraintError,
+  MalfunctionError,
+} from 'helpful-errors';
 import { getError, given, then, useThen, when } from 'test-fns';
 import { z } from 'zod';
 
@@ -74,6 +78,60 @@ const SCHEMA_ORDER = z.object({
 const MESSAGE_VALID = {
   body: JSON.stringify({ orderId: 'ord-1' }),
   headers: { OrderSource: 'web', 'x-untouched': 'kept' },
+};
+
+/**
+ * .what = runs a handler and reads what sqs reads, plus the one trace a refusal leaves
+ * .why = an acknowledged refusal is a successful invoke, so the `sqs.record.refused` warn is the
+ *        only place its cause appears (`invariant.constraint-errors-never-redrive-sqs`)
+ *
+ * .note = `invokeErrorMessage` is null when the invoke succeeded — the signal sqs reads to delete
+ * .note = a spy, never a mock: the real line still prints, and the test reads what it was handed
+ */
+const getSqsDisposition = async (input: {
+  handler: ReturnType<typeof perRecord>;
+  event: SQSEvent;
+}): Promise<{
+  invokeErrorMessage: string | null;
+  refusedLine: string | null;
+  refusedEntry: unknown;
+}> => {
+  const spy = jest.spyOn(console, 'warn');
+  const asLines = (): string[] =>
+    spy.mock.calls.map((args) =>
+      args.map((arg) => JSON.stringify(arg)).join(' '),
+    );
+
+  // .why = the line text escapes the logged body twice; a requeue reads the parsed entry, so read it too
+  const asRefusedEntry = (): unknown => {
+    const args = spy.mock.calls.find((call) =>
+      call.some((arg) => JSON.stringify(arg).includes('sqs.record.refused')),
+    );
+    const arg = args?.find((each) =>
+      JSON.stringify(each).includes('sqs.record.refused'),
+    );
+    return typeof arg === 'string' ? JSON.parse(arg) : (arg ?? null);
+  };
+  try {
+    const invokeErrorMessage = await runLambdaEndpoint
+      .onReferenced({
+        handler: input.handler,
+        struct: { payload: 'ancient' },
+        event: input.event,
+      })
+      .then(() => null)
+      .catch((caught: unknown) =>
+        caught instanceof Error ? caught.message : String(caught),
+      );
+    return {
+      invokeErrorMessage,
+      refusedLine:
+        asLines().find((line) => line.includes('sqs.record.refused')) ?? null,
+      refusedEntry: asRefusedEntry(),
+    };
+  } finally {
+    spy.mockRestore();
+  }
 };
 
 describe('genLambdaEndpoint.forSqs.perRecord', () => {
@@ -252,65 +310,56 @@ describe('genLambdaEndpoint.forSqs.perRecord', () => {
   });
 
   /**
-   * .what = a poison pill fails the invocation
-   * .why = in sqs a successful invocation means delete the message. so a validation failure
-   *        swallowed into a success would silently discard a message no handler processed.
-   *        the throw is what lets sqs redrive and eventually dead-letter it
+   * .what = a poison pill is acknowledged: logged, and the invoke succeeds
+   * .why = the same bytes fail the same schema on every receive, so a redrive cannot help — it
+   *        only fills the dead-letter queue and pages the consumer for the producer's fault
+   *        (`invariant.constraint-errors-never-redrive-sqs`). the warn names the field, so the
+   *        discard is never silent (`rule.forbid.failhide`)
    *
-   * .why the message carries the claim, never `toBeInstanceOf(Error)` = `getError` substitutes
-   *        rather than fails when no throw occurs, and the substitute is measured:
-   *
-   *          NoErrorThrownError -> HelpfulError -> Error
-   *          message: "NoErrorThrownError: no error was thrown"
-   *
-   *        so `toBeInstanceOf(Error)` and `toBeInstanceOf(HelpfulError)` both pass against it,
-   *        and either one reads a swallowed refusal as a refusal — the exact outcome the `.why`
-   *        above calls catastrophic. only an assertion the substitute cannot satisfy carries
-   *        the claim
-   *
-   * .why the `invoked` peer cannot carry it either = a swallowed refusal still never calls
-   *        `invoke`, so `invoked === false` holds under the defect too
+   * .why the warn line carries the claim, never the success alone = a swallowed refusal with no
+   *        log also succeeds, and that is the silent discard the invariant forbids. only the
+   *        line, with the field zod refused, proves the refusal was seen
    *        (`rule.require.positive-control-before-absence-claims`)
-   *
-   * .note = the forms that bite, against the measured chain above:
-   *
-   *          inert -> toBeInstanceOf(Error) · toBeInstanceOf(HelpfulError) · a bare not.toContain
-   *          bites -> toBeInstanceOf(<a domain error class>) · toContain(<a real message>) ·
-   *                   toMatchSnapshot()
    */
   given('[case4] a message whose body fails the schema', () => {
     when('[t0] the handler runs', () => {
-      const outcome = useThen('it throws, and invoke never ran', async () => {
-        let invoked = false;
+      const outcome = useThen('it answers sqs', async () => {
+        // .note = deliberate mutation in a `const` box — `invoke` has no return path here
+        const invoked: true[] = [];
 
         const handler = perRecord({
           schema: { input: SCHEMA_ORDER },
           invoke: async () => {
-            invoked = true;
+            invoked.push(true);
           },
         });
 
-        const caught = await getError(
-          async () =>
-            await runLambdaEndpoint.onReferenced({
-              handler,
-              struct: { payload: 'ancient' },
-              event: asSqsEvent({
-                messages: [{ body: JSON.stringify({ orderId: 404 }) }],
-              }),
-            }),
-        );
+        const disposition = await getSqsDisposition({
+          handler,
+          event: asSqsEvent({
+            messages: [{ body: JSON.stringify({ orderId: 404 }) }],
+          }),
+        });
 
-        return { message: caught.message, invoked };
+        return { ...disposition, invoked: invoked.length };
       });
 
-      then('the invocation fails, so sqs keeps the message', () => {
-        // the field zod refused — a string only a REAL validation error carries
-        expect(outcome.message).toContain('orderId');
+      // .verdict = a caller fault on sqs is logged and acknowledged, never redriven (human, sdk-aws-lambda#73; F7)
+      then('the invocation succeeds, so sqs deletes the message once', () => {
+        expect(outcome.invokeErrorMessage).toEqual(null);
       });
+
+      then(
+        'sqs.record.refused names the message, the class, and the field refused',
+        () => {
+          expect(outcome.refusedLine).toContain('msg-0');
+          expect(outcome.refusedLine).toContain('ConstraintError');
+          expect(outcome.refusedLine).toContain('orderId');
+        },
+      );
 
       then('the handler never saw it', () => {
-        expect(outcome.invoked).toEqual(false);
+        expect(outcome.invoked).toEqual(0);
       });
     });
   });
@@ -401,22 +450,24 @@ describe('genLambdaEndpoint.forSqs.perRecord', () => {
 
           const ranAnyway: boolean[] = [];
 
-          const error = await getError(
-            runLambdaEndpoint.onReferenced({
-              handler,
-              struct: { payload: 'ancient' },
-              // `MESSAGE_VALID` carries `x-untouched`, which the strict bag refuses
-              event: asSqsEvent({ messages: [MESSAGE_VALID] }),
-            }),
-          );
+          const disposition = await getSqsDisposition({
+            handler,
+            // `MESSAGE_VALID` carries `x-untouched`, which the strict bag refuses
+            event: asSqsEvent({ messages: [MESSAGE_VALID] }),
+          });
 
-          return { message: error.message, invoked: ranAnyway.length };
+          return {
+            message: disposition.refusedLine ?? '',
+            invokeErrorMessage: disposition.invokeErrorMessage,
+            invoked: ranAnyway.length,
+          };
         });
 
         /**
          * .what = the refusal itself, which is correct and stays correct after the repair
          */
         then('the record is refused, and the handler never ran', () => {
+          expect(caught.invokeErrorMessage).toEqual(null);
           expect(caught.message).toContain('unrecognized');
           expect(caught.invoked).toEqual(0);
         });
@@ -547,7 +598,7 @@ describe('genLambdaEndpoint.forSqs.perRecord', () => {
    * .why = the sdk always hands `schema.input` a `headers` object — `{}` for a message with no
    *        attributes — so `z.object({ … }).optional()` can never fire. an author who writes it
    *        believes the header is optional, and every message that omits it fails validation and
-   *        redrives to the dead-letter queue
+   *        is refused — deleted, with one `sqs.record.refused` warn as its only trace
    *
    * .why BOTH arms = a one-arm clamp cannot tell an inert modifier from an effective one.
    *        [t0] proves the outer form REFUSES, [t1] proves the inner form ACCEPTS, and the two
@@ -564,6 +615,7 @@ describe('genLambdaEndpoint.forSqs.perRecord', () => {
     const MESSAGE_BARE = { body: JSON.stringify({ orderId: 'ord-1' }) };
 
     when('[t0] the schema puts `.optional()` ON the header object', () => {
+      // .verdict = a schema refusal is a caller fault, so sqs deletes it (human, sdk-aws-lambda#73; F7)
       then(
         'it is INERT — the declared header stays required, and the message is refused',
         async () => {
@@ -579,16 +631,14 @@ describe('genLambdaEndpoint.forSqs.perRecord', () => {
             },
           });
 
-          const caught = await getError(
-            async () =>
-              await runLambdaEndpoint.onReferenced({
-                handler,
-                struct: { payload: 'ancient' },
-                event: asSqsEvent({ messages: [MESSAGE_BARE] }),
-              }),
-          );
+          const disposition = await getSqsDisposition({
+            handler,
+            event: asSqsEvent({ messages: [MESSAGE_BARE] }),
+          });
 
-          expect(caught.message).toContain('headers');
+          // refused and acknowledged — the warn names the slot the inert modifier left required
+          expect(disposition.invokeErrorMessage).toEqual(null);
+          expect(disposition.refusedLine).toContain('headers');
         },
       );
     });
@@ -634,10 +684,10 @@ describe('genLambdaEndpoint.forSqs.perRecord', () => {
    *        invocation FAILS, and sqs redrives. a flag is not a run, so this case is what makes
    *        that a measurement (`rule.require.measure-the-value-you-emit`)
    *
-   * .the stakes = the opposite outcome is silent and total. were the error swallowed into a
-   *        successful invocation — which is exactly what the peer families' constraint-error
-   *        middleware does, correctly, for an http caller — sqs would DELETE a message no
-   *        handler ever finished. `rule.forbid.failhide`, at this sdk's highest stakes
+   * .the stakes = the opposite outcome is silent and total. were a server fault swallowed into
+   *        a successful invocation, sqs would DELETE a message no handler ever finished.
+   *        `rule.forbid.failhide`, at this sdk's highest stakes. so the catch allowlists caller
+   *        faults alone (`[t1]`, `[t2]`), and every other throw escapes (`[t0]`, `[t3]`)
    */
   given('[case10] a handler that THROWS', () => {
     when('[t0] the message is valid and the handler fails on it', () => {
@@ -665,11 +715,182 @@ describe('genLambdaEndpoint.forSqs.perRecord', () => {
        * .what = the throw ESCAPES, rather than becoming a returned value
        * .why = an sqs invocation that RETURNS is an instruction to delete the message. so the
        *        only way a failed message survives is for the invocation itself to fail
+       * .why the message carries the claim, never `toBeInstanceOf(Error)` = `getError` substitutes
+       *        rather than fails when no throw occurs: `NoErrorThrownError -> HelpfulError -> Error`,
+       *        message "NoErrorThrownError: no error was thrown". so an instanceof check passes on a
+       *        swallowed throw; only an assertion the substitute cannot satisfy carries the claim
        */
       then('the handler`s own error reaches the caller, unswallowed', () => {
         expect(outcome.message).toContain(
           'the downstream warehouse api is down',
         );
+      });
+    });
+
+    /**
+     * .what = a handler that refuses the message with a ConstraintError is acknowledged
+     * .why = 🔴 the svc-quotes case (sdk-aws-lambda#73): the refusal escaped, so sqs redrove a
+     *        message the handler judged it could never serve, until it dead-lettered. the class
+     *        is read in-process, so it holds whatever `.name` the error carries
+     *        (`invariant.constraint-errors-never-redrive-sqs`)
+     */
+    when('[t1] the handler refuses the message with ConstraintError', () => {
+      const event = asSqsEvent({ messages: [MESSAGE_VALID] });
+      const outcome = useThen('it answers sqs', async () =>
+        getSqsDisposition({
+          handler: perRecord({
+            schema: { input: SCHEMA_ORDER },
+            invoke: async () => {
+              throw new ConstraintError('the order id is malformed');
+            },
+          }),
+          event,
+        }),
+      );
+
+      /**
+       * .what = the line carries the message exactly as aws delivered it, after validation ran
+       * .why = an acknowledged message is deleted, so the log is the one place left to requeue it
+       *        from. validation writes parsed values back into the decoded record before the
+       *        handler refuses, so this proves the line reads the untouched wire record instead
+       */
+      then(
+        'sqs.record.refused carries the full message as delivered, so it can be requeued',
+        () => {
+          // the logger writes `metadata` as a json string inside the json line, so read it twice
+          const entry = outcome.refusedEntry as { metadata?: unknown } | null;
+          const metadata = (
+            typeof entry?.metadata === 'string'
+              ? JSON.parse(entry.metadata)
+              : (entry?.metadata ?? null)
+          ) as { message?: unknown } | null;
+          const messageLogged = metadata?.message ?? null;
+          expect(messageLogged).toEqual(
+            JSON.parse(JSON.stringify(event.Records[0])),
+          );
+        },
+      );
+
+      // .verdict = a caller fault on sqs is logged and acknowledged, never redriven (human, sdk-aws-lambda#73; F7)
+      then('the invocation succeeds, so sqs deletes the message once', () => {
+        expect(outcome.invokeErrorMessage).toEqual(null);
+      });
+
+      then(
+        'sqs.record.refused names the message, the class, and the cause',
+        () => {
+          expect(outcome.refusedLine).toContain('msg-0');
+          expect(outcome.refusedLine).toContain('ConstraintError');
+          expect(outcome.refusedLine).toContain('the order id is malformed');
+        },
+      );
+
+      // the one trace of a deleted message must reach the warn stream, with its fate stated
+      then('the line is emitted at warn, and names the fate', () => {
+        expect(outcome.refusedLine).toContain('"level":"warn"');
+        expect(outcome.refusedLine).toContain(
+          'deleted only if this invoke succeeds; redriven if it fails',
+        );
+      });
+    });
+
+    /**
+     * .what = the same, for a subclass and for the legacy peer class
+     * .why = `getIsConstraintError` reads the prototype chain and `BadRequestError` alike, so a
+     *        domain refusal class and an upgrade from `simple-lambda-handlers` both hold
+     */
+    when(
+      '[t2] the handler refuses with a subclass, or with BadRequestError',
+      () => {
+        class OrderWithdrawnError extends ConstraintError {}
+        const outcome = useThen('it answers sqs, for each', async () => ({
+          subclass: await getSqsDisposition({
+            handler: perRecord({
+              schema: { input: SCHEMA_ORDER },
+              invoke: async () => {
+                throw new OrderWithdrawnError('the order was withdrawn');
+              },
+            }),
+            event: asSqsEvent({ messages: [MESSAGE_VALID] }),
+          }),
+          legacy: await getSqsDisposition({
+            handler: perRecord({
+              schema: { input: SCHEMA_ORDER },
+              invoke: async () => {
+                throw new BadRequestError('the order id is malformed');
+              },
+            }),
+            event: asSqsEvent({ messages: [MESSAGE_VALID] }),
+          }),
+        }));
+
+        then('both invocations succeed, each with its refusal logged', () => {
+          expect(outcome.subclass.invokeErrorMessage).toEqual(null);
+          expect(outcome.subclass.refusedLine).toContain(
+            'the order was withdrawn',
+          );
+          expect(outcome.legacy.invokeErrorMessage).toEqual(null);
+          expect(outcome.legacy.refusedLine).toContain('BadRequestError');
+        });
+      },
+    );
+
+    /**
+     * .what = a server fault still escapes, and logs no refusal
+     * .why = the positive control for `[t1]`: the catch is an allowlist, so a `MalfunctionError`
+     *        fails the invoke and sqs redrives, as today (`rule.forbid.failhide`)
+     */
+    when('[t3] the handler faults with MalfunctionError', () => {
+      const outcome = useThen('it answers sqs', async () =>
+        getSqsDisposition({
+          handler: perRecord({
+            schema: { input: SCHEMA_ORDER },
+            invoke: async () => {
+              throw new MalfunctionError('the warehouse api is down');
+            },
+          }),
+          event: asSqsEvent({ messages: [MESSAGE_VALID] }),
+        }),
+      );
+
+      then('the invocation fails, so sqs redrives the message', () => {
+        expect(outcome.invokeErrorMessage).toContain(
+          'the warehouse api is down',
+        );
+      });
+
+      then('no refusal is logged', () => {
+        expect(outcome.refusedLine).toEqual(null);
+      });
+    });
+
+    /**
+     * .what = a thrown value that is not an `Error` still escapes, even one that names itself a
+     *         `ConstraintError`
+     * .why = the gate reads a class, never a claim. a bare `{ name }` bag carries no verdict this
+     *        sdk can trust, so it must redrive rather than be deleted — the miss fails toward a
+     *        retry (`invariant.constraint-errors-never-redrive-sqs`)
+     */
+    when('[t4] the handler throws a plain object named ConstraintError', () => {
+      const outcome = useThen('it answers sqs', async () =>
+        getSqsDisposition({
+          handler: perRecord({
+            schema: { input: SCHEMA_ORDER },
+            invoke: async () => {
+              // biome-ignore lint/style/useThrowOnlyError: the case is a throw of a non-error
+              throw { name: 'ConstraintError', message: 'order withdrawn' };
+            },
+          }),
+          event: asSqsEvent({ messages: [MESSAGE_VALID] }),
+        }),
+      );
+
+      then('the invocation fails, so sqs redrives the message', () => {
+        expect(outcome.invokeErrorMessage).not.toEqual(null);
+      });
+
+      then('no refusal is logged', () => {
+        expect(outcome.refusedLine).toEqual(null);
       });
     });
   });
@@ -905,12 +1126,13 @@ describe('genLambdaEndpoint.forSqs.perRecord', () => {
    *        and refuses it
    *
    * .why it is a total outage rather than one bad message = the config is per handler, so
-   *        every message the queue carries meets the same mismatch. `perRecord` throws, sqs
-   *        redrives, and the queue drains to its dead-letter — all of it, on one config line
+   *        every message the queue carries meets the same mismatch. each is refused and deleted
+   *        — all of it, on one config line
    *
    * .note = the sender never learns. at api gateway the peer footgun answers a 400 the caller
    *        reads; here the producer's `SendMessage` already succeeded, so the loss is visible
-   *        only to whoever watches the dlq (`[case9]`'s stakes note, same shape)
+   *        only to whoever reads the `sqs.record.refused` warns (`[case9]`'s stakes note, same
+   *        shape)
    *
    * .the family = three config values an author sets that can refuse 100% of traffic, and each
    *        owes its own clamp because each is reached by a different key:
@@ -923,7 +1145,7 @@ describe('genLambdaEndpoint.forSqs.perRecord', () => {
    *        facts each already clamped on that variant:
    *
    *          the mismatch refuses every record -> shared: one decode, one `setSqsRecordValidated`
-   *          every refusal lands in the answer -> `perBatch`'s `[case5]`, all-fail -> all ids
+   *          every refusal is acknowledged     -> `perBatch`'s `[case5]`, all-refused -> no ids
    *
    *        so no single edit can break that arm while this one stays green, which is the test a
    *        per-variant case has to pass (`rule.prefer.wet-over-dry` — a second instance of one
@@ -958,20 +1180,22 @@ describe('genLambdaEndpoint.forSqs.perRecord', () => {
             },
           });
 
-          const error = await getError(
-            async () =>
-              await runLambdaEndpoint.onReferenced({
-                handler,
-                struct: { payload: 'ancient' },
-                event: asSqsEvent({ messages: [MESSAGE_VALID] }),
-              }),
-          );
+          const disposition = await getSqsDisposition({
+            handler,
+            event: asSqsEvent({ messages: [MESSAGE_VALID] }),
+          });
 
-          return { message: error.message, invoked: ranAnyway.length };
+          return {
+            message: disposition.refusedLine ?? '',
+            invokeErrorMessage: disposition.invokeErrorMessage,
+            invoked: ranAnyway.length,
+          };
         });
 
+        // .verdict = a schema refusal is a caller fault, so sqs deletes it (human, sdk-aws-lambda#73; F7)
         then('the record is refused, and the handler never ran', () => {
-          // the zod summary names the slot, which is the one clue an author gets
+          // acknowledged, so the warn is the one sign — and it names the slot
+          expect(outcome.invokeErrorMessage).toEqual(null);
           expect(outcome.message).toContain('payload');
           expect(outcome.invoked).toEqual(0);
         });

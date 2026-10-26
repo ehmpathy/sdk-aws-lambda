@@ -1,4 +1,4 @@
-import { MalfunctionError } from 'helpful-errors';
+import { ConstraintError, MalfunctionError } from 'helpful-errors';
 import { getError, given, then, useThen, when } from 'test-fns';
 import { z } from 'zod';
 
@@ -154,11 +154,13 @@ describe('genLambdaEndpoint.forSqs.perBatch', () => {
         expect(outcome.envelopeSize).toEqual(3);
       });
 
-      then('the refused message alone is retried', () => {
-        expect(outcome.response).toEqual({
-          batchItemFailures: [{ itemIdentifier: 'msg-1' }],
-        });
-      });
+      // .verdict = a schema refusal is a caller fault, so sqs deletes it (human, sdk-aws-lambda#73; F7)
+      then(
+        'the refused message is acknowledged, so no message is retried',
+        () => {
+          expect(outcome.response).toEqual({ batchItemFailures: [] });
+        },
+      );
     });
   });
 
@@ -184,14 +186,15 @@ describe('genLambdaEndpoint.forSqs.perBatch', () => {
           });
         });
 
-        then('both the refused and the unreported record are retried', () => {
-          expect(response).toEqual({
-            batchItemFailures: [
-              { itemIdentifier: 'msg-1' },
-              { itemIdentifier: 'msg-2' },
-            ],
-          });
-        });
+        // .verdict = a schema refusal is a caller fault, so sqs deletes it (human, sdk-aws-lambda#73; F7)
+        then(
+          'the unreported record alone is retried — the refused one is acknowledged',
+          () => {
+            expect(response).toEqual({
+              batchItemFailures: [{ itemIdentifier: 'msg-2' }],
+            });
+          },
+        );
       });
     },
   );
@@ -252,13 +255,9 @@ describe('genLambdaEndpoint.forSqs.perBatch', () => {
         expect(outcome.recordsSeen).toEqual([]);
       });
 
-      then('every id is retried', () => {
-        expect(outcome.response).toEqual({
-          batchItemFailures: [
-            { itemIdentifier: 'msg-0' },
-            { itemIdentifier: 'msg-1' },
-          ],
-        });
+      // .verdict = a schema refusal is a caller fault, so sqs deletes it (human, sdk-aws-lambda#73; F7)
+      then('every id is acknowledged, so none is retried', () => {
+        expect(outcome.response).toEqual({ batchItemFailures: [] });
       });
     });
   });
@@ -312,6 +311,77 @@ describe('genLambdaEndpoint.forSqs.perBatch', () => {
       });
 
       then('the throw escapes, so all three are retried', () => {
+        expect(outcome.answers).toEqual([]);
+        expect(outcome.message).toContain(
+          'the downstream warehouse api is down',
+        );
+      });
+    });
+
+    /**
+     * .what = a ConstraintError the handler throws is forwarded too, never acknowledged
+     * .why = 🔴 the throw names no record, and the handler may have served some before it threw.
+     *        to acknowledge the batch would delete records of unknown outcome, so the batch
+     *        redrives. a handler that refuses one record acknowledges it by name, in `successes`.
+     *        (fulcrum F8)
+     */
+    when('[t1] the handler throws a ConstraintError mid-batch', () => {
+      const outcome = useThen('the invocation is refused', async () =>
+        getRefusal(
+          perBatch({
+            schema: { input: SCHEMA_ORDER },
+            invoke: async () => {
+              throw new ConstraintError('the batch holds a withdrawn order');
+            },
+          }),
+          [asMessageValid('ord-0'), asMessageValid('ord-1')],
+        ),
+      );
+
+      then('the throw escapes unchanged, so the whole batch redrives', () => {
+        expect(outcome.answers).toEqual([]);
+        expect(outcome.message).toContain('the batch holds a withdrawn order');
+      });
+    });
+
+    /**
+     * .what = a refused record shares the batch with a handler that throws
+     * .why = the refusal is acknowledged only by a successful invoke. a throw fails the invoke,
+     *        so the refused record redrives with its batch — the log line's consequence says
+     *        "only if this invoke succeeds" for exactly this case
+     */
+    when('[t2] one message is refused and the handler then throws', () => {
+      const outcome = useThen('the invocation is refused', async () => {
+        // a spy, never a mock: the real line still prints, and the test reads what it was handed
+        const spy = jest.spyOn(console, 'warn');
+        const asLines = (): string[] =>
+          spy.mock.calls.map((args) =>
+            args.map((arg) => JSON.stringify(arg)).join(' '),
+          );
+        try {
+          const refusal = await getRefusal(
+            perBatch({
+              schema: { input: SCHEMA_ORDER },
+              invoke: async () => {
+                throw new MalfunctionError(
+                  'the downstream warehouse api is down',
+                );
+              },
+            }),
+            [asMessageValid('ord-0'), MESSAGE_INVALID],
+          );
+          return { ...refusal, warned: asLines().join('\n') };
+        } finally {
+          spy.mockRestore();
+        }
+      });
+
+      then('the refusal is still logged, with its conditional fate', () => {
+        expect(outcome.warned).toContain('sqs.record.refused');
+        expect(outcome.warned).toContain('only if this invoke succeeds');
+      });
+
+      then('the throw escapes, so the refused record redrives too', () => {
         expect(outcome.answers).toEqual([]);
         expect(outcome.message).toContain(
           'the downstream warehouse api is down',
@@ -530,13 +600,12 @@ describe('genLambdaEndpoint.forSqs.perBatch', () => {
   given('[case13] a message the sdk refuses, observed at the log', () => {
     when('[t0] a batch carries one poison message', () => {
       const observed = useThen('it answers sqs', async () => {
-        // .note = deliberate mutation in a `const` box — the log fires inside `logic`
-        const lines: string[] = [];
-        const spy = jest
-          .spyOn(console, 'warn')
-          .mockImplementation((...args: unknown[]) => {
-            lines.push(args.map((arg) => JSON.stringify(arg)).join(' '));
-          });
+        // a spy, never a mock: the real line still prints, and the test reads what it was handed
+        const spy = jest.spyOn(console, 'warn');
+        const asLines = (): string[] =>
+          spy.mock.calls.map((args) =>
+            args.map((arg) => JSON.stringify(arg)).join(' '),
+          );
         try {
           const handler = perBatch({
             schema: { input: SCHEMA_ORDER },
@@ -550,22 +619,148 @@ describe('genLambdaEndpoint.forSqs.perBatch', () => {
             }),
           });
           return {
-            reported: JSON.stringify(response),
+            response,
             entry:
-              lines.find((line) => line.includes('sqs.record.invalid')) ?? '',
+              asLines().find((line) => line.includes('sqs.record.refused')) ??
+              '',
           };
         } finally {
           spy.mockRestore();
         }
       });
 
-      then('the message was retried — so the log claim is a real read', () => {
-        expect(observed.reported).toContain('msg-1');
+      // .verdict = a schema refusal is a caller fault, so sqs deletes it (human, sdk-aws-lambda#73; F7)
+      then('the message was acknowledged, never retried', () => {
+        expect(observed.response).toEqual({ batchItemFailures: [] });
       });
 
-      then('the log names which message was refused, and why', () => {
-        expect(observed.entry).toContain('msg-1');
-        expect(observed.entry).toContain('orderId');
+      /**
+       * .what = the one durable trace of an acknowledged message
+       * .why = sqs deletes it, so a silent drop would be a failhide. the line is also the
+       *        positive control for the absence above — the refusal was seen, not lost
+       */
+      then(
+        'the log names which message was refused, its class, and why',
+        () => {
+          expect(observed.entry).toContain('msg-1');
+          expect(observed.entry).toContain('ConstraintError');
+          expect(observed.entry).toContain('orderId');
+        },
+      );
+
+      // the operator's alarm reads the warn stream, so the level and the fate are pinned
+      then('the line is emitted at warn, and names the fate', () => {
+        expect(observed.entry).toContain('"level":"warn"');
+        expect(observed.entry).toContain(
+          'deleted only if this invoke succeeds; redriven if it fails',
+        );
+      });
+    });
+  });
+
+  /**
+   * .what = the allowlist's positive control: a schema callback that throws a server fault
+   * .why = the validation catch acknowledges caller faults only. a raw throw from a schema's own
+   *        `.refine()` is a defect of ours, so that record is retried alone, never deleted
+   *        (`rule.forbid.failhide`)
+   */
+  given('[case14] a schema whose own callback throws a server fault', () => {
+    when('[t0] a batch arrives', () => {
+      const observed = useThen('it answers sqs', async () => {
+        // a spy, never a mock: the real line still prints, and the test reads what it was handed
+        // .note = sdk-logs writes every level at or above warn through `console.warn`
+        const spy = jest.spyOn(console, 'warn');
+        const asLines = (): string[] =>
+          spy.mock.calls.map((args) =>
+            args.map((arg) => JSON.stringify(arg)).join(' '),
+          );
+        try {
+          const handler = perBatch({
+            schema: {
+              input: SCHEMA_ORDER.refine((value) => {
+                if (value.payload.orderId === 'ord-boom')
+                  throw new Error('the refine callback broke');
+                return true;
+              }),
+            },
+            invoke: async (input) => ({ successes: input.records }),
+          });
+          const response = await runLambdaEndpoint.onReferenced({
+            handler,
+            struct: { payload: 'ancient' },
+            event: asSqsEvent({
+              messages: [asMessageValid('ord-0'), asMessageValid('ord-boom')],
+            }),
+          });
+          return {
+            response,
+            entry:
+              asLines().find((line) => line.includes('sqs.record.invalid')) ??
+              '',
+          };
+        } finally {
+          spy.mockRestore();
+        }
+      });
+
+      then('the record that met the server fault is retried alone', () => {
+        expect(observed.response).toEqual({
+          batchItemFailures: [{ itemIdentifier: 'msg-1' }],
+        });
+      });
+
+      /**
+       * .what = the fault of ours is reported loud, with what an on-call engineer needs
+       * .why = the record redrives, so a quiet line would hide a schema defect behind retries
+       */
+      then(
+        'an error line names the record, the class, the cause, and the stack',
+        () => {
+          // the line's metadata is itself a json string, so its keys arrive escaped
+          expect(observed.entry).toContain('"level":"error"');
+          expect(observed.entry).toContain('msg-1');
+          expect(observed.entry).toContain('class');
+          expect(observed.entry).toContain('Error: the refine callback broke'); // the stack's head
+          expect(observed.entry).toContain('setSqsRecordsValidated'); // a frame of the stack
+        },
+      );
+    });
+
+    /**
+     * .what = the third arm: a throw that is not an `Error` at all
+     * .why = it names no fault class, so it carries no verdict on its record — it escapes, and
+     *        the whole batch redrives, as `perRecord [case10][t4]` does for one record
+     */
+    when('[t1] the callback throws a value that is not an Error', () => {
+      const outcome = useThen('the batch is not answered', async () => {
+        const handler = perBatch({
+          schema: {
+            input: SCHEMA_ORDER.refine((value) => {
+              if (value.payload.orderId === 'ord-boom')
+                throw { name: 'ConstraintError', message: 'a claim, no class' };
+              return true;
+            }),
+          },
+          invoke: async (input) => ({ successes: input.records }),
+        });
+        const answers: unknown[] = [];
+        const error: unknown = await getError(async () => {
+          answers.push(
+            await runLambdaEndpoint.onReferenced({
+              handler,
+              struct: { payload: 'ancient' },
+              event: asSqsEvent({
+                messages: [asMessageValid('ord-0'), asMessageValid('ord-boom')],
+              }),
+            }),
+          );
+        });
+        return { error, answers };
+      });
+
+      then('the throw escapes, so the whole batch redrives', () => {
+        expect(outcome.answers).toEqual([]);
+        expect(outcome.error).toBeDefined();
       });
     });
   });

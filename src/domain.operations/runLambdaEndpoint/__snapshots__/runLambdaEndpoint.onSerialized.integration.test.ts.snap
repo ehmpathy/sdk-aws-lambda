@@ -138,3 +138,92 @@ exports[`runLambdaEndpoint.onSerialized given: [case18] a callback-style handler
   "messageNamesCallbackStyle": true,
 }
 `;
+
+exports[`runLambdaEndpoint.onSerialized given: [case22] a throw met by a handler, at local when: [t1] the same endpoint faults with MalfunctionError then: the caller reads a server fault, never a caller fault 1`] = `
+{
+  "class": "LambdaEndpointError",
+  "messageHeadline": "LambdaEndpointError: 💥 MalfunctionError: upstream down",
+  "metadata": {
+    "endpoint": LambdaEndpoint {
+      "access": "test",
+      "function": "consumeOrder",
+      "service": "svc-orders",
+      "slug": "svc-orders-test-consumeOrder",
+    },
+    "errorType": "Error",
+    "exid": "<exid>",
+    "stackTrace": "<stackTrace>",
+  },
+}
+`;
+
+exports[`runLambdaEndpoint.onSerialized given: [case22] a throw met by a handler, at local when: [t2] a raw handler, never named, throws a ConstraintError then: the caller reads a server fault — exactly what the aws runtime answers for it 1`] = `
+{
+  "class": "LambdaEndpointError",
+  "messageHeadline": "LambdaEndpointError: ✋ ConstraintError: order id malformed",
+  "metadata": {
+    "endpoint": LambdaEndpoint {
+      "access": "test",
+      "function": "consumeOrderRaw",
+      "service": "svc-orders",
+      "slug": "svc-orders-test-consumeOrderRaw",
+    },
+    "errorType": "Error",
+    "exid": "<exid>",
+    "stackTrace": "<stackTrace>",
+  },
+}
+`;
+
+exports[`runLambdaEndpoint.onSerialized given: [case22] a throw met by a handler, at local when: [t3] a forAsk endpoint faults with MalfunctionError then: the caller reads a server fault, labeled by its \`.name\` as the cloud labels it 1`] = `
+{
+  "class": "LambdaEndpointError",
+  "messageHeadline": "LambdaEndpointError: 💥 MalfunctionError: upstream down",
+  "metadata": {
+    "endpoint": LambdaEndpoint {
+      "access": "test",
+      "function": "getOrder",
+      "service": "svc-orders",
+      "slug": "svc-orders-test-getOrder",
+    },
+    "errorType": "Error",
+    "exid": "<exid>",
+    "stackTrace": "<stackTrace>",
+  },
+}
+`;
+
+exports[`runLambdaEndpoint.onSerialized given: [case22] a throw met by a handler, at local when: [t4] a forAsk endpoint refuses with ConstraintError then: the caller reads a caller fault, as on the cloud 1`] = `
+{
+  "class": "ConstraintError",
+  "messageHeadline": "✋ ConstraintError: order id malformed",
+  "metadata": {
+    "causeMessage": undefined,
+    "details": undefined,
+    "endpoint": LambdaEndpoint {
+      "access": "test",
+      "function": "getOrderRefused",
+      "service": "svc-orders",
+      "slug": "svc-orders-test-getOrderRefused",
+    },
+    "exid": "<exid>",
+  },
+}
+`;
+
+exports[`runLambdaEndpoint.onSerialized given: [case22] a throw met by a handler, at local when: [t5] a raw handler throws a ConstraintError whose \`.name\` names its class then: the caller reads a caller fault 1`] = `
+{
+  "class": "ConstraintError",
+  "messageHeadline": "✋ ConstraintError: order id malformed",
+  "metadata": {
+    "endpoint": LambdaEndpoint {
+      "access": "test",
+      "function": "consumeOrderRawNamed",
+      "service": "svc-orders",
+      "slug": "svc-orders-test-consumeOrderRawNamed",
+    },
+    "exid": "<exid>",
+    "stackTrace": "<stackTrace>",
+  },
+}
+`;

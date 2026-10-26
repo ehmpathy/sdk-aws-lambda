@@ -2,23 +2,18 @@
 
 exports[`the sqs queue input given: [case1] a consumer reaches perRecord through the family object when: [t0] one message arrives on the queue then: the handler read all four slots 1`] = `
 {
-  "0": {
-    "exidPresent": true,
-    "orderId": "ord-1",
-    "recordCount": 1,
-    "source": "web",
-  },
+  "exidPresent": true,
+  "orderId": "ord-1",
+  "recordCount": 1,
+  "source": "web",
 }
 `;
 
-exports[`the sqs queue input given: [case3] a consumer reaches perBatch through the family object when: [t0] a batch of three arrives, one poison and one unparseable then: both failure sources reach the response 1`] = `
+exports[`the sqs queue input given: [case3] a consumer reaches perBatch through the family object when: [t0] a batch of three arrives, one poison and one unparseable then: sqs reads only msg-1 to retry; the refused msg-2 is absent, so deleted 1`] = `
 {
   "batchItemFailures": [
     {
       "itemIdentifier": "msg-1",
-    },
-    {
-      "itemIdentifier": "msg-2",
     },
   ],
 }
@@ -35,9 +30,228 @@ exports[`the sqs queue input given: [case3] a consumer reaches perBatch through 
 }
 `;
 
+exports[`the sqs queue input given: [case3] a consumer reaches perBatch through the family object when: [t1] every message is served then: no message is retried 1`] = `
+{
+  "batchItemFailures": [],
+}
+`;
+
+exports[`the sqs queue input given: [case3] a consumer reaches perBatch through the family object when: [t2] every message fails the schema then: every refusal is acknowledged, so none is retried 1`] = `
+{
+  "refusedIds": [
+    "msg-0",
+    "msg-1",
+  ],
+  "response": {
+    "batchItemFailures": [],
+  },
+}
+`;
+
+exports[`the sqs queue input given: [case3] a consumer reaches perBatch through the family object when: [t3] the handler serves none of the messages then: every message is retried 1`] = `
+{
+  "batchItemFailures": [
+    {
+      "itemIdentifier": "msg-0",
+    },
+    {
+      "itemIdentifier": "msg-1",
+    },
+  ],
+}
+`;
+
 exports[`the sqs queue input given: [case4] a queue message carries a capitalized attribute name when: [t0] the message arrives then: every attribute name survives with its case intact 1`] = `
 {
   "OrderSource": "web",
   "x-untouched": "kept",
+}
+`;
+
+exports[`the sqs queue input given: [case6] a perRecord handler meets a message it must refuse when: [t0] the message fails the schema then: the operator reads one warn line that names the schema refusal 1`] = `
+{
+  "entry": {
+    "level": "warn",
+    "message": "sqs.record.refused",
+    "metadata": {
+      "class": "ConstraintError",
+      "consequence": "deleted only if this invoke succeeds; redriven if it fails",
+      "errorMessage": "✋ ConstraintError: validation failed: payload.orderId: Invalid input: expected string, received number
+
+{
+  "issues": [
+    {
+      "path": "payload.orderId",
+      "message": "Invalid input: expected string, received number",
+      "code": "invalid_type"
+    }
+  ],
+  "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
+}",
+      "id": "msg-0",
+      "message": {
+        "attributes": {
+          "ApproximateFirstReceiveTimestamp": "1700000000000",
+          "ApproximateReceiveCount": "1",
+          "SenderId": "sender",
+          "SentTimestamp": "1700000000000",
+        },
+        "awsRegion": "us-east-1",
+        "body": "{"orderId":404}",
+        "eventSource": "aws:sqs",
+        "eventSourceARN": "arn:aws:sqs:us-east-1:000000000000:test-queue",
+        "md5OfBody": "md5",
+        "messageAttributes": {},
+        "messageId": "msg-0",
+        "receiptHandle": "receipt-0",
+      },
+    },
+    "timestamp": "<timestamp>",
+    "trail": {
+      "exid": "<exid>",
+      "stack": [],
+    },
+  },
+  "settled": {
+    "cause": null,
+    "failed": false,
+  },
+}
+`;
+
+exports[`the sqs queue input given: [case6] a perRecord handler meets a message it must refuse when: [t1] the handler throws a ConstraintError then: the operator reads one warn line that names the refusal 1`] = `
+{
+  "entry": {
+    "level": "warn",
+    "message": "sqs.record.refused",
+    "metadata": {
+      "class": "ConstraintError",
+      "consequence": "deleted only if this invoke succeeds; redriven if it fails",
+      "errorMessage": "✋ ConstraintError: order withdrawn
+
+{
+  "orderId": "ord-withdrawn"
+}",
+      "id": "msg-0",
+      "message": {
+        "attributes": {
+          "ApproximateFirstReceiveTimestamp": "1700000000000",
+          "ApproximateReceiveCount": "1",
+          "SenderId": "sender",
+          "SentTimestamp": "1700000000000",
+        },
+        "awsRegion": "us-east-1",
+        "body": "{"orderId":"ord-withdrawn"}",
+        "eventSource": "aws:sqs",
+        "eventSourceARN": "arn:aws:sqs:us-east-1:000000000000:test-queue",
+        "md5OfBody": "md5",
+        "messageAttributes": {},
+        "messageId": "msg-0",
+        "receiptHandle": "receipt-0",
+      },
+    },
+    "timestamp": "<timestamp>",
+    "trail": {
+      "exid": "<exid>",
+      "stack": [],
+    },
+  },
+  "settled": {
+    "cause": null,
+    "failed": false,
+  },
+}
+`;
+
+exports[`the sqs queue input given: [case7] a fault that must redrive, through the export when: [t0] a perRecord handler throws a MalfunctionError then: the invoke fails on the handler fault, so sqs redrives the message 1`] = `
+{
+  "cause": {
+    "class": "MalfunctionError",
+    "headline": "💥 MalfunctionError: the upstream is down",
+  },
+  "failed": true,
+}
+`;
+
+exports[`the sqs queue input given: [case7] a fault that must redrive, through the export when: [t1] a perBatch handler throws a ConstraintError then: the invoke fails on the forwarded throw, so sqs redrives the whole batch 1`] = `
+{
+  "cause": {
+    "class": "ConstraintError",
+    "headline": "✋ ConstraintError: the batch is refused",
+  },
+  "failed": true,
+}
+`;
+
+exports[`the sqs queue input given: [case7] a fault that must redrive, through the export when: [t2] one message is refused and the perBatch handler throws then: the invoke fails on the handler fault, so the refused record redrives too 1`] = `
+{
+  "entry": {
+    "level": "warn",
+    "message": "sqs.record.refused",
+    "metadata": {
+      "class": "ConstraintError",
+      "consequence": "deleted only if this invoke succeeds; redriven if it fails",
+      "errorMessage": "✋ ConstraintError: validation failed: payload.orderId: Invalid input: expected string, received number
+
+{
+  "issues": [
+    {
+      "path": "payload.orderId",
+      "message": "Invalid input: expected string, received number",
+      "code": "invalid_type"
+    }
+  ],
+  "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
+}",
+      "id": "msg-1",
+      "message": {
+        "attributes": {
+          "ApproximateFirstReceiveTimestamp": "1700000000000",
+          "ApproximateReceiveCount": "1",
+          "SenderId": "sender",
+          "SentTimestamp": "1700000000000",
+        },
+        "awsRegion": "us-east-1",
+        "body": "{"orderId":404}",
+        "eventSource": "aws:sqs",
+        "eventSourceARN": "arn:aws:sqs:us-east-1:000000000000:test-queue",
+        "md5OfBody": "md5",
+        "messageAttributes": {},
+        "messageId": "msg-1",
+        "receiptHandle": "receipt-1",
+      },
+    },
+    "timestamp": "<timestamp>",
+    "trail": {
+      "exid": "<exid>",
+      "stack": [],
+    },
+  },
+  "settled": {
+    "cause": {
+      "class": "MalfunctionError",
+      "headline": "💥 MalfunctionError: the upstream is down",
+    },
+    "failed": true,
+  },
+}
+`;
+
+exports[`the sqs queue input given: [case8] a perBatch schema whose own callback throws a fault of ours when: [t0] a batch arrives with one record that breaks the schema then: the operator reads one error line that names the record and the cause 1`] = `
+{
+  "level": "error",
+  "message": "sqs.record.invalid",
+  "metadata": {
+    "class": "Error",
+    "consequence": "redriven — a fault of ours, so sqs redrives this record alone",
+    "errorMessage": "the refine callback broke",
+    "id": "msg-1",
+    "stack": "<stack>",
+  },
+  "timestamp": "<timestamp>",
+  "trail": {
+    "exid": "<exid>",
+    "stack": [],
+  },
 }
 `;

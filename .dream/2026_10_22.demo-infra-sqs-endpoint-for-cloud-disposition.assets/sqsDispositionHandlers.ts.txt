@@ -1,0 +1,42 @@
+/**
+ * .what = two sqs endpoints, one per cardinality, deployed behind a real queue
+ * .why = the sdk decides delete-vs-redrive by what it hands back to aws; aws decides what that
+ *        means. these handlers let a test send each kind of message through a real queue trigger
+ *        and read where aws put it (`invariant.constraint-errors-never-redrive-sqs`)
+ */
+import { ConstraintError, MalfunctionError } from 'helpful-errors';
+import { z } from 'zod';
+
+import { genLambdaEndpoint } from '../../src/index';
+
+const schemaOrder = {
+  // no `headers` key: header enforcement is opt-in, and these messages carry none
+  input: z.object({ payload: z.object({ orderId: z.string() }) }),
+};
+
+/**
+ * .what = one message per invoke: served, refused by the handler, or failed by a server fault
+ * .note = a body whose `orderId` is not a string is refused by the schema before `invoke` runs
+ */
+export const consumeOrder = genLambdaEndpoint.forSqs.perRecord({
+  schema: schemaOrder,
+  invoke: async ({ payload }) => {
+    if (payload.orderId === 'ord-withdrawn')
+      throw new ConstraintError('order withdrawn', { orderId: payload.orderId });
+    if (payload.orderId === 'ord-down')
+      throw new MalfunctionError('the upstream is down', {
+        orderId: payload.orderId,
+      });
+  },
+});
+
+/**
+ * .what = a batch per invoke: every record served except `ord-poison`, which is left unreported
+ * .note = a body whose `orderId` is not a string is refused by the schema and acknowledged
+ */
+export const consumeBatch = genLambdaEndpoint.forSqs.perBatch({
+  schema: schemaOrder,
+  invoke: async ({ records }) => ({
+    successes: records.filter((record) => record.payload.orderId !== 'ord-poison'),
+  }),
+});

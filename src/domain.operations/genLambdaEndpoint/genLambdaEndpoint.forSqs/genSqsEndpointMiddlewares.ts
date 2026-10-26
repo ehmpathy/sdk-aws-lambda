@@ -23,12 +23,14 @@ export const CARRIER_SQS: TrailCarrier = 'wrapper';
  *        (`rule.forbid.parallel-codepaths`)
  *
  * .why no constraint-error middleware, where both peer families register one = that middleware
- *        turns a caller fault into a successful invocation, which is correct where an http caller
- *        waits on a response. in sqs a successful invocation means delete the message, so to
- *        swallow a validation failure into a success would silently discard a message no handler
- *        ever processed (`rule.forbid.failhide`). a poison pill must fail instead: `perRecord`
- *        lets the throw escape so sqs redrives and then dead-letters it, and `perBatch` reports
- *        that one id as a batch item failure so sqs redrives only it
+ *        answers a caller fault with a response body, and an sqs invoke has no one to answer.
+ *        each variant acknowledges a caller fault itself, per message, where the record id is in
+ *        hand: `perRecord` logs `sqs.record.refused` and returns, so sqs deletes the message;
+ *        `perBatch` logs it and leaves that id out of `batchItemFailures`. a refusal is never
+ *        retried and never dead-lettered, since the same bytes fail the same way on every
+ *        receive (`invariant.constraint-errors-never-redrive-sqs`). the log line is the discard's
+ *        trace, so it is not a failhide. a fault that names no message — a `perBatch` handler
+ *        throw, of any class — escapes here and redrives the batch
  *
  * .why no introspection middleware = introspection exists so `genServiceSdk` can generate a typed
  *        caller, and an sqs handler has no caller sdk — a producer sends to a queue, and never
@@ -40,7 +42,9 @@ export const CARRIER_SQS: TrailCarrier = 'wrapper';
  *
  *          index | hook                 | run order
  *          ------|----------------------|------------------------------------------
- *            0   | onError              | LAST  — logs the fault loudly, then rethrows
+ *            0   | onError              | LAST  — logs a server fault loudly, then rethrows;
+ *                |                      |         a caller fault passes unlogged
+ *                |                      |         (`.dream/2026_10_22.sqs-forwarded-caller-fault-logs-loud.dream.md`)
  *            1   | before               | FIRST — produces `context.log`
  *            2   | before/after/onError | reads `context.log`
  *

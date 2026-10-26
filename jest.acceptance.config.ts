@@ -32,6 +32,10 @@ const config: Config = {
     '!**/.agent/**',
     '!**/.log/**',
   ],
+  // .note = the stray-snapshot half of that trap; see `jest.unit.config.ts`
+  modulePathIgnorePatterns: ['<rootDir>/.agent/', '<rootDir>/.log/'],
+  // .note = the sso export runs once here, before workers fork; see `jest.keyrack.globalsetup.ts`
+  globalSetup: './jest.keyrack.globalsetup.ts',
   setupFilesAfterEnv: ['./jest.acceptance.env.ts'],
 
   // use 50% of threads to leave headroom for other processes

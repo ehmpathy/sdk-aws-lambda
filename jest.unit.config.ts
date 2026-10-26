@@ -40,6 +40,10 @@ const config: Config = {
     //    pairs any `*.snap` against no test. both fail the run, LOCALLY ONLY and never in ci
     '!**/.log/**',
   ],
+  // 🔴 `testMatch` keeps a stray suite out, never a stray `*.snap`: jest pairs snapshots against
+  //    the haste map, which walks every dir this list does not name. `.agent/` holds rmsafe's
+  //    trash, so a deleted snapshot reads as obsolete and fails the run — locally only
+  modulePathIgnorePatterns: ['<rootDir>/.agent/', '<rootDir>/.log/'],
   setupFilesAfterEnv: ['./jest.unit.env.ts'],
 
   // use 50% of threads to leave headroom for other processes

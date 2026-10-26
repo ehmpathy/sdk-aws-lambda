@@ -152,9 +152,23 @@ export const handler = genLambdaEndpoint.forSqs.perBatch({
 });
 ```
 
-`perBatch` fails safe: any record not returned in `successes` is retried, and an answer the sdk
-cannot read retries the whole batch. its event source must declare
+`perBatch` fails safe: any record neither returned in `successes` nor refused by the schema is
+retried, and an answer the sdk cannot read retries the whole batch. its event source must declare
 `functionResponseTypes: ['ReportBatchItemFailures']`.
+
+a caller fault is never retried. a message the schema refuses, or a `ConstraintError` (or
+`BadRequestError`) a `perRecord` handler throws, logs `sqs.record.refused` at warn and is deleted,
+with no dead-letter entry. to retry a fault, throw a `MalfunctionError`; every other throw redrives.
+
+- `sqs.record.refused` carries the full message as delivered (`message`: body, attributes, queue
+  arn), so an operator can requeue it from the log. alarm on its volume: a schema bug of ours
+  deletes messages, and no dead-letter queue holds them
+- `sqs.record.invalid` (error) marks a schema callback that threw a fault of ours; that record retries
+- a `perBatch` handler throw redrives the whole batch, refused records too. to drop a record, return
+  it in `successes`, and log it yourself. when the schema refuses every record, the handler gets
+  `records: []`
+- to test a refusal: the invoke succeeds with no answer, so assert the handler did not run and spy
+  `console.warn` for `sqs.record.refused`
 
 ⇒ zoom in: [records](./.agent/repo=.this/role=any/briefs/domain.terms/records.md)
 
@@ -188,7 +202,7 @@ it resolves `{ status, headers, text, body }`. a 4xx throws a `ConstraintError`;
 `MalfunctionError` that carries the `correlationId`. your trail rides the request, so the endpoint's
 logs join yours.
 
-any other http client spreads the `x-trail-exid` header in to send the trail. the header also opts the
+any other http caller spreads the `x-trail-exid` header in to send the trail. the header also opts the
 caller in to the contemp error body (`{ error: { class, … } }`); without it the endpoint answers the flat
 `{ errorMessage, errorType }`:
 
@@ -234,6 +248,11 @@ await expect(
 ```
 
 a malfunction throws on both. the util adds no `catch`.
+
+`'local'` labels an escaped throw by its `.name`, as the aws runtime does. a `forAsk` or
+`forApiGateway` endpoint answers a `ConstraintError` by class, so its caller reads a caller fault on
+both loci. a raw handler's throw reads as its `.name` says: helpful-errors 1.7.3's `ConstraintError`
+reads `'Error'`, so it arrives as a server fault, locally and on the cloud (cure: helpful-errors#47).
 
 the return is a union — `TOutput | Envelope` — so read either arm through a narrow:
 
@@ -370,7 +389,7 @@ schema: {
 a value that fails the domain object's own constructor **fails loud at the border** and never reaches
 `invoke` half-built.
 
-what a caller of your generated cross-service client sees is the **wire** shape —
+what a caller of your generated cross-service sdk sees is the **wire** shape —
 `{ surfer: { uuid, name } }` — never the instance. the two differ by design: the wire is what
 crosses, the instance is what you hold once through.
 

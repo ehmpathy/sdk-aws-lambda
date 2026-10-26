@@ -10,12 +10,14 @@ import { setHandlerTrailCarrier } from '../../lambdaEndpointWire/frame/setHandle
 import { asContextLogTrail } from '../asContextLogTrail';
 import { setEventFrozen } from '../setEventFrozen';
 import type { TranslateLog } from '../TranslateLog';
+import { asCallerFault } from './asCallerFault';
 import { asSqsEventDecoded } from './asSqsEventDecoded';
 import { DESERIALIZE_DEFAULT } from './asSqsRecordDecoded';
 import {
   CARRIER_SQS,
   genSqsEndpointMiddlewares,
 } from './genSqsEndpointMiddlewares';
+import { logSqsRecordRefused } from './logSqsRecordRefused';
 import type {
   SqsEventDecoded,
   SqsHeadersDeclared,
@@ -39,9 +41,9 @@ export type ForSqsPerRecordInput<
   schema: {
     /**
      * .what = describes the pair `invoke` receives for one message — `{ headers?, payload }`
-     * .why = a message with the wrong shape is refused before the handler runs, and the refusal
-     *        fails the invoke, so sqs redrives it and eventually dead-letters it rather than
-     *        delete it
+     * .why = a message with the wrong shape is refused before the handler runs. the refusal is
+     *        a caller fault, so it is logged as `sqs.record.refused` and the invoke succeeds —
+     *        sqs deletes the message once, with no retry and no dead-letter entry
      *
      * .note = `payload` is required and `headers` is optional. an absent `headers` key constrains
      *         naught, so header enforcement is opt-in (`rule.require.explicit-optout`)
@@ -51,6 +53,12 @@ export type ForSqsPerRecordInput<
     input: ZodSchema<{ headers?: THeaders; payload: TPayload }>;
   };
 
+  /**
+   * .what = serves one message; a return acknowledges it, a throw redrives it
+   * .note = the class is the verdict: a `ConstraintError` (or `BadRequestError`) that escapes is a
+   *         caller fault, so the message is logged `sqs.record.refused` and deleted — a downstream
+   *         one too, such as a 429. to retry a transient fault, throw a `MalfunctionError`
+   */
   invoke: (
     input: {
       /**
@@ -113,9 +121,9 @@ export type ForSqsPerRecordInput<
      *         exact bytes reads the string (`rule.require.explicit-optout`)
      * .note = `false` hands `payload` to your schema as a string, so it must be set with the
      *         schema's payload half. a mis-pair is a total outage rather than one bad message:
-     *         the config is per handler, so every message meets the same mismatch and the queue
-     *         drains to its dead-letter, while the sender's `SendMessage` reports success.
-     *         clamped by `[case15]`
+     *         the config is per handler, so every message meets the same mismatch and each is
+     *         refused and deleted, while the sender's `SendMessage` reports success. the
+     *         `sqs.record.refused` warn on every message is the one sign. clamped by `[case15]`
      *
      *          deserialize.payload | the schema's payload half
      *          --------------------|--------------------------
@@ -182,50 +190,71 @@ export const perRecord = <THeaders extends SqsHeadersDeclared, TPayload>(
         },
       );
 
-    /**
-     * .what = validates the one record, and writes the parsed values back into it
-     * .note = its return is that same object, narrowed. the read happens off `eventFrozen` below
-     *         instead, which narrows the whole envelope and the record with it
-     */
-    setSqsRecordValidated({
-      record: decoded.records[0]!,
-      schema: config.schema.input,
-    });
+    const record = decoded.records[0]!;
 
     /**
-     * .what = seals the envelope before the handler's turn
-     * .why = the envelope it hands over is the same shape `perBatch` hands over, and a guarantee
-     *        that holds on one variant and not its peer is a trap for an author who moves between
-     *        them (`rule.forbid.parallel-codepaths`)
-     * .where = after the validator, which writes the parsed values back into the record
-     *
-     * .as = the validated values were written into the record, so the envelope now carries them
-     *       too — a fact typescript cannot track from a mutation
-     * .removal = drops when the decode is parameterized on the schema's own output types
+     * .what = serves the one record: validate, freeze, invoke
+     * .why = a caller fault on this message is acknowledged — logged, and the invoke succeeds, so
+     *        sqs deletes it once. the same bytes fail the same way on every receive, so a redrive
+     *        could only page someone for the producer's fault
+     *        (`invariant.constraint-errors-never-redrive-sqs`). any other fault escapes, so sqs
+     *        redrives it (`rule.forbid.failhide`)
+     * .note = the batch-size refusal above stays outside this catch: it is the deployer's fault,
+     *         and a `MalfunctionError` besides
      */
-    const eventFrozen = setEventFrozen({
-      event: decoded as SqsEventDecoded<{
-        headers: SqsHeadersMerged<THeaders>;
-        payload: TPayload;
-      }>,
-    });
-    const recordFrozen = eventFrozen.records[0]!;
+    try {
+      /**
+       * .what = validates the one record, and writes the parsed values back into it
+       * .note = its return is that same object, narrowed. the read happens off `eventFrozen`
+       *         below instead, which narrows the whole envelope and the record with it
+       */
+      setSqsRecordValidated({ record, schema: config.schema.input });
 
-    /**
-     * .what = hands over the pair, the envelope, and the lineage. the two lifted fields are
-     *         projections of the record's slots
-     * .note = read off `eventFrozen` rather than `decoded` — the same reference, since the freeze
-     *         is in place, and the narrowed type is what carries the readonly guarantee to the
-     *         handler. a read off `decoded` hands over the pre-freeze type and drops it
-     */
-    await config.invoke(
-      {
-        payload: recordFrozen.payload,
-        headers: recordFrozen.headers,
-        event: eventFrozen,
-      },
-      { log },
-    );
+      /**
+       * .what = seals the envelope before the handler's turn
+       * .why = the envelope it hands over is the same shape `perBatch` hands over, and a
+       *        guarantee that holds on one variant and not its peer is a trap for an author who
+       *        moves between them (`rule.forbid.parallel-codepaths`)
+       * .where = after the validator, which writes the parsed values back into the record
+       *
+       * .as = the validated values were written into the record, so the envelope now carries
+       *       them too — a fact typescript cannot track from a mutation
+       * .removal = drops when the decode is parameterized on the schema's own output types
+       */
+      const eventFrozen = setEventFrozen({
+        event: decoded as SqsEventDecoded<{
+          headers: SqsHeadersMerged<THeaders>;
+          payload: TPayload;
+        }>,
+      });
+      const recordFrozen = eventFrozen.records[0]!;
+
+      /**
+       * .what = hands over the pair, the envelope, and the lineage. the two lifted fields are
+       *         projections of the record's slots
+       * .note = read off `eventFrozen` rather than `decoded` — the same reference, since the
+       *         freeze is in place, and the narrowed type is what carries the readonly guarantee
+       *         to the handler. a read off `decoded` hands over the pre-freeze type and drops it
+       */
+      await config.invoke(
+        {
+          payload: recordFrozen.payload,
+          headers: recordFrozen.headers,
+          event: eventFrozen,
+        },
+        { log },
+      );
+    } catch (error) {
+      // rethrow every fault that is not the caller's, so sqs redrives it; the escaped throw is its trace
+      const callerFault = asCallerFault({ error });
+      if (!callerFault) throw error;
+
+      // acknowledge the caller fault, by the leaves `setSqsRecordsValidated` shares; the return deletes it
+      logSqsRecordRefused(
+        { message: record._.raw, error: callerFault },
+        { log },
+      );
+    }
   };
 
   return setHandlerTrailCarrier({

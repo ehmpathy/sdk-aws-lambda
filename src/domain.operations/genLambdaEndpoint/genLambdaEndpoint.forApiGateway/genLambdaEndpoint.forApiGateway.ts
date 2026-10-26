@@ -420,7 +420,7 @@ export const forApiGateway = <
      *
      * .note = the dialect follows the caller's opt-in, as in every family. a caller that sends
      *         `x-trail-exid` is contemp and gets the nested body; one that sends none — a
-     *         browser, a legacy client — is ancient and gets the flat one. where trail never
+     *         browser, a legacy caller — is ancient and gets the flat one. where trail never
      *         ran, `asContextTrailed` defaults the flag to `false`
      */
     genConstraintErrorMiddleware({
