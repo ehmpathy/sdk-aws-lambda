@@ -6,7 +6,7 @@ exports[`logSqsRecordInvalid given: [case1] a record whose schema callback threw
     "message": "sqs.record.invalid",
     "metadata": {
       "class": "Error",
-      "consequence": "retried — a fault of ours, so sqs redrives this record alone",
+      "consequence": "redriven — a fault of ours, so sqs redrives this record alone",
       "errorMessage": "the refine callback broke",
       "id": "msg-3",
       "stack": "<stack>",

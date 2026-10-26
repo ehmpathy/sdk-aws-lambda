@@ -42,7 +42,7 @@ describe('logSqsRecordInvalid', () => {
               class: 'Error',
               errorMessage: 'the refine callback broke',
               consequence:
-                'retried — a fault of ours, so sqs redrives this record alone',
+                'redriven — a fault of ours, so sqs redrives this record alone',
             },
           });
         },

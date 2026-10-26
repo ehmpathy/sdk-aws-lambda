@@ -94,12 +94,24 @@ const getSqsDisposition = async (input: {
 }): Promise<{
   invokeErrorMessage: string | null;
   refusedLine: string | null;
+  refusedEntry: unknown;
 }> => {
   const spy = jest.spyOn(console, 'warn');
   const asLines = (): string[] =>
     spy.mock.calls.map((args) =>
       args.map((arg) => JSON.stringify(arg)).join(' '),
     );
+
+  // .why = the line text escapes the logged body twice; a requeue reads the parsed entry, so read it too
+  const asRefusedEntry = (): unknown => {
+    const args = spy.mock.calls.find((call) =>
+      call.some((arg) => JSON.stringify(arg).includes('sqs.record.refused')),
+    );
+    const arg = args?.find((each) =>
+      JSON.stringify(each).includes('sqs.record.refused'),
+    );
+    return typeof arg === 'string' ? JSON.parse(arg) : (arg ?? null);
+  };
   try {
     const invokeErrorMessage = await runLambdaEndpoint
       .onReferenced({
@@ -115,6 +127,7 @@ const getSqsDisposition = async (input: {
       invokeErrorMessage,
       refusedLine:
         asLines().find((line) => line.includes('sqs.record.refused')) ?? null,
+      refusedEntry: asRefusedEntry(),
     };
   } finally {
     spy.mockRestore();
@@ -722,6 +735,7 @@ describe('genLambdaEndpoint.forSqs.perRecord', () => {
      *        (`invariant.constraint-errors-never-redrive-sqs`)
      */
     when('[t1] the handler refuses the message with ConstraintError', () => {
+      const event = asSqsEvent({ messages: [MESSAGE_VALID] });
       const outcome = useThen('it answers sqs', async () =>
         getSqsDisposition({
           handler: perRecord({
@@ -730,8 +744,31 @@ describe('genLambdaEndpoint.forSqs.perRecord', () => {
               throw new ConstraintError('the order id is malformed');
             },
           }),
-          event: asSqsEvent({ messages: [MESSAGE_VALID] }),
+          event,
         }),
+      );
+
+      /**
+       * .what = the line carries the message exactly as aws delivered it, after validation ran
+       * .why = an acknowledged message is deleted, so the log is the one place left to requeue it
+       *        from. validation writes parsed values back into the decoded record before the
+       *        handler refuses, so this proves the line reads the untouched wire record instead
+       */
+      then(
+        'sqs.record.refused carries the full message as delivered, so it can be requeued',
+        () => {
+          // the logger writes `metadata` as a json string inside the json line, so read it twice
+          const entry = outcome.refusedEntry as { metadata?: unknown } | null;
+          const metadata = (
+            typeof entry?.metadata === 'string'
+              ? JSON.parse(entry.metadata)
+              : (entry?.metadata ?? null)
+          ) as { message?: unknown } | null;
+          const messageLogged = metadata?.message ?? null;
+          expect(messageLogged).toEqual(
+            JSON.parse(JSON.stringify(event.Records[0])),
+          );
+        },
       );
 
       // .verdict = a caller fault on sqs is logged and acknowledged, never redriven (human, sdk-aws-lambda#73; F7)

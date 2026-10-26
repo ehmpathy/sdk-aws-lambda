@@ -17,6 +17,7 @@ export const logSqsRecordInvalid = (
     class: input.error.constructor.name,
     errorMessage: input.error.message,
     stack: input.error.stack ?? null,
-    consequence: 'retried — a fault of ours, so sqs redrives this record alone',
+    consequence:
+      'redriven — a fault of ours, so sqs redrives this record alone',
   });
 };

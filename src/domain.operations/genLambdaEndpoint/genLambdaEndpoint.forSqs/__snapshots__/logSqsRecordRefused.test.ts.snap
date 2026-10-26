@@ -9,6 +9,31 @@ exports[`logSqsRecordRefused given: [case1] a message refused with a ConstraintE
       "consequence": "deleted only if this invoke succeeds; redriven if it fails",
       "errorMessage": "✋ ConstraintError: order withdrawn",
       "id": "msg-7",
+      "message": {
+        "attributes": {
+          "ApproximateFirstReceiveTimestamp": "1761400000100",
+          "ApproximateReceiveCount": "1",
+          "MessageDeduplicationId": "dedupe-7",
+          "MessageGroupId": "orders",
+          "SenderId": "AIDAEXAMPLE",
+          "SentTimestamp": "1761400000000",
+        },
+        "awsRegion": "us-east-1",
+        "body": "{"orderId":"o-1","note":"  keeps its own spaces  "}",
+        "eventSource": "aws:sqs",
+        "eventSourceARN": "arn:aws:sqs:us-east-1:000000000000:orders.fifo",
+        "md5OfBody": "md5-7",
+        "messageAttributes": {
+          "x-trail-exid": {
+            "binaryListValues": [],
+            "dataType": "String",
+            "stringListValues": [],
+            "stringValue": "trail-7",
+          },
+        },
+        "messageId": "msg-7",
+        "receiptHandle": "receipt-7",
+      },
     },
   },
 ]

@@ -250,7 +250,10 @@ export const perRecord = <THeaders extends SqsHeadersDeclared, TPayload>(
       if (!callerFault) throw error;
 
       // acknowledge the caller fault, by the leaves `setSqsRecordsValidated` shares; the return deletes it
-      logSqsRecordRefused({ id: record.id, error: callerFault }, { log });
+      logSqsRecordRefused(
+        { message: record._.raw, error: callerFault },
+        { log },
+      );
     }
   };
 

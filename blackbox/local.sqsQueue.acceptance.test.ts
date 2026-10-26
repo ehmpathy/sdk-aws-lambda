@@ -145,7 +145,7 @@ describe('the sqs queue input', () => {
             ],
           }),
         });
-        return seen;
+        return seen[0];
       });
 
       then('the handler read all four slots', () => {
@@ -315,7 +315,14 @@ describe('the sqs queue input', () => {
 
       then('every refusal is acknowledged, so none is retried', () => {
         expect(outcome.result).toEqual({ batchItemFailures: [] });
-        expect(outcome.result).toMatchSnapshot();
+
+        // the refused ids ride beside the response, so this snapshot cannot read as `[t1]`'s served batch
+        const refusedIds = outcome.lines
+          .map((line) => asWarnLineMasked({ lines: [line], message: 'sqs.record.refused' }))
+          .map((entry) => (entry?.metadata as { id?: unknown } | undefined)?.id ?? null)
+          .filter((id) => id !== null);
+        expect(refusedIds).toEqual(['msg-0', 'msg-1']);
+        expect({ response: outcome.result, refusedIds }).toMatchSnapshot();
       });
 
       then('each refusal leaves one warn line', () => {
@@ -469,16 +476,15 @@ describe('the sqs queue input', () => {
       const outcome = useThen('the invoke settles', async () => {
         const reachedBefore = reached.length;
         const { result: settled, lines } = await withWarnLines(async () =>
-          runLambdaEndpoint
-            .onReferenced({
+          asInvokeSettled(
+            runLambdaEndpoint.onReferenced({
               handler,
               struct: { payload: 'ancient' },
               event: asSqsEvent({
                 messages: [{ body: JSON.stringify({ orderId: 404 }) }],
               }),
-            })
-            .then(() => ({ failed: false }))
-            .catch(() => ({ failed: true })),
+            }),
+          ),
         );
         return {
           settled,
@@ -493,7 +499,7 @@ describe('the sqs queue input', () => {
       });
 
       then('the invoke succeeds, so sqs deletes the message', () => {
-        expect(outcome.settled).toEqual({ failed: false });
+        expect(outcome.settled).toEqual({ failed: false, cause: null });
       });
 
       then('the operator reads one warn line that names the schema refusal', () => {
@@ -511,8 +517,8 @@ describe('the sqs queue input', () => {
     when('[t1] the handler throws a ConstraintError', () => {
       const outcome = useThen('the invoke settles', async () => {
         const { result: settled, lines } = await withWarnLines(async () =>
-          runLambdaEndpoint
-            .onReferenced({
+          asInvokeSettled(
+            runLambdaEndpoint.onReferenced({
               handler,
               struct: { payload: 'ancient' },
               event: asSqsEvent({
@@ -520,9 +526,8 @@ describe('the sqs queue input', () => {
                   { body: JSON.stringify({ orderId: 'ord-withdrawn' }) },
                 ],
               }),
-            })
-            .then(() => ({ failed: false }))
-            .catch(() => ({ failed: true })),
+            }),
+          ),
         );
         return {
           settled,
@@ -532,7 +537,7 @@ describe('the sqs queue input', () => {
 
       then('the handler ran, and the invoke still succeeds', () => {
         expect(reached).toContain('ord-withdrawn');
-        expect(outcome.settled).toEqual({ failed: false });
+        expect(outcome.settled).toEqual({ failed: false, cause: null });
       });
 
       then('the operator reads one warn line that names the refusal', () => {

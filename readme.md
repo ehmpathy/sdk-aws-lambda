@@ -156,33 +156,19 @@ export const handler = genLambdaEndpoint.forSqs.perBatch({
 retried, and an answer the sdk cannot read retries the whole batch. its event source must declare
 `functionResponseTypes: ['ReportBatchItemFailures']`.
 
-a caller fault is never retried. a message the schema refuses, or one a `perRecord` handler refuses
-with a `ConstraintError` (or `BadRequestError`), is logged once as `sqs.record.refused` and
-acknowledged, so sqs deletes it, with no dead-letter entry. the same bytes fail the same way on every
-receive, so a retry could only page you for the producer's fault. the class is the verdict: a
-downstream `ConstraintError` your handler lets escape (a 429, say) deletes the message too, so to
-retry a transient fault, throw a `MalfunctionError`. any other throw still redrives. a
-`perBatch` handler throw names no record, so it redrives the whole batch, whatever its class. in a
-`perBatch` handler, `successes` is the lever: sqs deletes every record you return there and retries
-every record you leave out — so to drop a record you will never serve, return it. the sdk logs no
-line for a record you drop that way, so log it yourself if an operator needs the trace.
+a caller fault is never retried. a message the schema refuses, or a `ConstraintError` (or
+`BadRequestError`) a `perRecord` handler throws, logs `sqs.record.refused` at warn and is deleted,
+with no dead-letter entry. to retry a fault, throw a `MalfunctionError`; every other throw redrives.
 
-a `perBatch` refusal is deleted only once the invoke succeeds. if your handler throws, the whole
-batch redrives, the refused records among them, and each is refused again on the next receive. so a
-`perBatch` handler must not throw on a batch the schema emptied: when every record is refused, it is
-called with `records: []`.
-
-the refusal line keeps the `id`, the error class, and its message, never the message body — replay
-the producer from its own system. a schema refusal used to log as `sqs.record.invalid` and dead-letter;
-it now logs `sqs.record.refused` and is deleted, so an alarm on a total producer outage belongs on
-`sqs.record.refused`. `sqs.record.invalid` now marks only a schema callback that threw a fault of ours.
-
-a deleted refusal leaves no dead-letter copy, so a schema bug of ours — a tightened schema, a
-`deserialize` mis-pair — deletes the queue's in-flight messages rather than park them for redrive.
-alarm on the volume of `sqs.record.refused`, not only on the dead-letter queue.
-
-to assert a refusal in a test: the invoke succeeds with no answer (`null` at `onSerialized`), so assert
-the handler did not run, and spy `console.warn` for the `sqs.record.refused` line.
+- `sqs.record.refused` carries the full message as delivered (`message`: body, attributes, queue
+  arn), so an operator can requeue it from the log. alarm on its volume: a schema bug of ours
+  deletes messages, and no dead-letter queue holds them
+- `sqs.record.invalid` (error) marks a schema callback that threw a fault of ours; that record retries
+- a `perBatch` handler throw redrives the whole batch, refused records too. to drop a record, return
+  it in `successes`, and log it yourself. when the schema refuses every record, the handler gets
+  `records: []`
+- to test a refusal: the invoke succeeds with no answer, so assert the handler did not run and spy
+  `console.warn` for `sqs.record.refused`
 
 ⇒ zoom in: [records](./.agent/repo=.this/role=any/briefs/domain.terms/records.md)
 
@@ -263,15 +249,10 @@ await expect(
 
 a malfunction throws on both. the util adds no `catch`.
 
-a `genLambdaEndpoint.forAsk` or `.forApiGateway` endpoint answers a `ConstraintError` by class, as a
-response body, so its caller reads a caller fault on both loci. a throw no family answers — from a raw
-handler — reaches the wire labelled by its `.name`, never its class, exactly as the aws runtime labels
-it. so on `onSerialized` at `'local'`, a raw handler's error class with no `.name` of its own
-(helpful-errors 1.7.3's `ConstraintError` reads `'Error'`) arrives as a server fault, as it does on
-the cloud. a local test that asserted it as a caller fault goes red on upgrade; the cloud was already
-red. the cure is an error class that sets its own `.name` (helpful-errors#47). the label itself moves
-for every family: a server fault's `error.metadata.errorType` reads `.name`, so any helpful-errors
-1.7.3 class (a `MalfunctionError` included) reads `'Error'` there on a local run, as on the cloud.
+`'local'` labels an escaped throw by its `.name`, as the aws runtime does. a `forAsk` or
+`forApiGateway` endpoint answers a `ConstraintError` by class, so its caller reads a caller fault on
+both loci. a raw handler's throw reads as its `.name` says: helpful-errors 1.7.3's `ConstraintError`
+reads `'Error'`, so it arrives as a server fault, locally and on the cloud (cure: helpful-errors#47).
 
 the return is a union — `TOutput | Envelope` — so read either arm through a narrow:
 

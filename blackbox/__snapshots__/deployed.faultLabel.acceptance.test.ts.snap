@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
-exports[`e2e: deployed raw handler, its escaped throw labelled on both loci given: [case1] a raw handler that throws, once per runtime label branch when: [t0] each fault is met at the cloud locus and at the local locus then: the error each cloud caller receives matches the snapshot 1`] = `
+exports[`e2e: deployed raw handler, its escaped throw labelled on both loci given: [case1] a raw handler that throws, once per runtime label branch when: [t0] each fault is met at the cloud locus and at the local locus then: each escaped throw reaches the cloud caller labelled by the runtime rule, one row per branch 1`] = `
 {
   "endpoint": LambdaEndpoint {
     "access": "prod",
@@ -22,6 +22,7 @@ exports[`e2e: deployed raw handler, its escaped throw labelled on both loci give
       "isCallerFault": false,
       "kind": "constraint",
       "labelExpected": "Error",
+      "note": "helpful-errors 1.7.3 leaves .name at 'Error', so a raw ConstraintError is a server fault here; it flips to a caller fault once helpful-errors#47 ships",
     },
     {
       "error": {

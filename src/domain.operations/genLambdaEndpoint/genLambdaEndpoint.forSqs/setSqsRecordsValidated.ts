@@ -55,7 +55,10 @@ export const setSqsRecordsValidated = <
       // a caller fault: acknowledge it, by id
       const callerFault = asCallerFault({ error });
       if (callerFault) {
-        logSqsRecordRefused({ id: record.id, error: callerFault }, context);
+        logSqsRecordRefused(
+          { message: record._.raw, error: callerFault },
+          context,
+        );
         idsRefused.add(record.id);
         continue;
       }

@@ -244,9 +244,12 @@ describe('e2e: deployed raw handler, its escaped throw labelled on both loci', (
        *        shows, once, and the then asserts each row carries it. each row also states the
        *        label it expects and the fault side a caller reads, so the snapshot reads alone
        */
-      then('the error each cloud caller receives matches the snapshot', () => {
+      then('each escaped throw reaches the cloud caller labelled by the runtime rule, one row per branch', () => {
         const asMetadata = (masked: Record<string, unknown>) =>
           (masked.metadata ?? {}) as Record<string, unknown>;
+
+        // the endpoint is the one field no throw can change, so it alone is hoisted; the class and
+        // the fault side stay per row, since the `constraint` row flips both on the helpful-errors bump
         const endpoint = asMetadata(rows.views[0]?.cloudMasked ?? {}).endpoint;
         for (const row of rows.views)
           expect(asMetadata(row.cloudMasked).endpoint).toEqual(endpoint);
@@ -260,6 +263,11 @@ describe('e2e: deployed raw handler, its escaped throw labelled on both loci', (
               kind: row.kind,
               labelExpected: row.label,
               isCallerFault: row.cloud.isCallerFault,
+              ...(row.kind === 'constraint'
+                ? {
+                    note: "helpful-errors 1.7.3 leaves .name at 'Error', so a raw ConstraintError is a server fault here; it flips to a caller fault once helpful-errors#47 ships",
+                  }
+                : {}),
               error: { ...row.cloudMasked, metadata: metadataRest },
             };
           }),

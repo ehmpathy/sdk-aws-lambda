@@ -2,12 +2,10 @@
 
 exports[`the sqs queue input given: [case1] a consumer reaches perRecord through the family object when: [t0] one message arrives on the queue then: the handler read all four slots 1`] = `
 {
-  "0": {
-    "exidPresent": true,
-    "orderId": "ord-1",
-    "recordCount": 1,
-    "source": "web",
-  },
+  "exidPresent": true,
+  "orderId": "ord-1",
+  "recordCount": 1,
+  "source": "web",
 }
 `;
 
@@ -40,7 +38,13 @@ exports[`the sqs queue input given: [case3] a consumer reaches perBatch through 
 
 exports[`the sqs queue input given: [case3] a consumer reaches perBatch through the family object when: [t2] every message fails the schema then: every refusal is acknowledged, so none is retried 1`] = `
 {
-  "batchItemFailures": [],
+  "refusedIds": [
+    "msg-0",
+    "msg-1",
+  ],
+  "response": {
+    "batchItemFailures": [],
+  },
 }
 `;
 
@@ -85,6 +89,22 @@ exports[`the sqs queue input given: [case6] a perRecord handler meets a message 
   "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
 }",
       "id": "msg-0",
+      "message": {
+        "attributes": {
+          "ApproximateFirstReceiveTimestamp": "1700000000000",
+          "ApproximateReceiveCount": "1",
+          "SenderId": "sender",
+          "SentTimestamp": "1700000000000",
+        },
+        "awsRegion": "us-east-1",
+        "body": "{"orderId":404}",
+        "eventSource": "aws:sqs",
+        "eventSourceARN": "arn:aws:sqs:us-east-1:000000000000:test-queue",
+        "md5OfBody": "md5",
+        "messageAttributes": {},
+        "messageId": "msg-0",
+        "receiptHandle": "receipt-0",
+      },
     },
     "timestamp": "<timestamp>",
     "trail": {
@@ -93,6 +113,7 @@ exports[`the sqs queue input given: [case6] a perRecord handler meets a message 
     },
   },
   "settled": {
+    "cause": null,
     "failed": false,
   },
 }
@@ -112,6 +133,22 @@ exports[`the sqs queue input given: [case6] a perRecord handler meets a message 
   "orderId": "ord-withdrawn"
 }",
       "id": "msg-0",
+      "message": {
+        "attributes": {
+          "ApproximateFirstReceiveTimestamp": "1700000000000",
+          "ApproximateReceiveCount": "1",
+          "SenderId": "sender",
+          "SentTimestamp": "1700000000000",
+        },
+        "awsRegion": "us-east-1",
+        "body": "{"orderId":"ord-withdrawn"}",
+        "eventSource": "aws:sqs",
+        "eventSourceARN": "arn:aws:sqs:us-east-1:000000000000:test-queue",
+        "md5OfBody": "md5",
+        "messageAttributes": {},
+        "messageId": "msg-0",
+        "receiptHandle": "receipt-0",
+      },
     },
     "timestamp": "<timestamp>",
     "trail": {
@@ -120,6 +157,7 @@ exports[`the sqs queue input given: [case6] a perRecord handler meets a message 
     },
   },
   "settled": {
+    "cause": null,
     "failed": false,
   },
 }
@@ -166,6 +204,22 @@ exports[`the sqs queue input given: [case7] a fault that must redrive, through t
   "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
 }",
       "id": "msg-1",
+      "message": {
+        "attributes": {
+          "ApproximateFirstReceiveTimestamp": "1700000000000",
+          "ApproximateReceiveCount": "1",
+          "SenderId": "sender",
+          "SentTimestamp": "1700000000000",
+        },
+        "awsRegion": "us-east-1",
+        "body": "{"orderId":404}",
+        "eventSource": "aws:sqs",
+        "eventSourceARN": "arn:aws:sqs:us-east-1:000000000000:test-queue",
+        "md5OfBody": "md5",
+        "messageAttributes": {},
+        "messageId": "msg-1",
+        "receiptHandle": "receipt-1",
+      },
     },
     "timestamp": "<timestamp>",
     "trail": {
@@ -189,7 +243,7 @@ exports[`the sqs queue input given: [case8] a perBatch schema whose own callback
   "message": "sqs.record.invalid",
   "metadata": {
     "class": "Error",
-    "consequence": "retried — a fault of ours, so sqs redrives this record alone",
+    "consequence": "redriven — a fault of ours, so sqs redrives this record alone",
     "errorMessage": "the refine callback broke",
     "id": "msg-1",
     "stack": "<stack>",
