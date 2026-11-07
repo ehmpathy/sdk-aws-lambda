@@ -8,7 +8,7 @@
 | F4 | `runLambdaEndpoint.onSerialized` keeps `ConstraintError` | clean | best-guessed | 88% |
 | F5 | server fault logs two error lines (`handler.output` + extant `handler.error`) | clean | ruled — accepted | 75% |
 | F6 | sqs perRecord consumer: a peer refusal now redrives | clean | ruled — accepted | 85% |
-| F7 | version cut = `feat` → v0.8.0, not `break` → v1.0.0 | clean | best-guessed — listed in the pr body | 85% |
+| F7 | version cut = `feat` → v0.8.0, not `break` → v1.0.0 | clean | superseded — the branch binds `fix`, so the commit is `fix` → v0.7.4; the pr body asks the commander for `feat` or `break` | 85% |
 | F8 | an http 429 is a throttle, a `MalfunctionError` under either opt, never a refusal | clean | disputed — the commander rules it on the pr | 90% |
 | F9 | wire and ask tests keep the `getIsConstraintError` predicate assert across domains | clean | disputed — for the council | 85% |
 | F10 | the fault-side verdict stays four reads of `getIsConstraintError`; no `asFaultSideOfError` leaf yet | clean | best-guessed | 88% |

@@ -34,7 +34,7 @@ an unknown `refusal` value fails fast with a `💥 MalfunctionError` (the asker'
 - a peer refusal is now a server fault, so the invoke fails where it used to answer. an async invoke that fails is retried by aws (twice, by default), and a consumer retry wrapper that retries a `MalfunctionError` retries it too. opt in where the refusal is the caller's to fix
 - svc-gateway's stopgap catch at its svc-notifications boundary can be deleted once it upgrades
 
-version: a `feat` commit → please-release cuts **v0.8.0** (prior 0.x breaks shipped as `feat`, e.g. #46). say the word if this should be `break` → v1.0.0.
+version: the commit is `fix`, since this branch binds the `fix` level, so please-release cuts **v0.7.4**. the contract break above argues for `feat` → v0.8.0 (prior 0.x breaks shipped as `feat`, e.g. #46), or `break` → v1.0.0. say which, and the merge title carries it.
 
 follow-ups, not in this pr:
 - the failure line logs the raw message and stack; a `logTranslate` for the error branch would let an endpoint redact it. caught as `.dream/2026_11_06.v2026-11-06-feat-log-translate-for-error-branch.dream.md`
@@ -73,4 +73,8 @@ each behavior is clamped by a test that fails without the fix (fix reverted → 
 | `getParsedResponse.test.ts` `[case10]`, `asErrorFromHttpResponse.test.ts` — the refusal class per arm and opt | 13 |
 | `genLambdaEndpoint.forApiGateway.test.ts` `[case29]` — consumer answers 500, body free of peer text, a loud line names peer + reason + opt-in | 3 |
 
-integration, against deployed prep lambdas and a real http server: `askLambdaEndpoint.roundtrip` `[case2]` (contemp + ancient peers) and `viaApiGateway` `[case1][t0]`, each under the default and the pass-through opt.
+integration, against deployed prep lambdas and a real http server: `askLambdaEndpoint.roundtrip` `[case2]` (contemp + ancient peers) and `viaApiGateway` `[case1][t0]`, each under the default and the pass-through opt. the 429 throttle runs over a real http wire too: `viaApiGateway` `[case1][t6]` (throttle check disabled → 2 red).
+
+acceptance: every consumer family's lines on a real run, through the export: `local.failureLogLevel` (`forAsk` each outcome, a real peer refusal under each opt; success at debug for `forApiGateway`, `forSqs.perRecord`, `forSqs.perBatch`), `local.askApiGateway [case3]`, `local.sqsQueue [case9][case10]`, `deployed.awsLambda [case1][t2][t4]`.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
