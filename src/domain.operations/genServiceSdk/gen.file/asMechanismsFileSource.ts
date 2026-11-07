@@ -37,7 +37,7 @@ export const asMechanismsFileSource = (input: {
 
   // the import lines: askLambdaEndpoint always; resource types only if any used
   const imports = [
-    `import { askLambdaEndpoint, type ContextAwsLambdaCaller } from 'sdk-aws-lambda';`,
+    `import { askLambdaEndpoint, type ContextAwsLambdaCaller, type LambdaEndpointRefusal } from 'sdk-aws-lambda';`,
   ];
   if (usedResourceNames.length > 0)
     imports.push(

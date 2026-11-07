@@ -2,6 +2,10 @@ import { ConstraintError } from 'helpful-errors';
 
 import type { ContextAwsLambdaCaller } from '../../domain.objects/ContextAwsLambdaCaller';
 import type { LambdaEndpointDialect } from '../../domain.objects/LambdaEndpointDialect';
+import {
+  type LambdaEndpointRefusal,
+  REFUSAL_PASSTHROUGH,
+} from '../../domain.objects/LambdaEndpointRefusal';
 import { askLambdaEndpoint } from '../askLambdaEndpoint/askLambdaEndpoint';
 import { asLambdaEndpoint } from '../asLambdaEndpoint/asLambdaEndpoint';
 import { getOneTrailExid } from '../lambdaEndpointWire/context/getOneTrailExid';
@@ -27,6 +31,15 @@ import { asWirePayload } from './serde/asWirePayload';
  *        (define.lambda-endpoint-run-boundary)
  */
 export type LambdaEndpointLocus = 'cloud' | 'local';
+
+/**
+ * .what = a refusal reaches the runner as a `ConstraintError`, on both loci
+ * .why = the runner composed the event itself, so no peer stands between it and the handler:
+ *        the fault truly is the runner's to fix. `askLambdaEndpoint`'s default
+ *        (`LambdaEndpointRefusedError`) states the opposite, for a caller that composed a request
+ *        on its OWN caller's behalf
+ */
+const REFUSAL_OF_RUN: LambdaEndpointRefusal = REFUSAL_PASSTHROUGH;
 
 /**
  * .what = runs a lambda endpoint you hold the SLUG of — `{ service, function }`
@@ -205,6 +218,7 @@ export const onSerialized = async <TEvent, TOutput>(
             carrier,
           }),
           struct: { payload: 'ancient' },
+          refusal: REFUSAL_OF_RUN,
         },
         {
           ...context,
@@ -221,6 +235,7 @@ export const onSerialized = async <TEvent, TOutput>(
         which: input.which,
         event: input.event,
         struct: structValidated,
+        refusal: REFUSAL_OF_RUN,
       },
       context,
     ).catch(asCredentialsFault);
@@ -278,5 +293,6 @@ export const onSerialized = async <TEvent, TOutput>(
     functionError: undefined,
     endpoint,
     exid,
+    refusal: REFUSAL_OF_RUN,
   });
 };

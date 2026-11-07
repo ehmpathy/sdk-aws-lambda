@@ -17,19 +17,28 @@ exports[`e2e: deployed codegen (real fidelity) given: [case1] the codegen runs a
  * re-run the codegen to update.
  */
 
-import { askLambdaEndpoint, type ContextAwsLambdaCaller } from 'sdk-aws-lambda';
+import {
+  askLambdaEndpoint,
+  type ContextAwsLambdaCaller,
+  type LambdaEndpointRefusal,
+} from 'sdk-aws-lambda';
 import type { SvcSurfSeaturtleSurfboard } from './svcSurf.resources';
 
 export const svcSurf = {
   getSurfboard: (
     event: { uuid: string },
     context: ContextAwsLambdaCaller,
+    options?: { refusal?: LambdaEndpointRefusal },
   ): Promise<{ surfboard: SvcSurfSeaturtleSurfboard }> =>
     askLambdaEndpoint<
       { uuid: string },
       { surfboard: SvcSurfSeaturtleSurfboard }
     >(
-      { which: { service: 'svc-surf', function: 'getSurfboard' }, event },
+      {
+        which: { service: 'svc-surf', function: 'getSurfboard' },
+        event,
+        refusal: options?.refusal,
+      },
       context,
     ),
 };

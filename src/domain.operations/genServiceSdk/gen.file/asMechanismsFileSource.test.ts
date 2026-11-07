@@ -42,7 +42,7 @@ describe('asMechanismsFileSource', () => {
 
       then('it imports askLambdaEndpoint + context type', () => {
         expect(source).toContain(
-          `import { askLambdaEndpoint, type ContextAwsLambdaCaller } from 'sdk-aws-lambda';`,
+          `import { askLambdaEndpoint, type ContextAwsLambdaCaller, type LambdaEndpointRefusal } from 'sdk-aws-lambda';`,
         );
       });
 

@@ -8,6 +8,7 @@ import { getError, given, then, useThen, when } from 'test-fns';
 import { z } from 'zod';
 
 import { asSqsEvent } from '../../../__test_assets__/asSqsEvent';
+import { asErrorFromPeerRefusal } from '../../lambdaEndpointWire/error/asErrorFromPeerRefusal';
 import { runLambdaEndpoint } from '../../runLambdaEndpoint/runLambdaEndpoint';
 import type { ForSqsPerRecordInput } from './genLambdaEndpoint.forSqs.perRecord';
 import { perRecord } from './genLambdaEndpoint.forSqs.perRecord';
@@ -793,6 +794,87 @@ describe('genLambdaEndpoint.forSqs.perRecord', () => {
         );
       });
     });
+
+    /**
+     * .what = a peer refuses a request the handler composed, under each refusal opt
+     * .why = the largest behavior shift of sdk-aws-lambda#77: the handler built the request, so the
+     *        refusal is its own fault and the message redrives, then dead-letters. a handler that
+     *        forwards the body verbatim opts in, and the refusal is acknowledged as a caller fault
+     *        (`invariant.constraint-errors-never-redrive-sqs` `.the bound`)
+     * .note = the error is built by the ask roads' own cast, so the chain meets what a real ask throws
+     */
+    when(
+      '[t5] a peer refuses the request the handler composed, under the default opt',
+      () => {
+        const outcome = useThen('it answers sqs', async () =>
+          getSqsDisposition({
+            handler: perRecord({
+              schema: { input: SCHEMA_ORDER },
+              invoke: async () => {
+                throw asErrorFromPeerRefusal({
+                  refusal: { as: 'LambdaEndpointRefusedError' },
+                  peer: 'svc-warehouse-prep-reserveStock',
+                  message: 'sku absent',
+                  errorType: 'ConstraintError',
+                  metadata: { exid: 'exid:peer' },
+                });
+              },
+            }),
+            event: asSqsEvent({ messages: [MESSAGE_VALID] }),
+          }),
+        );
+
+        then('the invocation fails, so sqs redrives the message', () => {
+          expect(outcome.invokeErrorMessage).toContain('sku absent');
+          expect(outcome.invokeErrorMessage).toContain(
+            'svc-warehouse-prep-reserveStock refused the request',
+          );
+        });
+
+        then(
+          'no sqs.record.refused line is written: it is no caller fault',
+          () => {
+            expect(outcome.refusedLine).toEqual(null);
+          },
+        );
+      },
+    );
+
+    when(
+      '[t6] a peer refuses a request the handler forwards verbatim, under pass-through',
+      () => {
+        const outcome = useThen('it answers sqs', async () =>
+          getSqsDisposition({
+            handler: perRecord({
+              schema: { input: SCHEMA_ORDER },
+              invoke: async () => {
+                throw asErrorFromPeerRefusal({
+                  refusal: { as: 'ConstraintError' },
+                  peer: 'svc-warehouse-prep-reserveStock',
+                  message: 'sku absent',
+                  errorType: 'ConstraintError',
+                  metadata: { exid: 'exid:peer' },
+                });
+              },
+            }),
+            event: asSqsEvent({ messages: [MESSAGE_VALID] }),
+          }),
+        );
+
+        then('the invocation succeeds, so sqs deletes the message once', () => {
+          expect(outcome.invokeErrorMessage).toEqual(null);
+        });
+
+        then(
+          'sqs.record.refused names the message and the cause, at warn',
+          () => {
+            expect(outcome.refusedLine).toContain('msg-0');
+            expect(outcome.refusedLine).toContain('sku absent');
+            expect(outcome.refusedLine).toContain('"level":"warn"');
+          },
+        );
+      },
+    );
 
     /**
      * .what = the same, for a subclass and for the legacy peer class

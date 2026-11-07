@@ -103,6 +103,34 @@ exports[`getParsedResponse given: [case6] BadRequestError response with validati
 }]
 `;
 
+exports[`getParsedResponse given: [case6] BadRequestError response with validation details when: [t1] parsed under the default opt then: it should match snapshot 1`] = `
+[LambdaEndpointRefusedError: 💥 LambdaEndpointRefusedError: svc-users-prep-createUser refused the request: validation failed
+
+this caller composed the request. if it forwards its own caller's input verbatim, opt in with refusal: { as: 'ConstraintError' }
+
+{
+  "endpoint": {
+    "service": "svc-users",
+    "access": "prep",
+    "function": "createUser",
+    "slug": "svc-users-prep-createUser"
+  },
+  "exid": "exid:abc123",
+  "stackTrace": "at handler",
+  "details": {
+    "issues": [
+      {
+        "path": "email",
+        "message": "invalid email",
+        "code": "invalid_string"
+      }
+    ]
+  },
+  "causeMessage": "zod validation failed",
+  "errorType": "BadRequestError"
+}]
+`;
+
 exports[`getParsedResponse given: [case7] LambdaEndpointError with details when: [t0] parsed with error details then: it should match snapshot 1`] = `
 [LambdaEndpointError: LambdaEndpointError: internal error
 
@@ -148,4 +176,87 @@ exports[`getParsedResponse given: [case9] aws reported NO function error — the
 {
   "someOtherShape": true,
 }
+`;
+
+exports[`getParsedResponse given: [case10] a peer refuses, under the default opt when: [t0] the refusal arrives in the contemp envelope then: it should match snapshot 1`] = `
+[LambdaEndpointRefusedError: 💥 LambdaEndpointRefusedError: svc-notifications-prep-sendNotification refused the request: template id absent
+
+this caller composed the request. if it forwards its own caller's input verbatim, opt in with refusal: { as: 'ConstraintError' }
+
+{
+  "endpoint": {
+    "service": "svc-notifications",
+    "access": "prep",
+    "function": "sendNotification",
+    "slug": "svc-notifications-prep-sendNotification"
+  },
+  "exid": "exid:abc123",
+  "details": {
+    "field": "templateId"
+  },
+  "errorType": "ConstraintError"
+}]
+`;
+
+exports[`getParsedResponse given: [case10] a peer refuses, under the default opt when: [t1] the refusal arrives in the ancient envelope, as BadRequestError then: it should match snapshot 1`] = `
+[LambdaEndpointRefusedError: 💥 LambdaEndpointRefusedError: svc-notifications-prep-sendNotification refused the request: template id absent
+
+this caller composed the request. if it forwards its own caller's input verbatim, opt in with refusal: { as: 'ConstraintError' }
+
+{
+  "endpoint": {
+    "service": "svc-notifications",
+    "access": "prep",
+    "function": "sendNotification",
+    "slug": "svc-notifications-prep-sendNotification"
+  },
+  "exid": "exid:abc123",
+  "errorType": "BadRequestError"
+}]
+`;
+
+exports[`getParsedResponse given: [case10] a peer refuses, under the default opt when: [t2] the same refusal, with the pass-through opt then: it throws ConstraintError, as before 1`] = `
+[Error: ✋ ConstraintError: template id absent
+
+{
+  "endpoint": {
+    "service": "svc-notifications",
+    "access": "prep",
+    "function": "sendNotification",
+    "slug": "svc-notifications-prep-sendNotification"
+  },
+  "exid": "exid:abc123"
+}]
+`;
+
+exports[`getParsedResponse given: [case10] a peer refuses, under the default opt when: [t3] a server fault, under the default opt then: it throws LambdaEndpointError, unchanged by the opt 1`] = `
+[LambdaEndpointError: LambdaEndpointError: the queue is down
+
+{
+  "endpoint": {
+    "service": "svc-notifications",
+    "access": "prep",
+    "function": "sendNotification",
+    "slug": "svc-notifications-prep-sendNotification"
+  },
+  "exid": "exid:abc123",
+  "errorType": "MalfunctionError"
+}]
+`;
+
+exports[`getParsedResponse given: [case10] a peer refuses, under the default opt when: [t4] the contemp refusal, with the pass-through opt then: it throws ConstraintError with the peer details kept 1`] = `
+[Error: ✋ ConstraintError: template id absent
+
+{
+  "endpoint": {
+    "service": "svc-notifications",
+    "access": "prep",
+    "function": "sendNotification",
+    "slug": "svc-notifications-prep-sendNotification"
+  },
+  "exid": "exid:abc123",
+  "details": {
+    "field": "templateId"
+  }
+}]
 `;

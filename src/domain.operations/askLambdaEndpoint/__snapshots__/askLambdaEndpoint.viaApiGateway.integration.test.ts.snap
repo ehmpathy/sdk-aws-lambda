@@ -1,0 +1,37 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`askLambdaEndpoint.viaApiGateway given: [case1] a server that answers each shape when: [t6] the answer is a 429 throttle, with a retry-after then: under the default opt, it throws a MalfunctionError that keeps the retry-after 1`] = `
+{
+  "class": "MalfunctionError",
+  "message": "💥 MalfunctionError: the endpoint answered http 429
+
+{
+  "url": "http://127.0.0.1:[port]/throttle-429",
+  "status": 429,
+  "exid": "exid:via-test",
+  "correlationId": null,
+  "text": "",
+  "headers": {
+    "connection": "keep-alive",
+    "date": "Sat, 07 Nov 2026 00:00:00 GMT",
+    "keep-alive": "timeout=5",
+    "retry-after": "30",
+    "transfer-encoding": "chunked"
+  }
+}",
+  "metadata": {
+    "correlationId": null,
+    "exid": "exid:via-test",
+    "headers": {
+      "connection": "keep-alive",
+      "date": "Sat, 07 Nov 2026 00:00:00 GMT",
+      "keep-alive": "timeout=5",
+      "retry-after": "30",
+      "transfer-encoding": "chunked",
+    },
+    "status": 429,
+    "text": "",
+    "url": "http://127.0.0.1:[port]/throttle-429",
+  },
+}
+`;

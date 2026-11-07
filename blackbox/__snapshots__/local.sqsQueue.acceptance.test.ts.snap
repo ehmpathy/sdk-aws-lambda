@@ -108,7 +108,7 @@ exports[`the sqs queue input given: [case6] a perRecord handler meets a message 
     },
     "timestamp": "<timestamp>",
     "trail": {
-      "exid": "<exid>",
+      "exid": "exid:[masked]",
       "stack": [],
     },
   },
@@ -152,7 +152,7 @@ exports[`the sqs queue input given: [case6] a perRecord handler meets a message 
     },
     "timestamp": "<timestamp>",
     "trail": {
-      "exid": "<exid>",
+      "exid": "exid:[masked]",
       "stack": [],
     },
   },
@@ -223,7 +223,7 @@ exports[`the sqs queue input given: [case7] a fault that must redrive, through t
     },
     "timestamp": "<timestamp>",
     "trail": {
-      "exid": "<exid>",
+      "exid": "exid:[masked]",
       "stack": [],
     },
   },
@@ -250,8 +250,472 @@ exports[`the sqs queue input given: [case8] a perBatch schema whose own callback
   },
   "timestamp": "<timestamp>",
   "trail": {
-    "exid": "<exid>",
+    "exid": "exid:[masked]",
     "stack": [],
   },
+}
+`;
+
+exports[`the sqs queue input given: [case9] a perRecord or perBatch handler whose peer refuses the request it composed when: [t0] a perRecord handler takes the default opt then: the operator reads the peer line at warn, then the handler line at error 1`] = `
+{
+  "outputLevels": [
+    "warn",
+    "error",
+  ],
+  "outputs": [
+    {
+      "level": "warn",
+      "message": "handler.output",
+      "metadata": {
+        "errorMessage": "✋ ConstraintError: validation failed: payload.sku: Too small: expected string to have >=3 characters
+
+{
+  "issues": [
+    {
+      "path": "payload.sku",
+      "message": "Too small: expected string to have >=3 characters",
+      "code": "too_small"
+    }
+  ],
+  "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
+}",
+        "stackTrace": "Error: ✋ ConstraintError: validation failed: payload.sku: Too small: expected string to have >=3 characters
+    at [frames]",
+      },
+      "timestamp": "<timestamp>",
+      "trail": {
+        "exid": "exid:[masked]",
+        "stack": [],
+      },
+    },
+    {
+      "level": "error",
+      "message": "handler.output",
+      "metadata": {
+        "errorMessage": "💥 LambdaEndpointRefusedError: http://127.0.0.1:[port]/reserve refused the request: validation failed: payload.sku: Too small: expected string to have >=3 characters
+
+{
+  "issues": [
+    {
+      "path": "payload.sku",
+      "message": "Too small: expected string to have >=3 characters",
+      "code": "too_small"
+    }
+  ],
+  "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
+}
+
+this caller composed the request. if it forwards its own caller's input verbatim, opt in with refusal: { as: 'ConstraintError' }
+
+{
+  "url": "http://127.0.0.1:[port]/reserve",
+  "status": 400,
+  "exid": "exid:[masked]",
+  "correlationId": null,
+  "text": null,
+  "headers": {
+    "connection": "keep-alive",
+    "content-type": "application/json",
+    "date": "[date]",
+    "keep-alive": "timeout=5",
+    "transfer-encoding": "chunked"
+  },
+  "errorType": "ConstraintError"
+}",
+        "stackTrace": "LambdaEndpointRefusedError: 💥 LambdaEndpointRefusedError: http://127.0.0.1:[port]/reserve refused the request: validation failed: payload.sku: Too small: expected string to have >=3 characters
+    at [frames]",
+      },
+      "timestamp": "<timestamp>",
+      "trail": {
+        "exid": "exid:[masked]",
+        "stack": [],
+      },
+    },
+  ],
+  "refused": null,
+  "settled": {
+    "cause": {
+      "class": "LambdaEndpointRefusedError",
+      "headline": "💥 LambdaEndpointRefusedError: http://127.0.0.1:[port]/reserve refused the request: validation failed: payload.sku: Too small: expected string to have >=3 characters",
+    },
+    "failed": true,
+  },
+}
+`;
+
+exports[`the sqs queue input given: [case9] a perRecord or perBatch handler whose peer refuses the request it composed when: [t1] a perRecord handler opts into pass-through then: only the peer writes handler.output at warn; the handler writes none 1`] = `
+{
+  "outputLevels": [
+    "warn",
+  ],
+  "outputs": [
+    {
+      "level": "warn",
+      "message": "handler.output",
+      "metadata": {
+        "errorMessage": "✋ ConstraintError: validation failed: payload.sku: Too small: expected string to have >=3 characters
+
+{
+  "issues": [
+    {
+      "path": "payload.sku",
+      "message": "Too small: expected string to have >=3 characters",
+      "code": "too_small"
+    }
+  ],
+  "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
+}",
+        "stackTrace": "Error: ✋ ConstraintError: validation failed: payload.sku: Too small: expected string to have >=3 characters
+    at [frames]",
+      },
+      "timestamp": "<timestamp>",
+      "trail": {
+        "exid": "exid:[masked]",
+        "stack": [],
+      },
+    },
+  ],
+  "refused": {
+    "level": "warn",
+    "message": "sqs.record.refused",
+    "metadata": {
+      "class": "ConstraintError",
+      "consequence": "deleted only if this invoke succeeds; redriven if it fails",
+      "errorMessage": "✋ ConstraintError: validation failed: payload.sku: Too small: expected string to have >=3 characters
+
+{
+  "issues": [
+    {
+      "path": "payload.sku",
+      "message": "Too small: expected string to have >=3 characters",
+      "code": "too_small"
+    }
+  ],
+  "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
+}
+
+{
+  "url": "http://127.0.0.1:[port]/reserve",
+  "status": 400,
+  "exid": "exid:[masked]",
+  "correlationId": null,
+  "text": null,
+  "headers": {
+    "connection": "keep-alive",
+    "content-type": "application/json",
+    "date": "[date]",
+    "keep-alive": "timeout=5",
+    "transfer-encoding": "chunked"
+  }
+}",
+      "id": "msg-0",
+      "message": {
+        "attributes": {
+          "ApproximateFirstReceiveTimestamp": "1700000000000",
+          "ApproximateReceiveCount": "1",
+          "SenderId": "sender",
+          "SentTimestamp": "1700000000000",
+        },
+        "awsRegion": "us-east-1",
+        "body": "{"orderId":"ord-0"}",
+        "eventSource": "aws:sqs",
+        "eventSourceARN": "arn:aws:sqs:us-east-1:000000000000:test-queue",
+        "md5OfBody": "md5",
+        "messageAttributes": {},
+        "messageId": "msg-0",
+        "receiptHandle": "receipt-0",
+      },
+    },
+    "timestamp": "<timestamp>",
+    "trail": {
+      "exid": "exid:[masked]",
+      "stack": [],
+    },
+  },
+  "settled": {
+    "cause": null,
+    "failed": false,
+  },
+}
+`;
+
+exports[`the sqs queue input given: [case9] a perRecord or perBatch handler whose peer refuses the request it composed when: [t2] a perBatch handler takes the default opt then: the operator reads the peer line at warn, then the handler line at error 1`] = `
+{
+  "outputLevels": [
+    "warn",
+    "error",
+  ],
+  "outputs": [
+    {
+      "level": "warn",
+      "message": "handler.output",
+      "metadata": {
+        "errorMessage": "✋ ConstraintError: validation failed: payload.sku: Too small: expected string to have >=3 characters
+
+{
+  "issues": [
+    {
+      "path": "payload.sku",
+      "message": "Too small: expected string to have >=3 characters",
+      "code": "too_small"
+    }
+  ],
+  "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
+}",
+        "stackTrace": "Error: ✋ ConstraintError: validation failed: payload.sku: Too small: expected string to have >=3 characters
+    at [frames]",
+      },
+      "timestamp": "<timestamp>",
+      "trail": {
+        "exid": "exid:[masked]",
+        "stack": [],
+      },
+    },
+    {
+      "level": "error",
+      "message": "handler.output",
+      "metadata": {
+        "errorMessage": "💥 LambdaEndpointRefusedError: http://127.0.0.1:[port]/reserve refused the request: validation failed: payload.sku: Too small: expected string to have >=3 characters
+
+{
+  "issues": [
+    {
+      "path": "payload.sku",
+      "message": "Too small: expected string to have >=3 characters",
+      "code": "too_small"
+    }
+  ],
+  "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
+}
+
+this caller composed the request. if it forwards its own caller's input verbatim, opt in with refusal: { as: 'ConstraintError' }
+
+{
+  "url": "http://127.0.0.1:[port]/reserve",
+  "status": 400,
+  "exid": "exid:[masked]",
+  "correlationId": null,
+  "text": null,
+  "headers": {
+    "connection": "keep-alive",
+    "content-type": "application/json",
+    "date": "[date]",
+    "keep-alive": "timeout=5",
+    "transfer-encoding": "chunked"
+  },
+  "errorType": "ConstraintError"
+}",
+        "stackTrace": "LambdaEndpointRefusedError: 💥 LambdaEndpointRefusedError: http://127.0.0.1:[port]/reserve refused the request: validation failed: payload.sku: Too small: expected string to have >=3 characters
+    at [frames]",
+      },
+      "timestamp": "<timestamp>",
+      "trail": {
+        "exid": "exid:[masked]",
+        "stack": [],
+      },
+    },
+  ],
+  "refused": null,
+  "settled": {
+    "cause": {
+      "class": "LambdaEndpointRefusedError",
+      "headline": "💥 LambdaEndpointRefusedError: http://127.0.0.1:[port]/reserve refused the request: validation failed: payload.sku: Too small: expected string to have >=3 characters",
+    },
+    "failed": true,
+  },
+}
+`;
+
+exports[`the sqs queue input given: [case9] a perRecord or perBatch handler whose peer refuses the request it composed when: [t3] a perBatch handler opts into pass-through then: the invoke fails on the ConstraintError, and the handler line is at warn 1`] = `
+{
+  "outputLevels": [
+    "warn",
+    "warn",
+  ],
+  "outputs": [
+    {
+      "level": "warn",
+      "message": "handler.output",
+      "metadata": {
+        "errorMessage": "✋ ConstraintError: validation failed: payload.sku: Too small: expected string to have >=3 characters
+
+{
+  "issues": [
+    {
+      "path": "payload.sku",
+      "message": "Too small: expected string to have >=3 characters",
+      "code": "too_small"
+    }
+  ],
+  "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
+}",
+        "stackTrace": "Error: ✋ ConstraintError: validation failed: payload.sku: Too small: expected string to have >=3 characters
+    at [frames]",
+      },
+      "timestamp": "<timestamp>",
+      "trail": {
+        "exid": "exid:[masked]",
+        "stack": [],
+      },
+    },
+    {
+      "level": "warn",
+      "message": "handler.output",
+      "metadata": {
+        "errorMessage": "✋ ConstraintError: validation failed: payload.sku: Too small: expected string to have >=3 characters
+
+{
+  "issues": [
+    {
+      "path": "payload.sku",
+      "message": "Too small: expected string to have >=3 characters",
+      "code": "too_small"
+    }
+  ],
+  "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
+}
+
+{
+  "url": "http://127.0.0.1:[port]/reserve",
+  "status": 400,
+  "exid": "exid:[masked]",
+  "correlationId": null,
+  "text": null,
+  "headers": {
+    "connection": "keep-alive",
+    "content-type": "application/json",
+    "date": "[date]",
+    "keep-alive": "timeout=5",
+    "transfer-encoding": "chunked"
+  }
+}",
+        "stackTrace": "Error: ✋ ConstraintError: validation failed: payload.sku: Too small: expected string to have >=3 characters
+    at [frames]",
+      },
+      "timestamp": "<timestamp>",
+      "trail": {
+        "exid": "exid:[masked]",
+        "stack": [],
+      },
+    },
+  ],
+  "refused": null,
+  "settled": {
+    "cause": {
+      "class": "ConstraintError",
+      "headline": "✋ ConstraintError: validation failed: payload.sku: Too small: expected string to have >=3 characters",
+    },
+    "failed": true,
+  },
+}
+`;
+
+exports[`the sqs queue input given: [case10] the handler.output level of each sqs failure the chain observes when: [t0] a perRecord handler throws a MalfunctionError then: the outcome and its lines match snapshot 1`] = `
+{
+  "errors": [
+    {
+      "level": "error",
+      "message": "handler.error",
+      "metadata": {
+        "endpoint": "run-lambda-endpoint",
+        "errorMessage": "💥 MalfunctionError: the upstream is down",
+        "stackTrace": "Error: 💥 MalfunctionError: the upstream is down
+    at [frames]",
+      },
+      "timestamp": "<timestamp>",
+      "trail": {
+        "exid": "exid:[masked]",
+        "stack": [],
+      },
+    },
+  ],
+  "failed": true,
+  "outputLevels": [
+    "error",
+  ],
+  "outputs": [
+    {
+      "level": "error",
+      "message": "handler.output",
+      "metadata": {
+        "errorMessage": "💥 MalfunctionError: the upstream is down",
+        "stackTrace": "Error: 💥 MalfunctionError: the upstream is down
+    at [frames]",
+      },
+      "timestamp": "<timestamp>",
+      "trail": {
+        "exid": "exid:[masked]",
+        "stack": [],
+      },
+    },
+  ],
+}
+`;
+
+exports[`the sqs queue input given: [case10] the handler.output level of each sqs failure the chain observes when: [t1] a perBatch handler throws a ConstraintError then: the outcome and its lines match snapshot 1`] = `
+{
+  "errors": [],
+  "failed": true,
+  "outputLevels": [
+    "warn",
+  ],
+  "outputs": [
+    {
+      "level": "warn",
+      "message": "handler.output",
+      "metadata": {
+        "errorMessage": "✋ ConstraintError: the batch is refused",
+        "stackTrace": "Error: ✋ ConstraintError: the batch is refused
+    at [frames]",
+      },
+      "timestamp": "<timestamp>",
+      "trail": {
+        "exid": "exid:[masked]",
+        "stack": [],
+      },
+    },
+  ],
+}
+`;
+
+exports[`the sqs queue input given: [case10] the handler.output level of each sqs failure the chain observes when: [t2] a perBatch handler throws a MalfunctionError then: the outcome and its lines match snapshot 1`] = `
+{
+  "errors": [
+    {
+      "level": "error",
+      "message": "handler.error",
+      "metadata": {
+        "endpoint": "run-lambda-endpoint",
+        "errorMessage": "💥 MalfunctionError: the upstream is down",
+        "stackTrace": "Error: 💥 MalfunctionError: the upstream is down
+    at [frames]",
+      },
+      "timestamp": "<timestamp>",
+      "trail": {
+        "exid": "exid:[masked]",
+        "stack": [],
+      },
+    },
+  ],
+  "failed": true,
+  "outputLevels": [
+    "error",
+  ],
+  "outputs": [
+    {
+      "level": "error",
+      "message": "handler.output",
+      "metadata": {
+        "errorMessage": "💥 MalfunctionError: the upstream is down",
+        "stackTrace": "Error: 💥 MalfunctionError: the upstream is down
+    at [frames]",
+      },
+      "timestamp": "<timestamp>",
+      "trail": {
+        "exid": "exid:[masked]",
+        "stack": [],
+      },
+    },
+  ],
 }
 `;

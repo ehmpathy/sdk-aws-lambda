@@ -17,24 +17,38 @@ exports[`codegen (local) given: [case1] a capturable service (svc-jobs, in-proce
  * re-run the codegen to update.
  */
 
-import { askLambdaEndpoint, type ContextAwsLambdaCaller } from 'sdk-aws-lambda';
+import {
+  askLambdaEndpoint,
+  type ContextAwsLambdaCaller,
+  type LambdaEndpointRefusal,
+} from 'sdk-aws-lambda';
 import type { SvcJobsJob } from './svcJobs.resources';
 
 export const svcJobs = {
   getJob: (
     event: { uuid: string },
     context: ContextAwsLambdaCaller,
+    options?: { refusal?: LambdaEndpointRefusal },
   ): Promise<{ job: SvcJobsJob }> =>
     askLambdaEndpoint<{ uuid: string }, { job: SvcJobsJob }>(
-      { which: { service: 'svc-jobs', function: 'getJob' }, event },
+      {
+        which: { service: 'svc-jobs', function: 'getJob' },
+        event,
+        refusal: options?.refusal,
+      },
       context,
     ),
   getJobs: (
     event: { limit: number },
     context: ContextAwsLambdaCaller,
+    options?: { refusal?: LambdaEndpointRefusal },
   ): Promise<{ jobs: SvcJobsJob[] }> =>
     askLambdaEndpoint<{ limit: number }, { jobs: SvcJobsJob[] }>(
-      { which: { service: 'svc-jobs', function: 'getJobs' }, event },
+      {
+        which: { service: 'svc-jobs', function: 'getJobs' },
+        event,
+        refusal: options?.refusal,
+      },
       context,
     ),
 };

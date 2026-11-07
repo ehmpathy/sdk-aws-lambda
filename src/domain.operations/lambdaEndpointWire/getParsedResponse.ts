@@ -1,7 +1,7 @@
-import { ConstraintError } from 'helpful-errors';
-
 import type { LambdaEndpoint } from '../../domain.objects/LambdaEndpoint';
 import { LambdaEndpointError } from '../../domain.objects/LambdaEndpointError';
+import type { LambdaEndpointRefusal } from '../../domain.objects/LambdaEndpointRefusal';
+import { asErrorFromPeerRefusal } from './error/asErrorFromPeerRefusal';
 import {
   getIsAncientErrorResponse,
   getIsContempErrorResponse,
@@ -25,15 +25,18 @@ import { getParsedJson } from './serde/getParsedJson';
  * | # | when | it throws |
  * |---|---|---|
  * | 1 | the payload is absent or is not json | `LambdaEndpointError` |
- * | 2 | a CONTEMP envelope — `{ error: { _serde, class, … } }` | `ConstraintError` when `class` is one; else `LambdaEndpointError` |
- * | 3 | an ANCIENT envelope — `{ errorMessage, … }` | `ConstraintError` when `errorType` is `ConstraintError` **or** `BadRequestError`; else `LambdaEndpointError` |
+ * | 2 | a CONTEMP envelope — `{ error: { _serde, class, … } }` | the `refusal` class when `class` is `ConstraintError`; else `LambdaEndpointError` |
+ * | 3 | an ANCIENT envelope — `{ errorMessage, … }` | the `refusal` class when `errorType` is `ConstraintError` **or** `BadRequestError`; else `LambdaEndpointError` |
  * | 4 | aws reported a `functionError` and no shape above matched | `LambdaEndpointError`, with the payload in `details` |
  * | 5 | none of the above | returns the payload as `TResponse` |
  *
  * ⚠️ **rows 2 and 3 split on the same question and answer it differently**, which
  *    is deliberate: a caller's bad request is not a lambda failure, so it
- *    hydrates to `ConstraintError` rather than to an invocation error
- *    (`invariant.badrequesterror-not-lambda-error`). the ancient arm accepts
+ *    hydrates to the `refusal` class rather than to an invocation error
+ *    (`invariant.badrequesterror-not-lambda-error`). the `refusal` class is
+ *    `LambdaEndpointRefusedError` on an ask road — the asker composed the request,
+ *    so the refusal is its own malfunction — and `ConstraintError` where the caller
+ *    opted in, or is the test author (`onSerialized`). the ancient arm accepts
  *    `BadRequestError` too, because that is the name the legacy family emits for
  *    the same fact (`invariant.ancient-vs-contemp-callers`).
  *
@@ -55,6 +58,13 @@ export const getParsedResponse = <TResponse>(input: {
   functionError: string | undefined;
   endpoint: LambdaEndpoint;
   exid: string | null;
+  /**
+   * .what = the class a peer's caller fault becomes
+   * .why = an ask road's caller composed the request, so its default is
+   *        `LambdaEndpointRefusedError`; `runLambdaEndpoint.onSerialized`'s caller IS the party
+   *        at fault, so it names `ConstraintError`
+   */
+  refusal: LambdaEndpointRefusal;
 }): TResponse => {
   // validate payload exists
   if (!input.payload) {
@@ -82,15 +92,21 @@ export const getParsedResponse = <TResponse>(input: {
   if (getIsContempErrorResponse(parsed)) {
     const err = parsed.error;
 
-    // ConstraintError = caller's fault, not lambda error (lambda succeeded)
+    // ConstraintError = the peer refused the request (lambda succeeded); the caller's opt names the class
     if (err.class === 'ConstraintError') {
       // strip prefix to avoid double prefix (handler already prefixed the message)
       const message = asUnprefixedErrorMessage({ message: err.message });
-      throw new ConstraintError(message, {
-        endpoint: input.endpoint,
-        exid: input.exid,
-        causeMessage: err.cause,
-        details: err.details,
+      throw asErrorFromPeerRefusal({
+        refusal: input.refusal,
+        peer: input.endpoint.slug,
+        message,
+        errorType: err.class,
+        metadata: {
+          endpoint: input.endpoint,
+          exid: input.exid,
+          causeMessage: err.cause,
+          details: err.details,
+        },
       });
     }
 
@@ -109,7 +125,7 @@ export const getParsedResponse = <TResponse>(input: {
     const stackTrace = getStackTraceString({ stackTrace: parsed.stackTrace });
     const errorMeta = getLambdaErrorMetadata({ errorResponse: parsed });
 
-    // ConstraintError/BadRequestError = caller's fault, not lambda error (lambda succeeded)
+    // ConstraintError/BadRequestError = the peer refused the request (lambda succeeded)
     // .note = check both for backwards compat with handlers that use old error types
     if (
       parsed.errorType === 'ConstraintError' ||
@@ -119,11 +135,17 @@ export const getParsedResponse = <TResponse>(input: {
       const message = asUnprefixedErrorMessage({
         message: parsed.errorMessage,
       });
-      throw new ConstraintError(message, {
-        endpoint: input.endpoint,
-        exid: input.exid,
-        stackTrace,
-        ...errorMeta,
+      throw asErrorFromPeerRefusal({
+        refusal: input.refusal,
+        peer: input.endpoint.slug,
+        message,
+        errorType: parsed.errorType,
+        metadata: {
+          endpoint: input.endpoint,
+          exid: input.exid,
+          stackTrace,
+          ...errorMeta,
+        },
       });
     }
 

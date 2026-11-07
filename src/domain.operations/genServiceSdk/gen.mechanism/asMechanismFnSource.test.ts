@@ -1,4 +1,5 @@
 import { given, then, when } from 'test-fns';
+import * as ts from 'typescript';
 
 import type { LambdaEndpointSchema } from '../../../domain.objects/LambdaEndpointSchema';
 import { asMechanismFnSource } from './asMechanismFnSource';
@@ -57,6 +58,70 @@ describe('asMechanismFnSource', () => {
       then('it threads context', () => {
         expect(source).toContain('context: ContextAwsLambdaCaller');
       });
+
+      then('it takes the refusal opt and passes it to the ask', () => {
+        expect(source).toContain(
+          'options?: { refusal?: LambdaEndpointRefusal },',
+        );
+        expect(source).toContain('event, refusal: options?.refusal }');
+      });
+    });
+
+    /**
+     * .what = run the emitted fn, not only read its text
+     * .why = a text check passes on a fn that names `refusal` but never sends it; only a
+     *        run against a fake ask shows what reaches `askLambdaEndpoint`
+     */
+    when('[t1] the emitted fn runs against a fake ask', () => {
+      const runEmitted = (input: { args: unknown[] }): unknown[] => {
+        const source = asMechanismFnSource({
+          service: 'svc-jobs',
+          function: 'getJob',
+          schema,
+          dobjRefs: { Job: 'SvcJobsJob' },
+        });
+        const { outputText } = ts.transpileModule(
+          `const sdk = {\n${source}\n};\nreturn sdk;`,
+          { compilerOptions: { target: ts.ScriptTarget.ES2020 } },
+        );
+        const asks: unknown[] = [];
+        const askLambdaEndpoint = async (ask: unknown): Promise<null> => {
+          asks.push(ask);
+          return null;
+        };
+        const sdk = new Function('askLambdaEndpoint', outputText)(
+          askLambdaEndpoint,
+        ) as { getJob: (...args: unknown[]) => Promise<unknown> };
+        void sdk.getJob(...input.args);
+        return asks;
+      };
+
+      then('the refusal opt given reaches the ask', () => {
+        const asks = runEmitted({
+          args: [{ uuid: 'j-1' }, {}, { refusal: { as: 'ConstraintError' } }],
+        });
+        expect(asks).toEqual([
+          {
+            which: { service: 'svc-jobs', function: 'getJob' },
+            event: { uuid: 'j-1' },
+            refusal: { as: 'ConstraintError' },
+          },
+        ]);
+      });
+
+      then(
+        'a call with no options asks with no refusal, so the default holds',
+        () => {
+          const asks = runEmitted({ args: [{ uuid: 'j-1' }, {}] });
+          expect(asks).toEqual([
+            {
+              which: { service: 'svc-jobs', function: 'getJob' },
+              event: { uuid: 'j-1' },
+              refusal: undefined,
+            },
+          ]);
+        },
+      );
     });
   });
 });

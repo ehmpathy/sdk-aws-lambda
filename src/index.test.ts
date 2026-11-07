@@ -158,6 +158,7 @@ describe('[case1] the migrant swaps the import', () => {
             'LambdaDomainObjectRefUnbindableError',
             'LambdaEndpoint',
             'LambdaEndpointError',
+            'LambdaEndpointRefusedError',
             'LambdaFunctionNotFoundError',
             'LambdaIntrospectionBlockedError',
             'LambdaIntrospectionNotSupportedError',
@@ -246,6 +247,16 @@ describe('[case1] the migrant swaps the import', () => {
         expect(envelope.errorType).toEqual('BadRequestError');
         expect(run).toEqual({ found: true });
         expect(typeof handler).toEqual('function');
+      });
+
+      /**
+       * .what = the refusal opt's type is reachable from the root (sdk-aws-lambda#77)
+       * .why = a consumer that stores or forwards the opt must name its type; the annotation is the
+       *        clamp, so a removed `export type { LambdaEndpointRefusal }` is a compile error here
+       */
+      then('LambdaEndpointRefusal is reachable from the root', () => {
+        const refusal: sdk.LambdaEndpointRefusal = { as: 'ConstraintError' };
+        expect(refusal.as).toEqual('ConstraintError');
       });
 
       /**

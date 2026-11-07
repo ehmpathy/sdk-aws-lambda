@@ -1,12 +1,27 @@
-import { BadRequestError, getError } from 'helpful-errors';
+import {
+  BadRequestError,
+  ConstraintError,
+  getError,
+  MalfunctionError,
+} from 'helpful-errors';
 import { given, then, when } from 'test-fns';
 
 import { LambdaEndpointError } from '../../domain.objects/LambdaEndpointError';
+import { LAMBDA_ENDPOINT_ERROR_SERDE_CONTEMP } from '../../domain.objects/LambdaEndpointErrorResponseBody';
+import {
+  REFUSAL_DEFAULT,
+  REFUSAL_PASSTHROUGH,
+} from '../../domain.objects/LambdaEndpointRefusal';
+import { LambdaEndpointRefusedError } from '../../domain.objects/LambdaEndpointRefusedError';
 import { asLambdaEndpoint } from '../asLambdaEndpoint/asLambdaEndpoint';
+import { getIsConstraintError } from '../genLambdaEndpoint/middleware/getIsConstraintError';
 import { getParsedResponse } from './getParsedResponse';
 
 const toPayload = (obj: unknown): Uint8Array =>
   new TextEncoder().encode(JSON.stringify(obj));
+
+// .note = cases 1-9 pass `REFUSAL_PASSTHROUGH`, which keeps a refusal a `ConstraintError` as before
+//         sdk-aws-lambda#77; the default arm is graded by `[case6][t1]` (a rich envelope) and `[case10]`
 
 describe('getParsedResponse', () => {
   given('[case1] valid response payload', () => {
@@ -20,6 +35,7 @@ describe('getParsedResponse', () => {
           function: 'getOrder',
         }),
         exid: 'exid:abc123',
+        refusal: REFUSAL_PASSTHROUGH,
       });
 
       then('it should return parsed response', () => {
@@ -45,6 +61,7 @@ describe('getParsedResponse', () => {
               function: 'getOrder',
             }),
             exid: 'exid:abc123',
+            refusal: REFUSAL_PASSTHROUGH,
           }),
         );
         expect(error).toBeInstanceOf(LambdaEndpointError);
@@ -61,6 +78,7 @@ describe('getParsedResponse', () => {
               function: 'getOrder',
             }),
             exid: 'exid:abc123',
+            refusal: REFUSAL_PASSTHROUGH,
           }),
         );
         expect(error.message).toContain('empty payload');
@@ -77,6 +95,7 @@ describe('getParsedResponse', () => {
               function: 'getOrder',
             }),
             exid: 'exid:abc123',
+            refusal: REFUSAL_PASSTHROUGH,
           }),
         );
         expect(error).toMatchSnapshot();
@@ -97,6 +116,7 @@ describe('getParsedResponse', () => {
               function: 'getOrder',
             }),
             exid: 'exid:abc123',
+            refusal: REFUSAL_PASSTHROUGH,
           }),
         );
         expect(error).toBeInstanceOf(LambdaEndpointError);
@@ -113,6 +133,7 @@ describe('getParsedResponse', () => {
               function: 'getOrder',
             }),
             exid: 'exid:abc123',
+            refusal: REFUSAL_PASSTHROUGH,
           }),
         );
         expect(error.message).toContain('invalid json');
@@ -129,6 +150,7 @@ describe('getParsedResponse', () => {
               function: 'getOrder',
             }),
             exid: 'exid:abc123',
+            refusal: REFUSAL_PASSTHROUGH,
           }),
         );
         expect(error).toMatchSnapshot();
@@ -153,6 +175,7 @@ describe('getParsedResponse', () => {
               function: 'getOrder',
             }),
             exid: 'exid:abc123',
+            refusal: REFUSAL_PASSTHROUGH,
           }),
         );
         expect(error).toBeInstanceOf(LambdaEndpointError);
@@ -173,6 +196,7 @@ describe('getParsedResponse', () => {
               function: 'getOrder',
             }),
             exid: 'exid:abc123',
+            refusal: REFUSAL_PASSTHROUGH,
           }),
         );
         expect(error.message).toContain('something went wrong');
@@ -193,6 +217,7 @@ describe('getParsedResponse', () => {
               function: 'getOrder',
             }),
             exid: 'exid:abc123',
+            refusal: REFUSAL_PASSTHROUGH,
           }),
         );
         const lambdaError = error as LambdaEndpointError;
@@ -214,6 +239,7 @@ describe('getParsedResponse', () => {
               function: 'getOrder',
             }),
             exid: 'exid:abc123',
+            refusal: REFUSAL_PASSTHROUGH,
           }),
         );
         const lambdaError = error as LambdaEndpointError;
@@ -235,6 +261,7 @@ describe('getParsedResponse', () => {
               function: 'getOrder',
             }),
             exid: 'exid:abc123',
+            refusal: REFUSAL_PASSTHROUGH,
           }),
         );
         expect(error).toMatchSnapshot();
@@ -255,6 +282,7 @@ describe('getParsedResponse', () => {
               function: 'getOrder',
             }),
             exid: null,
+            refusal: REFUSAL_PASSTHROUGH,
           }),
         );
         expect(error).toBeInstanceOf(LambdaEndpointError);
@@ -273,6 +301,7 @@ describe('getParsedResponse', () => {
               function: 'getOrder',
             }),
             exid: null,
+            refusal: REFUSAL_PASSTHROUGH,
           }),
         );
         const lambdaError = error as LambdaEndpointError;
@@ -292,6 +321,7 @@ describe('getParsedResponse', () => {
               function: 'getOrder',
             }),
             exid: null,
+            refusal: REFUSAL_PASSTHROUGH,
           }),
         );
         expect(error).toMatchSnapshot();
@@ -316,6 +346,7 @@ describe('getParsedResponse', () => {
           function: 'getUser',
         }),
         exid: 'exid:xyz',
+        refusal: REFUSAL_PASSTHROUGH,
       });
 
       then('it should preserve nested structure', () => {
@@ -354,6 +385,7 @@ describe('getParsedResponse', () => {
           function: 'createUser',
         }),
         exid: 'exid:abc123',
+        refusal: REFUSAL_PASSTHROUGH,
       });
 
     when('[t0] parsed with errorType BadRequestError', () => {
@@ -436,6 +468,72 @@ describe('getParsedResponse', () => {
         expect(error).toMatchSnapshot();
       });
     });
+
+    /**
+     * .what = the same rich envelope, under the default opt
+     * .why = `[t0]` grades the pass-through arm; the default arm adds `errorType` and recasts the
+     *        class, so it owes its own proof that `details`, `causeMessage`, and `stackTrace`
+     *        survive the recast (sdk-aws-lambda#77)
+     */
+    when('[t1] parsed under the default opt', () => {
+      const parseWithDefault = () =>
+        getParsedResponse({
+          payload: toPayload({
+            errorMessage: 'validation failed',
+            errorType: 'BadRequestError',
+            stackTrace: 'at handler',
+            details: {
+              issues: [
+                {
+                  path: 'email',
+                  message: 'invalid email',
+                  code: 'invalid_string',
+                },
+              ],
+            },
+            causeMessage: 'zod validation failed',
+          }),
+          functionError: undefined,
+          endpoint: asLambdaEndpoint({
+            service: 'svc-users',
+            access: 'prep',
+            function: 'createUser',
+          }),
+          exid: 'exid:abc123',
+          refusal: REFUSAL_DEFAULT,
+        });
+
+      then(
+        'it throws LambdaEndpointRefusedError, with every field of the envelope kept',
+        async () => {
+          const error = await getError(parseWithDefault);
+          expect(error).toBeInstanceOf(LambdaEndpointRefusedError);
+          expect(error).toMatchObject({
+            metadata: {
+              errorType: 'BadRequestError',
+              details: {
+                issues: [
+                  {
+                    path: 'email',
+                    message: 'invalid email',
+                    code: 'invalid_string',
+                  },
+                ],
+              },
+              causeMessage: 'zod validation failed',
+              stackTrace: 'at handler',
+              endpoint: { service: 'svc-users', function: 'createUser' },
+              exid: 'exid:abc123',
+            },
+          });
+        },
+      );
+
+      then('it should match snapshot', async () => {
+        const error = await getError(parseWithDefault);
+        expect(error).toMatchSnapshot();
+      });
+    });
   });
 
   given('[case7] LambdaEndpointError with details', () => {
@@ -455,6 +553,7 @@ describe('getParsedResponse', () => {
           function: 'createUser',
         }),
         exid: 'exid:xyz789',
+        refusal: REFUSAL_PASSTHROUGH,
       });
 
     when('[t0] parsed with error details', () => {
@@ -528,6 +627,7 @@ describe('getParsedResponse', () => {
           functionError: 'Unhandled',
           endpoint,
           exid: 'exid:abc123',
+          refusal: REFUSAL_PASSTHROUGH,
         });
 
       then('it throws rather than returns the fault as a success', async () => {
@@ -569,6 +669,7 @@ describe('getParsedResponse', () => {
             functionError: 'Unhandled',
             endpoint,
             exid: 'exid:abc123',
+            refusal: REFUSAL_PASSTHROUGH,
           }),
         );
         expect(error).toBeInstanceOf(BadRequestError);
@@ -595,6 +696,7 @@ describe('getParsedResponse', () => {
           functionError: undefined,
           endpoint,
           exid: 'exid:abc123',
+          refusal: REFUSAL_PASSTHROUGH,
         });
 
         expect(result).toEqual({ someOtherShape: true });
@@ -603,6 +705,192 @@ describe('getParsedResponse', () => {
         // pass-through would satisfy the `toEqual` only if it were removed, so
         // the snapshot is what reports the reshape
         expect(result).toMatchSnapshot();
+      });
+    });
+  });
+
+  /**
+   * .what = a peer's refusal, under the default opt
+   * .why = the asker composed the request, so a refusal is the asker's own malfunction. thrown
+   *        as the asker's `ConstraintError`, an api-gateway asker answered its caller 400 and hid
+   *        from every alarm (sdk-aws-lambda#77)
+   */
+  given('[case10] a peer refuses, under the default opt', () => {
+    const endpoint = asLambdaEndpoint({
+      service: 'svc-notifications',
+      access: 'prep',
+      function: 'sendNotification',
+    });
+
+    when('[t0] the refusal arrives in the contemp envelope', () => {
+      const parseContemp = () =>
+        getParsedResponse({
+          payload: toPayload({
+            error: {
+              _serde: LAMBDA_ENDPOINT_ERROR_SERDE_CONTEMP,
+              class: 'ConstraintError',
+              message: 'ConstraintError: template id absent',
+              details: { field: 'templateId' },
+            },
+          }),
+          functionError: undefined,
+          endpoint,
+          exid: 'exid:abc123',
+          refusal: REFUSAL_DEFAULT,
+        });
+
+      then(
+        'it throws LambdaEndpointRefusedError, a MalfunctionError',
+        async () => {
+          const error = await getError(parseContemp);
+          expect(error).toBeInstanceOf(LambdaEndpointRefusedError);
+          expect(error).toBeInstanceOf(MalfunctionError);
+          expect(error.name).toEqual('LambdaEndpointRefusedError');
+        },
+      );
+
+      then('no consumer family reads it as a caller fault', async () => {
+        const error = await getError(parseContemp);
+        expect(error).not.toBeInstanceOf(ConstraintError);
+        expect(getIsConstraintError({ error })).toBe(false);
+      });
+
+      then(
+        'the message names the peer, its reason, and the opt-in',
+        async () => {
+          const error = await getError(parseContemp);
+          expect(error.message).toContain(
+            'svc-notifications-prep-sendNotification refused the request: template id absent',
+          );
+          expect(error.message).toContain("refusal: { as: 'ConstraintError' }");
+        },
+      );
+
+      then('the metadata keeps the peer verdict', async () => {
+        const error = (await getError(
+          parseContemp,
+        )) as LambdaEndpointRefusedError;
+        expect(error.metadata).toMatchObject({
+          exid: 'exid:abc123',
+          errorType: 'ConstraintError',
+          details: { field: 'templateId' },
+        });
+      });
+
+      then('it should match snapshot', async () => {
+        const error = await getError(parseContemp);
+        expect(error).toMatchSnapshot();
+      });
+    });
+
+    when(
+      '[t1] the refusal arrives in the ancient envelope, as BadRequestError',
+      () => {
+        const parseAncient = () =>
+          getParsedResponse({
+            payload: toPayload({
+              errorMessage: 'template id absent',
+              errorType: 'BadRequestError',
+            }),
+            functionError: undefined,
+            endpoint,
+            exid: 'exid:abc123',
+            refusal: REFUSAL_DEFAULT,
+          });
+
+        then('it throws LambdaEndpointRefusedError', async () => {
+          const error = await getError(parseAncient);
+          expect(error).toBeInstanceOf(LambdaEndpointRefusedError);
+          expect(getIsConstraintError({ error })).toBe(false);
+        });
+
+        then('the metadata names the peer verdict as it arrived', async () => {
+          const error = (await getError(
+            parseAncient,
+          )) as LambdaEndpointRefusedError;
+          expect(error.metadata).toMatchObject({
+            errorType: 'BadRequestError',
+          });
+        });
+
+        then('it should match snapshot', async () => {
+          const error = await getError(parseAncient);
+          expect(error).toMatchSnapshot();
+        });
+      },
+    );
+
+    when('[t2] the same refusal, with the pass-through opt', () => {
+      then('it throws ConstraintError, as before', async () => {
+        const error = await getError(() =>
+          getParsedResponse({
+            payload: toPayload({
+              errorMessage: 'template id absent',
+              errorType: 'BadRequestError',
+            }),
+            functionError: undefined,
+            endpoint,
+            exid: 'exid:abc123',
+            refusal: REFUSAL_PASSTHROUGH,
+          }),
+        );
+        expect(error).toBeInstanceOf(ConstraintError);
+        expect(getIsConstraintError({ error })).toBe(true);
+        expect(error).toMatchSnapshot();
+      });
+    });
+
+    when('[t3] a server fault, under the default opt', () => {
+      then('it throws LambdaEndpointError, unchanged by the opt', async () => {
+        const error = await getError(() =>
+          getParsedResponse({
+            payload: toPayload({
+              errorMessage: 'the queue is down',
+              errorType: 'MalfunctionError',
+            }),
+            functionError: 'Unhandled',
+            endpoint,
+            exid: 'exid:abc123',
+            refusal: REFUSAL_DEFAULT,
+          }),
+        );
+        expect(error).toBeInstanceOf(LambdaEndpointError);
+        expect(error).not.toBeInstanceOf(LambdaEndpointRefusedError);
+        expect(error).toMatchSnapshot();
+      });
+    });
+
+    /**
+     * .what = a contemp peer's refusal, under the pass-through opt
+     * .why = the journey of a consumer that forwards verbatim to a contemp peer: its thrown shape
+     *        (the unprefixed message, the contemp `details`) differs from the ancient pass-through
+     */
+    when('[t4] the contemp refusal, with the pass-through opt', () => {
+      then('it throws ConstraintError with the peer details kept', async () => {
+        const error = await getError(() =>
+          getParsedResponse({
+            payload: toPayload({
+              error: {
+                _serde: LAMBDA_ENDPOINT_ERROR_SERDE_CONTEMP,
+                class: 'ConstraintError',
+                message: 'ConstraintError: template id absent',
+                details: { field: 'templateId' },
+              },
+            }),
+            functionError: undefined,
+            endpoint,
+            exid: 'exid:abc123',
+            refusal: REFUSAL_PASSTHROUGH,
+          }),
+        );
+        expect(error).toBeInstanceOf(ConstraintError);
+        expect(error).not.toBeInstanceOf(LambdaEndpointRefusedError);
+        expect(error.message).toContain('template id absent');
+        expect(error.message).not.toContain('refused the request');
+        expect((error as ConstraintError).metadata).toMatchObject({
+          details: { field: 'templateId' },
+        });
+        expect(error).toMatchSnapshot();
       });
     });
   });
