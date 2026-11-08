@@ -1,9 +1,27 @@
 import { ConstraintError, MalfunctionError } from 'helpful-errors';
-import { given, then, useThen, when } from 'test-fns';
+import { given, then, useBeforeAll, useThen, when } from 'test-fns';
 import { z } from 'zod';
 
 import { asSqsEvent } from '../src/__test_assets__/asSqsEvent';
-import { genLambdaEndpoint, runLambdaEndpoint } from '../src/index';
+import { genApiGatewayProxyHarness } from '../src/__test_assets__/genApiGatewayProxyHarness';
+import { asLogLineMasked } from './__test_assets__/asLogLineMasked';
+import {
+  asApiGatewayResponseSchema,
+  askLambdaEndpoint,
+  genLambdaEndpoint,
+  runLambdaEndpoint,
+} from '../src/index';
+
+/**
+ * .what = masks the volatile fields of a peer answer in a serialized value
+ * .why = the harness port, the `date` header, and the generated trail exid move each run; every
+ *        other field is the contract (`rule.require.snapshots-deny-volatile-not-allow-expected`)
+ */
+const asPortMasked = (text: string): string =>
+  text
+    .replace(/127\.0\.0\.1:\d+/g, '127.0.0.1:[port]')
+    .replace(/(\\*"date\\*":\s*\\*")[^"\\]*/g, '$1[date]')
+    .replace(/exid:[0-9a-f]{8}-[0-9a-f-]{27}/g, 'exid:[masked]');
 
 /**
  * .what = drives BOTH sqs cardinality leaves through the surface a consumer imports
@@ -62,9 +80,23 @@ const asWarnLineMasked = (input: {
       typeof found.metadata === 'string'
         ? JSON.parse(found.metadata)
         : found.metadata,
-    ...(trail ? { trail: { ...trail, exid: '<exid>' } } : {}),
+    ...(trail ? { trail: { ...trail, exid: 'exid:[masked]' } } : {}),
   };
 };
+
+/**
+ * .what = the level of each `handler.output` line at warn or above, in the order written
+ * .why = on-call filters by that level; a debug line goes to another outlet, so it is absent here
+ */
+const asOutputLevels = (input: { lines: unknown[] }): unknown[] =>
+  input.lines
+    .filter(
+      (line): line is Record<string, unknown> =>
+        typeof line === 'object' &&
+        line !== null &&
+        (line as { message?: unknown }).message === 'handler.output',
+    )
+    .map((line) => line.level);
 
 /**
  * .what = how one invoke settled, with a rejection's class and headline kept
@@ -713,6 +745,298 @@ describe('the sqs queue input', () => {
         expect(metadata.id).toEqual('msg-1');
         expect(metadata.errorMessage).toEqual('the refine callback broke');
         expect(outcome.entry).toMatchSnapshot();
+      });
+    });
+  });
+
+  /**
+   * .what = a perRecord handler asks a real peer over http, and the peer refuses the request the
+   *         handler composed
+   * .why = the sqs fate of a peer refusal follows the ask's refusal opt: by default the refusal is
+   *        a fault of ours, so the message redrives; under pass-through it is a caller fault, so the
+   *        message is acknowledged (`invariant.constraint-errors-never-redrive-sqs`, sdk-aws-lambda#77).
+   *        the `handler.output` level is read beside it, since on-call filters by that level
+   */
+  given('[case9] a perRecord or perBatch handler whose peer refuses the request it composed', () => {
+    const peer = useBeforeAll(async () =>
+      genApiGatewayProxyHarness({
+        handler: genLambdaEndpoint.forApiGateway({
+          schema: {
+            input: z.object({ payload: z.object({ sku: z.string().min(3) }) }),
+            output: asApiGatewayResponseSchema({
+              payload: z.object({ reserved: z.boolean() }),
+            }),
+          },
+          invoke: async () => ({ payload: { reserved: true } }),
+        }),
+      }),
+    );
+    afterAll(async () => peer.close());
+
+    /**
+     * .what = a perRecord handler that composes a bad request to the peer, under the opt it is given
+     * .why = the message itself is valid; the handler built the bad body
+     */
+    const genHandler = (input: {
+      refusal: { as: 'ConstraintError' | 'LambdaEndpointRefusedError' };
+      leaf: 'perRecord' | 'perBatch';
+    }): Parameters<typeof runLambdaEndpoint.onReferenced>[0]['handler'] => {
+      const askPeer = async (context: {
+        log: Parameters<typeof askLambdaEndpoint.viaApiGateway>[1]['log'];
+      }): Promise<void> => {
+        await askLambdaEndpoint.viaApiGateway(
+          {
+            url: `${peer.url}/reserve`,
+            method: 'POST',
+            body: { sku: 'x' },
+            refusal: input.refusal,
+          },
+          { log: context.log },
+        );
+      };
+      if (input.leaf === 'perBatch')
+        return genLambdaEndpoint.forSqs.perBatch({
+          schema: SCHEMA_ORDER,
+          invoke: async ({ records }, { log }) => {
+            await askPeer({ log });
+            return { successes: records };
+          },
+        });
+      return genLambdaEndpoint.forSqs.perRecord({
+        schema: SCHEMA_ORDER,
+        invoke: async (_, { log }) => askPeer({ log }),
+      });
+    };
+
+    /**
+     * .what = runs one message through the handler, with the two lines on-call reads
+     * .why = the port of the harness rides the url in each message, so it is masked
+     */
+    const runOneMessage = async (input: {
+      refusal: { as: 'ConstraintError' | 'LambdaEndpointRefusedError' };
+      leaf: 'perRecord' | 'perBatch';
+    }) => {
+      const { result: settled, lines } = await withWarnLines(async () =>
+        asInvokeSettled(
+          runLambdaEndpoint.onReferenced({
+            handler: genHandler(input),
+            struct: { payload: 'ancient' },
+            event: asSqsEvent({
+              messages: [{ body: JSON.stringify({ orderId: 'ord-0' }) }],
+            }),
+          }),
+        ),
+      );
+      const refused = asWarnLineMasked({ lines, message: 'sqs.record.refused' });
+      return {
+        settled: JSON.parse(asPortMasked(JSON.stringify(settled))),
+        // the peer runs in this process too, so its own line comes first, then the handler's
+        outputLevels: asOutputLevels({ lines }),
+        // each handler.output line whole, save its volatile fields, as `[case10]` snaps them
+        outputs: lines
+          .filter(
+            (line): line is Record<string, unknown> =>
+              typeof line === 'object' &&
+              line !== null &&
+              (line as { message?: unknown }).message === 'handler.output',
+          )
+          .map((line) => asLogLineMasked({ line })),
+        refused: refused && JSON.parse(asPortMasked(JSON.stringify(refused))),
+      };
+    };
+
+    when('[t0] a perRecord handler takes the default opt', () => {
+      const outcome = useThen('the invoke settles', async () =>
+        runOneMessage({
+          refusal: { as: 'LambdaEndpointRefusedError' },
+          leaf: 'perRecord',
+        }),
+      );
+
+      then('the invoke fails on the refusal, so sqs redrives the message', () => {
+        expect(outcome.settled.failed).toEqual(true);
+        expect(outcome.settled.cause?.class).toEqual('LambdaEndpointRefusedError');
+        expect(outcome.settled.cause?.headline).toContain('refused the request');
+      });
+
+      then('no refusal line is written, since the message is not acknowledged', () => {
+        expect(outcome.refused).toEqual(null);
+      });
+
+      then('the operator reads the peer line at warn, then the handler line at error', () => {
+        expect(outcome.outputLevels).toEqual(['warn', 'error']);
+        expect(outcome).toMatchSnapshot();
+      });
+    });
+
+    when('[t1] a perRecord handler opts into pass-through', () => {
+      const outcome = useThen('the invoke settles', async () =>
+        runOneMessage({ refusal: { as: 'ConstraintError' }, leaf: 'perRecord' }),
+      );
+
+      then('the invoke succeeds, so sqs deletes the message', () => {
+        expect(outcome.settled).toEqual({ failed: false, cause: null });
+      });
+
+      then('the operator reads one warn line that names the record and the peer reason', () => {
+        const metadata = outcome.refused?.metadata as Record<string, unknown>;
+        expect(outcome.refused?.level).toEqual('warn');
+        expect(metadata.id).toEqual('msg-0');
+        expect(metadata.class).toEqual('ConstraintError');
+        expect(String(metadata.errorMessage)).toContain('sku');
+      });
+
+      // perRecord catches the caller fault inside its logic, so the chain sees a success
+      then('only the peer writes handler.output at warn; the handler writes none', () => {
+        expect(outcome.outputLevels).toEqual(['warn']);
+        expect(outcome).toMatchSnapshot();
+      });
+    });
+
+    when('[t2] a perBatch handler takes the default opt', () => {
+      const outcome = useThen('the invoke settles', async () =>
+        runOneMessage({
+          refusal: { as: 'LambdaEndpointRefusedError' },
+          leaf: 'perBatch',
+        }),
+      );
+
+      then('the invoke fails on the refusal, so sqs redrives the batch', () => {
+        expect(outcome.settled.failed).toEqual(true);
+        expect(outcome.settled.cause?.class).toEqual('LambdaEndpointRefusedError');
+      });
+
+      then('the operator reads the peer line at warn, then the handler line at error', () => {
+        expect(outcome.outputLevels).toEqual(['warn', 'error']);
+        expect(outcome).toMatchSnapshot();
+      });
+    });
+
+    when('[t3] a perBatch handler opts into pass-through', () => {
+      const outcome = useThen('the invoke settles', async () =>
+        runOneMessage({ refusal: { as: 'ConstraintError' }, leaf: 'perBatch' }),
+      );
+
+      // a perBatch caller fault fails the invoke whole, as `[case10][t1]` shows for a bare throw
+      then('the invoke fails on the ConstraintError, and the handler line is at warn', () => {
+        expect(outcome.settled.failed).toEqual(true);
+        expect(outcome.settled.cause?.class).toEqual('ConstraintError');
+        expect(outcome.outputLevels).toEqual(['warn', 'warn']);
+        expect(outcome).toMatchSnapshot();
+      });
+    });
+  });
+
+  given('[case10] the handler.output level of each sqs failure the chain observes', () => {
+    /**
+     * .what = the level on-call filters by, per sqs leaf and per fault class
+     * .why = a failed invoke that logs at debug hides the failure (sdk-aws-lambda#77)
+     */
+    const runOne = async (input: { handler: Parameters<typeof runLambdaEndpoint.onReferenced>[0]['handler'] }) => {
+      const { result: settled, lines } = await withWarnLines(async () =>
+        asInvokeSettled(
+          runLambdaEndpoint.onReferenced({
+            handler: input.handler,
+            struct: { payload: 'ancient' },
+            event: asSqsEvent({
+              messages: [{ body: JSON.stringify({ orderId: 'ord-0' }) }],
+            }),
+          }),
+        ),
+      );
+      // each handler.output and handler.error line is kept whole, save its volatile fields
+      const asLinesOf = (of: { message: string }) =>
+        lines
+          .filter(
+            (line): line is Record<string, unknown> =>
+              typeof line === 'object' &&
+              line !== null &&
+              (line as { message?: unknown }).message === of.message,
+          )
+          .map((line) => asLogLineMasked({ line }));
+      return {
+        failed: settled.failed,
+        outputLevels: asOutputLevels({ lines }),
+        outputs: asLinesOf({ message: 'handler.output' }),
+        errors: asLinesOf({ message: 'handler.error' }),
+      };
+    };
+
+    when('[t0] a perRecord handler throws a MalfunctionError', () => {
+      const outcome = useThen('the invoke settles', async () =>
+        runOne({
+          handler: genLambdaEndpoint.forSqs.perRecord({
+            schema: SCHEMA_ORDER,
+            invoke: async () => {
+              throw new MalfunctionError('the upstream is down');
+            },
+          }),
+        }),
+      );
+
+      then('handler.output is written at error', () => {
+        expect(outcome.failed).toEqual(true);
+        expect(outcome.outputLevels).toEqual(['error']);
+      });
+
+      then('handler.error is written once, at error', () => {
+        expect(outcome.errors.map((line) => line.level)).toEqual(['error']);
+      });
+
+      then('the outcome and its lines match snapshot', () => {
+        expect(outcome).toMatchSnapshot();
+      });
+    });
+
+    when('[t1] a perBatch handler throws a ConstraintError', () => {
+      const outcome = useThen('the invoke settles', async () =>
+        runOne({
+          handler: genLambdaEndpoint.forSqs.perBatch({
+            schema: SCHEMA_ORDER,
+            invoke: async () => {
+              throw new ConstraintError('the batch is refused');
+            },
+          }),
+        }),
+      );
+
+      then('handler.output is written at warn', () => {
+        expect(outcome.failed).toEqual(true);
+        expect(outcome.outputLevels).toEqual(['warn']);
+      });
+
+      then('no handler.error is written: a caller fault is no server fault', () => {
+        expect(outcome.errors).toEqual([]);
+      });
+
+      then('the outcome and its lines match snapshot', () => {
+        expect(outcome).toMatchSnapshot();
+      });
+    });
+
+    when('[t2] a perBatch handler throws a MalfunctionError', () => {
+      const outcome = useThen('the invoke settles', async () =>
+        runOne({
+          handler: genLambdaEndpoint.forSqs.perBatch({
+            schema: SCHEMA_ORDER,
+            invoke: async () => {
+              throw new MalfunctionError('the upstream is down');
+            },
+          }),
+        }),
+      );
+
+      then('handler.output is written at error', () => {
+        expect(outcome.failed).toEqual(true);
+        expect(outcome.outputLevels).toEqual(['error']);
+      });
+
+      then('handler.error is written once, at error', () => {
+        expect(outcome.errors.map((line) => line.level)).toEqual(['error']);
+      });
+
+      then('the outcome and its lines match snapshot', () => {
+        expect(outcome).toMatchSnapshot();
       });
     });
   });

@@ -1,0 +1,20 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`asLambdaEndpointRefusal given: [case2] an opt this sdk cannot honor when: [t5] the refusal is read then: it names both options and the fix 1`] = `
+[Error: 💥 MalfunctionError: the refusal opt given is not one this sdk can honor
+
+{
+  "declared": {
+    "as": "constraintError"
+  },
+  "options": [
+    {
+      "as": "LambdaEndpointRefusedError"
+    },
+    {
+      "as": "ConstraintError"
+    }
+  ],
+  "hint": "omit \`refusal\` when this caller composed the request (a peer refusal is then a LambdaEndpointRefusedError, a server fault). pass \`refusal: { as: 'ConstraintError' }\` only where the request forwards your own caller's input verbatim."
+}]
+`;

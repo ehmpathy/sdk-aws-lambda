@@ -4,6 +4,7 @@ import { getError, given, then, useBeforeAll, when } from 'test-fns';
 
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
+import { LambdaEndpointRefusedError } from '../../domain.objects/LambdaEndpointRefusedError';
 import { askLambdaEndpoint } from './askLambdaEndpoint';
 
 const CONTEXT = genContextLogTrail({
@@ -35,6 +36,15 @@ const genAnswerServer = async (): Promise<{
       if (req.url === '/html-502') {
         res.writeHead(502, { 'content-type': 'text/html' });
         res.end('<html><body>bad gateway</body></html>');
+        return;
+      }
+      if (req.url === '/throttle-429') {
+        // a fixed date, so node sends no clock value the snapshot would carry
+        res.writeHead(429, {
+          'retry-after': '30',
+          date: 'Sat, 07 Nov 2026 00:00:00 GMT',
+        });
+        res.end();
         return;
       }
       if (req.url === '/empty-204') {
@@ -72,7 +82,7 @@ describe('askLambdaEndpoint.viaApiGateway', () => {
 
     when('[t0] the answer is a flat 400 from an old endpoint', () => {
       then(
-        'it throws a ConstraintError, with the raw text kept in the metadata',
+        'it throws a LambdaEndpointRefusedError, with the raw text kept in the metadata',
         async () => {
           const error = await getError(
             askLambdaEndpoint.viaApiGateway(
@@ -80,7 +90,29 @@ describe('askLambdaEndpoint.viaApiGateway', () => {
               CONTEXT,
             ),
           );
+          expect(error).toBeInstanceOf(LambdaEndpointRefusedError);
+          expect(error).not.toBeInstanceOf(ConstraintError);
+          const metadata = (error as LambdaEndpointRefusedError).metadata;
+          expect(String(metadata?.text)).toContain('BadRequestError');
+        },
+      );
+
+      then(
+        'under the pass-through opt, it throws a ConstraintError, as before',
+        async () => {
+          const error = await getError(
+            askLambdaEndpoint.viaApiGateway(
+              {
+                url: `${server.url}/flat-400`,
+                method: 'POST',
+                body: {},
+                refusal: { as: 'ConstraintError' },
+              },
+              CONTEXT,
+            ),
+          );
           expect(error).toBeInstanceOf(ConstraintError);
+          expect(error).not.toBeInstanceOf(LambdaEndpointRefusedError);
           const metadata = (error as ConstraintError).metadata;
           expect(String(metadata?.text)).toContain('BadRequestError');
         },
@@ -101,6 +133,64 @@ describe('askLambdaEndpoint.viaApiGateway', () => {
           expect(String((error as MalfunctionError).metadata?.text)).toContain(
             'bad gateway',
           );
+        },
+      );
+    });
+
+    when('[t6] the answer is a 429 throttle, with a retry-after', () => {
+      /**
+       * .what = the throttle over a real http wire, under each opt
+       * .why = a 429 is load the caller did not cause: a MalfunctionError to retry, never a
+       *        refusal, under either opt (F8). `getIsHttpThrottle` must run before the 4xx arm
+       */
+      const askThrottled = async (input: {
+        refusal: { as: 'ConstraintError' } | null;
+      }): Promise<Error> =>
+        getError(
+          askLambdaEndpoint.viaApiGateway(
+            {
+              url: `${server.url}/throttle-429`,
+              method: 'POST',
+              body: {},
+              ...(input.refusal ? { refusal: input.refusal } : {}),
+            },
+            CONTEXT,
+          ),
+        );
+
+      then(
+        'under the default opt, it throws a MalfunctionError that keeps the retry-after',
+        async () => {
+          const error = await askThrottled({ refusal: null });
+          expect(error).toBeInstanceOf(MalfunctionError);
+          expect(error).not.toBeInstanceOf(LambdaEndpointRefusedError);
+          expect(error).not.toBeInstanceOf(ConstraintError);
+          expect((error as MalfunctionError).metadata?.headers).toMatchObject({
+            'retry-after': '30',
+          });
+
+          // the whole thrown error, with only the harness port denied
+          const view = JSON.parse(
+            JSON.stringify({
+              class: error.constructor.name,
+              message: error.message,
+              metadata: (error as MalfunctionError).metadata,
+            }).replaceAll(server.url, 'http://127.0.0.1:[port]'),
+          );
+          expect(view).toMatchSnapshot();
+        },
+      );
+
+      then(
+        'under the pass-through opt, it is the same MalfunctionError',
+        async () => {
+          const errorDefault = await askThrottled({ refusal: null });
+          const errorPassthrough = await askThrottled({
+            refusal: { as: 'ConstraintError' },
+          });
+          expect(errorPassthrough).toBeInstanceOf(MalfunctionError);
+          expect(errorPassthrough).not.toBeInstanceOf(ConstraintError);
+          expect(errorPassthrough.message).toEqual(errorDefault.message);
         },
       );
     });

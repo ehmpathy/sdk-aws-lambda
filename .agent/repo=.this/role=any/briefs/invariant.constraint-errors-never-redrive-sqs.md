@@ -33,7 +33,8 @@ the decision is made in the lambda's own process, via `getIsConstraintError`: `i
 - **a schema refusal is a caller fault.** the producer sent a message that does not match `schema.input`
 - **the invariant binds per message.** a `perBatch` handler that throws — a `ConstraintError` included — is forwarded, and the batch redrives. the throw does not say which records succeeded and which failed, so to acknowledge all would delete records whose outcome is unknown. a handler that refuses one record acknowledges it by name in `successes`, and the rest redrive
 - **an acknowledgement rides the invoke.** a `perBatch` schema refusal is deleted only once the invoke succeeds. a handler throw fails the invoke, so the refused record redrives with its batch and is refused again on the next receive. the sdk may not catch that throw (above), so the handler owns the cure: never throw on a batch the schema emptied (`records: []`). the refusal line's consequence reads "once this invoke succeeds" for this case (perBatch `[case7][t2]`)
-- **the class is the verdict, whatever it names.** a `perRecord` handler's own `ConstraintError` — one it caught from a downstream call, a 429 among them — reads exactly as a refusal of the message, and the message is deleted. a handler that must retry a transient downstream fault throws a server-fault class (`MalfunctionError`), never a `ConstraintError`
+- **the class is the verdict, whatever it names.** a `perRecord` handler's own `ConstraintError` reads exactly as a refusal of the message, and the message is deleted. a handler that must retry a transient downstream fault throws a server-fault class (`MalfunctionError`), never a `ConstraintError`
+- **a downstream refusal redrives by default.** an `askLambdaEndpoint` call a peer refuses (a peer `ConstraintError` / `BadRequestError`, or an http 4xx) throws `LambdaEndpointRefusedError`, a `MalfunctionError`: the handler composed that request, so the fault is its own, and the message redrives, then dead-letters. a handler that forwards the message body verbatim to the peer opts in per call with `refusal: { as: 'ConstraintError' }`, and the refusal then deletes the message as a caller fault (sdk-aws-lambda#77). an http 429 is a throttle, never a refusal: a `MalfunctionError` under either opt, so it always redrives
 - **a deploy misconfiguration is not a caller fault.** `perRecord`'s batch-size refusal is a `MalfunctionError`, and it redrives
 
 ## .test coverage
@@ -46,6 +47,8 @@ each variant clamps both arms:
 | a handler that throws `ConstraintError` (`perRecord`) | acknowledged; `sqs.record.refused` logged |
 | a handler that throws `ConstraintError` (`perBatch`) | forwarded — the invoke fails, and the batch redrives |
 | a handler that throws a server fault | redriven |
+| a peer refuses the request a `perRecord` handler composed, default opt | redriven; no `sqs.record.refused` line (`local.sqsQueue [case9][t0]`) |
+| the same, under `refusal: { as: 'ConstraintError' }` | acknowledged; `sqs.record.refused` logged (`local.sqsQueue [case9][t1]`) |
 
 ## .enforcement
 

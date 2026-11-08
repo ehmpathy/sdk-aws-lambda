@@ -11,6 +11,7 @@
 import * as path from 'path';
 
 import { DeclaredAwsLambda, genDeclaredAwsLambdaCode } from 'declastruct-aws';
+import { ConstraintError, MalfunctionError } from 'helpful-errors';
 import { genContextLogTrail } from 'sdk-logs';
 import { getError, given, then, useBeforeAll, useThen, when } from 'test-fns';
 import { z } from 'zod';
@@ -61,6 +62,39 @@ const goSurfSchema = {
     comment: z.string(),
     trailExid: z.string().nullable(),
   }),
+};
+
+/**
+ * .what = an error as a plain object: its name, message, cause, every defined metadata key, and
+ *         the fields a lambda error carries
+ * .why = a raw `[Error: …]` snapshot hides `name` and `metadata`, so each arm of a journey is
+ *        snapped through this one projection and the arms read side by side
+ */
+const asErrorSnapshot = (input: { error: Error }): Record<string, unknown> => {
+  const { error } = input;
+  const fields = error as Error & {
+    metadata?: Record<string, unknown>;
+    service?: unknown;
+    function?: unknown;
+    errorType?: unknown;
+  };
+  const metadataDefined = fields.metadata
+    ? Object.fromEntries(
+        Object.entries(fields.metadata).filter(([, v]) => v !== undefined),
+      )
+    : undefined;
+  return {
+    // helpful-errors leaves `.name` as `Error` on its own classes, so the class rides beside it
+    class: error.constructor.name,
+    name: error.name,
+    message: error.message,
+    ...(error.cause ? { cause: String(error.cause) } : {}),
+    ...(metadataDefined ? { metadata: metadataDefined } : {}),
+    ...(fields.service ? { service: fields.service } : {}),
+    ...(fields.function ? { function: fields.function } : {}),
+    ...(fields.errorType ? { errorType: fields.errorType } : {}),
+    messageContainsValidation: error.message.includes('validation'),
+  };
 };
 
 describe('e2e: deployed goSurf lambda with trail propagation', () => {
@@ -189,7 +223,7 @@ describe('e2e: deployed goSurf lambda with trail propagation', () => {
     });
 
     when('[t2] invoked with invalid input', () => {
-      then('handler returns validation error', async () => {
+      then('it throws a LambdaEndpointRefusedError that names the validation and the opt-in', async () => {
         const error = await getError(
           async () =>
             askLambdaEndpoint<
@@ -218,32 +252,49 @@ describe('e2e: deployed goSurf lambda with trail propagation', () => {
         );
         expect(error).toBeDefined();
         expect(error.message).toContain('validation');
-        // snapshot full error object for contract visibility
-        // filter out undefined values for valid JSON representation
-        const rawMetadata = (error as Error & { metadata?: Record<string, unknown> }).metadata;
-        const cleanMetadata = rawMetadata
-          ? Object.fromEntries(
-              Object.entries(rawMetadata).filter(([, v]) => v !== undefined),
-            )
-          : undefined;
-        const errorSnapshot = {
-          name: error.name,
-          message: error.message,
-          // include all error properties for full contract visibility
-          ...(error.cause ? { cause: String(error.cause) } : {}),
-          ...(cleanMetadata ? { metadata: cleanMetadata } : {}),
-          ...((error as Error & { service?: unknown }).service
-            ? { service: (error as Error & { service?: unknown }).service }
-            : {}),
-          ...((error as Error & { function?: unknown }).function
-            ? { function: (error as Error & { function?: unknown }).function }
-            : {}),
-          ...((error as Error & { errorType?: unknown }).errorType
-            ? { errorType: (error as Error & { errorType?: unknown }).errorType }
-            : {}),
-          messageContainsValidation: error.message.includes('validation'),
-        };
-        expect(errorSnapshot).toMatchSnapshot();
+
+        // this caller composed the bad event, so by default the refusal is its own malfunction
+        // (sdk-aws-lambda#77): the class, and the opt-in the message names
+        expect(error.name).toEqual('LambdaEndpointRefusedError');
+        expect(error.message).toContain("refusal: { as: 'ConstraintError' }");
+
+        // a server fault to every consumer family: a 500, a failed invoke, a redrive
+        expect(error).toBeInstanceOf(MalfunctionError);
+        expect(error).not.toBeInstanceOf(ConstraintError);
+
+        // snapshot the full error for contract visibility, as [t4] does
+        expect(asErrorSnapshot({ error })).toMatchSnapshot();
+      });
+    });
+
+    when('[t4] invoked with invalid input, on the pass-through opt', () => {
+      then('the refusal surfaces as a ConstraintError', async () => {
+        const error = await getError(
+          async () =>
+            askLambdaEndpoint<
+              z.infer<typeof goSurfSchema.input>,
+              z.infer<typeof goSurfSchema.output>
+            >(
+              {
+                which: { service: 'svc-seaturtle', function: 'goSurf' },
+                // use type cast to bypass compile-time check, as [t2] does
+                event: { ocean: 'pacific', style: 'surfboard' as 'longboard' },
+                refusal: { as: 'ConstraintError' },
+              },
+              {
+                // pinned, so the snapshot holds no generated exid
+                ...genTestLog({ exid: 'exid:fixed-t4-passthrough' }),
+                env: { access: 'prod', region: REGION },
+              },
+            ),
+        );
+
+        // this caller forwards its own caller's input, so the refusal is that caller's to fix
+        expect(error).toBeInstanceOf(ConstraintError);
+        expect(error).not.toBeInstanceOf(MalfunctionError);
+        expect(error.message).toContain('validation');
+        expect(error.message).not.toContain('refused the request');
+        expect(asErrorSnapshot({ error })).toMatchSnapshot();
       });
     });
 
@@ -311,11 +362,12 @@ describe('e2e: deployed goSurf lambda with trail propagation', () => {
    * .what it costs to add: zero infra. `useBeforeAll` above already deployed and
    *   awaited `svc-seaturtle-prod-goSurf`, so this block reuses a live artifact.
    *
-   * ⚠️ .what it does NOT close — row 2, stated rather than quietly skipped
+   * ⚠️ .where row 2 lives — not here
    *
-   * row 2 wants a **credential-free** process to prove the reject names its fix. ci is
-   * the opposite condition by construction, and to unset the env mid-file would poison
-   * the peer tests that share this process. it stays on the ledger, alone.
+   * row 2 wants a **credential-free** process to prove the reject names its fix. to
+   * unset the env mid-file would poison the peer tests that share this process, so it
+   * has its own file: `runLambdaEndpoint.credentialsabsent.integration.test.ts`, which
+   * scrubs every provider the real v3 chain reads and asserts the hinted reject.
    *
    * 🔴 .renumbered `[case2]` → `[case22]`
    *

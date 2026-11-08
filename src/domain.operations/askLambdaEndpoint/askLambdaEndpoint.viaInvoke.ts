@@ -4,14 +4,17 @@ import type { SimpleCache } from 'with-simple-cache';
 import { genLambdaSdk } from '../../access/sdks/lambda/genLambdaSdk';
 import type { ContextAwsLambdaCaller } from '../../domain.objects/ContextAwsLambdaCaller';
 import type { LambdaEndpointDialect } from '../../domain.objects/LambdaEndpointDialect';
+import type { LambdaEndpointRefusal } from '../../domain.objects/LambdaEndpointRefusal';
 import { asLambdaEndpoint } from '../asLambdaEndpoint/asLambdaEndpoint';
 import { getOneTrailExid } from '../lambdaEndpointWire/context/getOneTrailExid';
+import { asAskLambdaCacheKeyOfRefusal } from './cache/asAskLambdaCacheKeyOfRefusal';
 import { asCachedExecutor } from './cache/asCachedExecutor';
 import { getAskLambdaCacheKey } from './cache/getAskLambdaCacheKey';
 import type {
   InvocationContext,
   InvocationInput,
 } from './invoke/executeLambdaInvocation';
+import { asLambdaEndpointRefusal } from './serde/asLambdaEndpointRefusal';
 import { getLambdaPayload } from './serde/getLambdaPayload';
 
 /**
@@ -42,6 +45,15 @@ export const viaInvoke = async <TRequest, TResponse>(
        */
       payload?: LambdaEndpointDialect;
     };
+    /**
+     * .what = the class a peer's refusal (its ConstraintError / BadRequestError) is thrown as
+     * .why = this caller composed the request, so by default a refusal is this caller's own
+     *        malfunction — an api-gateway caller answers 500, never a 400 its caller cannot fix
+     * .default = { as: 'LambdaEndpointRefusedError' }
+     * .note = name `{ as: 'ConstraintError' }` only where the request forwards your own caller's
+     *         input verbatim, so the fault truly is theirs to fix
+     */
+    refusal?: LambdaEndpointRefusal;
   },
   context: ContextAwsLambdaCaller & {
     cache?: {
@@ -50,6 +62,9 @@ export const viaInvoke = async <TRequest, TResponse>(
     };
   },
 ): Promise<TResponse> => {
+  // refuse an unknown refusal opt before any invoke is sent
+  const refusal = asLambdaEndpointRefusal({ declared: input.refusal });
+
   // extract or generate the trail exid, and report the fallback if one was made.
   // shared with `runLambdaEndpoint.onSerialized` so the two loci cannot diverge
   // on the diagnostic — see `getOneTrailExid` for why that parity is structural
@@ -86,17 +101,25 @@ export const viaInvoke = async <TRequest, TResponse>(
   });
 
   // prepare invocation input + context
-  const invocationInput: InvocationInput = { endpoint, payload, exid };
+  const invocationInput: InvocationInput = {
+    endpoint,
+    payload,
+    exid,
+    refusal,
+  };
   const invocationContext: InvocationContext = {
     sdkLambda,
     log: context.log,
   };
 
-  // build cache key generator
+  // build cache key generator; a pass-through ask never shares a key with a default ask
   const getCacheKey = (): string =>
-    getAskLambdaCacheKey({
-      endpoint,
-      event: input.event as Record<string, unknown>,
+    asAskLambdaCacheKeyOfRefusal({
+      key: getAskLambdaCacheKey({
+        endpoint,
+        event: input.event as Record<string, unknown>,
+      }),
+      refusal,
     });
 
   // get executor with cache wrapper

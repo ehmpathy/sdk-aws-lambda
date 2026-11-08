@@ -20,6 +20,7 @@ import { genContextLogTrail } from 'sdk-logs';
 import { getError, given, then, useThen, when } from 'test-fns';
 
 import { LambdaEndpointError } from '../domain.objects/LambdaEndpointError';
+import { LambdaEndpointRefusedError } from '../domain.objects/LambdaEndpointRefusedError';
 import { askLambdaEndpoint } from '../domain.operations/askLambdaEndpoint/askLambdaEndpoint';
 import { askLambdaEndpointAncient } from './askLambdaEndpointAncient';
 
@@ -39,6 +40,26 @@ const genTestLog = () =>
   });
 
 const ENV = { access: 'prep' as const, region: 'us-east-1' };
+
+/**
+ * .what = reads the class facts of a caught error
+ * .why = each constraint case asserts the same facts, under the default opt and the pass-through
+ */
+const asErrorDetails = (input: {
+  caught: unknown;
+}): {
+  isConstraintError: boolean;
+  isLambdaEndpointError: boolean;
+  isRefusedError: boolean;
+  name: string | undefined;
+  message: string | undefined;
+} => ({
+  isConstraintError: input.caught instanceof ConstraintError,
+  isLambdaEndpointError: input.caught instanceof LambdaEndpointError,
+  isRefusedError: input.caught instanceof LambdaEndpointRefusedError,
+  name: input.caught instanceof Error ? input.caught.name : undefined,
+  message: input.caught instanceof Error ? input.caught.message : undefined,
+});
 
 describe('askLambdaEndpoint round-trip', () => {
   /**
@@ -153,18 +174,47 @@ describe('askLambdaEndpoint round-trip', () => {
               { ...genTestLog(), env: ENV },
             ),
           );
-          return {
-            isConstraintError: caught instanceof ConstraintError,
-            isLambdaEndpointError: caught instanceof LambdaEndpointError,
-            name: caught instanceof Error ? caught.name : undefined,
-            message: caught instanceof Error ? caught.message : undefined,
-          };
+          return asErrorDetails({ caught });
+        });
+
+        then(
+          'error is LambdaEndpointRefusedError, never the caller own ConstraintError',
+          () => {
+            // ancient handler returns BadRequestError; the caller composed the request, so the refusal is its own malfunction
+            expect(errorDetails.isRefusedError).toBe(true);
+            expect(errorDetails.isConstraintError).toBe(false);
+            expect(errorDetails.name).toEqual('LambdaEndpointRefusedError');
+          },
+        );
+
+        then('error message preserved', () => {
+          expect(errorDetails.message).toContain('ancient constraint error');
+        });
+      });
+
+      when('[t1] contemp caller opts into pass-through', () => {
+        const errorDetails = useThen('invocation fails', async () => {
+          const caught = await getError(async () =>
+            askLambdaEndpoint<EchoInput, EchoOutput>(
+              {
+                which: {
+                  service: 'svc',
+                  function: 'echoAncient',
+                },
+                event: { action: 'throwConstraintError' },
+                struct: { payload: 'ancient' },
+                refusal: { as: 'ConstraintError' },
+              },
+              { ...genTestLog(), env: ENV },
+            ),
+          );
+          return asErrorDetails({ caught });
         });
 
         then('error is ConstraintError (not LambdaEndpointError)', () => {
-          // ancient handler returns BadRequestError, contemp caller converts to ConstraintError
           expect(errorDetails.isConstraintError).toBe(true);
           expect(errorDetails.isLambdaEndpointError).toBe(false);
+          expect(errorDetails.isRefusedError).toBe(false);
         });
 
         then('error message preserved', () => {
@@ -217,18 +267,46 @@ describe('askLambdaEndpoint round-trip', () => {
               { ...genTestLog(), env: ENV },
             ),
           );
-          return {
-            isConstraintError: caught instanceof ConstraintError,
-            isLambdaEndpointError: caught instanceof LambdaEndpointError,
-            name: caught instanceof Error ? caught.name : undefined,
-            message: caught instanceof Error ? caught.message : undefined,
-          };
+          return asErrorDetails({ caught });
+        });
+
+        then(
+          'error is LambdaEndpointRefusedError, never the caller own ConstraintError',
+          () => {
+            // contemp handler returns ConstraintError via contemp format; the caller composed the request
+            expect(errorDetails.isRefusedError).toBe(true);
+            expect(errorDetails.isConstraintError).toBe(false);
+            expect(errorDetails.name).toEqual('LambdaEndpointRefusedError');
+          },
+        );
+
+        then('error message preserved', () => {
+          expect(errorDetails.message).toContain('contemp constraint error');
+        });
+      });
+
+      when('[t1] contemp caller opts into pass-through', () => {
+        const errorDetails = useThen('invocation fails', async () => {
+          const caught = await getError(async () =>
+            askLambdaEndpoint<EchoInput, EchoOutput>(
+              {
+                which: {
+                  service: 'svc',
+                  function: 'echoContemp',
+                },
+                event: { action: 'throwConstraintError' },
+                refusal: { as: 'ConstraintError' },
+              },
+              { ...genTestLog(), env: ENV },
+            ),
+          );
+          return asErrorDetails({ caught });
         });
 
         then('error is ConstraintError (not LambdaEndpointError)', () => {
-          // contemp handler returns ConstraintError via contemp format
           expect(errorDetails.isConstraintError).toBe(true);
           expect(errorDetails.isLambdaEndpointError).toBe(false);
+          expect(errorDetails.isRefusedError).toBe(false);
         });
 
         then('error message preserved', () => {

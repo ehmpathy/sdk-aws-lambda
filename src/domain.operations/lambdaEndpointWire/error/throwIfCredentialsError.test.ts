@@ -1,6 +1,7 @@
 import { ConstraintError } from 'helpful-errors';
 import { getError, given, then, when } from 'test-fns';
 
+import { LambdaEndpointRefusedError } from '../../../domain.objects/LambdaEndpointRefusedError';
 import {
   getIsCredentialsError,
   throwIfCredentialsError,
@@ -241,6 +242,36 @@ describe('throwIfCredentialsError', () => {
 
         expect(getIsCredentialsError(hydrated)).toEqual(true);
       });
+    });
+
+    /**
+     * .what = a peer refusal whose message names a credential
+     * .why = the refusal class is a `HelpfulError`, so its message is the peer's verdict, never an
+     *        aws fault. a misread would tell the developer to unlock a keyrack when the peer
+     *        refused the request (sdk-aws-lambda#77, vision edge case)
+     */
+    when('[t3] a peer refusal names a credential in its message', () => {
+      then(
+        'it is not read as a credentials fault, and is rethrown untouched',
+        async () => {
+          const refused = new LambdaEndpointRefusedError(
+            'svc-surf-prep-getForecast refused the request: the credentials record is absent for this surfer',
+            { errorType: 'ConstraintError' },
+          );
+
+          expect(getIsCredentialsError(refused)).toEqual(false);
+          const error = await getError(
+            (async () =>
+              throwIfCredentialsError({
+                error: refused,
+                message: 'aws credentials are absent or expired',
+                access: 'prep',
+                metadata: {},
+              }))(),
+          );
+          expect(error).toBe(refused);
+        },
+      );
     });
   });
 
