@@ -53,6 +53,15 @@ describe('[case1] the migrant swaps the import', () => {
         // for it would be an identity function.
         expect('fromAsk' in sdk.asLambdaEvent).toEqual(false);
       });
+
+      then('the schema family covers sns and kinesis, and no sqs', () => {
+        // sqs is served by `genLambdaEndpoint.forSqs`, which refuses a bad message alone;
+        // a `fromSqs` here would be a second sqs path that refuses the whole batch
+        expect(Object.keys(sdk.asLambdaEventSchema).sort()).toEqual([
+          'fromKinesis',
+          'fromSns',
+        ]);
+      });
     });
 
     when('[t2] it needs a lambda context to hand a handler', () => {
@@ -175,6 +184,8 @@ describe('[case1] the migrant swaps the import', () => {
             'asLambdaEndpointErrorEnvelopeContemp',
             'asLambdaEndpointOutput',
             'asLambdaEvent',
+            // the validate direction of the event-source axis — asserted in `[t1]`
+            'asLambdaEventSchema',
             // the http opt-in surface: the cast any http client spreads into its request
             'asTrailExidHeaders',
             'askLambdaEndpoint',
@@ -263,6 +274,24 @@ describe('[case1] the migrant swaps the import', () => {
 
         expect(forwarded).toEqual(at);
       });
+
+      /**
+       * .what = the decoded event types are reachable from the root
+       * .why = a consumer whose `invoke` is declared apart from the call site must name what
+       *        `asLambdaEventSchema.from*({ payload })` hands it; only this compile proves it
+       */
+      then(
+        'SnsEventDecoded and KinesisStreamEventDecoded are reachable',
+        () => {
+          const sns: sdk.SnsEventDecoded<{
+            id: string;
+          }>['Records'][number]['Sns']['Message'] = { id: 'n-1' };
+          const kinesis: sdk.KinesisStreamEventDecoded<string>['Records'][number]['kinesis']['data'] =
+            'a log line';
+          expect(sns.id).toEqual('n-1');
+          expect(kinesis).toEqual('a log line');
+        },
+      );
     });
   });
 });

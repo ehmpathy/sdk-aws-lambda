@@ -28,3 +28,6 @@ always:
       - briefs/define.*.md
       - briefs/howto.*.md
       - briefs/domain.terms/*.md
+    not:
+      - briefs/domain.terms/term=*._.choice.reason.md
+      - briefs/domain.terms/term=*._.choice.example=*.md

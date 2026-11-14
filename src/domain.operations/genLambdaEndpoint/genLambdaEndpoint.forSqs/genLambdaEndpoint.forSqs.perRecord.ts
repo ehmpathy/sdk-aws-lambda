@@ -8,9 +8,9 @@ import type { ZodSchema } from 'zod';
 import type { ContextAwsLambdaServer } from '../../../domain.objects/ContextAwsLambdaServer';
 import { setHandlerTrailCarrier } from '../../lambdaEndpointWire/frame/setHandlerTrailCarrier';
 import { asContextLogTrail } from '../asContextLogTrail';
+import { asCallerFault } from '../middleware/asCallerFault';
 import { setEventFrozen } from '../setEventFrozen';
 import type { TranslateLog } from '../TranslateLog';
-import { asCallerFault } from './asCallerFault';
 import { asSqsEventDecoded } from './asSqsEventDecoded';
 import { DESERIALIZE_DEFAULT } from './asSqsRecordDecoded';
 import {

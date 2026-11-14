@@ -1,7 +1,7 @@
 import type { ContextLogTrail } from 'sdk-logs';
 import type { ZodSchema } from 'zod';
 
-import { asCallerFault } from './asCallerFault';
+import { asCallerFault } from '../middleware/asCallerFault';
 import { logSqsRecordInvalid } from './logSqsRecordInvalid';
 import { logSqsRecordRefused } from './logSqsRecordRefused';
 import type {

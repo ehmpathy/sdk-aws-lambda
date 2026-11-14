@@ -1,7 +1,7 @@
 import middy from '@middy/core';
 import type { Context } from 'aws-lambda';
 import type { ContextLogTrail } from 'sdk-logs';
-import type { FrozenDeep } from 'type-fns';
+import { type FrozenDeep, isPresent } from 'type-fns';
 import type { ZodSchema } from 'zod';
 
 import type { ContextAwsLambdaServer } from '../../../domain.objects/ContextAwsLambdaServer';
@@ -18,6 +18,7 @@ import { getValidatedOutput } from '../middleware/getValidatedOutput';
 import { setEventFrozen } from '../setEventFrozen';
 import type { TranslateLog } from '../TranslateLog';
 import { genAskEventOnwireCaptureMiddleware } from './middleware/genAskEventOnwireCaptureMiddleware';
+import { genLambdaEventRefusedLogMiddleware } from './middleware/genLambdaEventRefusedLogMiddleware';
 import { genZodEventValidationMiddleware } from './middleware/genZodEventValidationMiddleware';
 
 /**
@@ -198,7 +199,10 @@ export const forAsk = <TInput, TOutput, TInputBefore = TInput>(
   // 3. trail (onBefore) - injects trail context (must be early so isContempCaller is set for error handlers)
   // 4. io logger - logs input/output for debug
   // 5. introspection (onBefore) - intercepts introspect requests, returns schema
-  // 6. validation (onBefore) - validates the body, then writes the envelope into `request.event`
+  // 6. refusal log - keeps the unwrapped event; on a caller fault at an event-source endpoint,
+  //    logs the warn line aws's drop leaves as the only trace (its onError runs before the
+  //    constraint error handler answers)
+  // 7. validation (onBefore) - validates the body, then writes the envelope into `request.event`
   const middlewares = [
     /**
      * .note = this family's response IS its payload, so a caller fault renders as the body
@@ -217,8 +221,10 @@ export const forAsk = <TInput, TOutput, TInputBefore = TInput>(
       asInputAfter: (request) => request.event,
       asOutputAfter: (schema) => schema,
     }),
+    // null for an endpoint whose schema declares no source, so its chain is unchanged
+    genLambdaEventRefusedLogMiddleware({ schema: input.schema.input }),
     genZodEventValidationMiddleware({ schema: input.schema.input }),
-  ];
+  ].filter(isPresent);
 
   /**
    * .as = assertion needed because middleware transforms LambdaHandlerInput<TInputBefore> into

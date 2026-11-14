@@ -26,9 +26,12 @@ ignores:
   - tsx
   - "@src/*"
   - "@src/.*"
+  # role packages: loaded by name at `rhachet init --roles ...`, never imported
   - rhachet-roles-bhrain
+  - rhachet-roles-bhrowser
   - rhachet-roles-bhuild
   - rhachet-roles-ehmpathy
+  - rhachet-roles-ghlitch
   - rhachet-roles-rhachet
   - tsc-alias
   - yalc

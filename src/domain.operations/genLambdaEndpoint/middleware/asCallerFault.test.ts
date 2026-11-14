@@ -3,6 +3,7 @@ import {
   ConstraintError,
   MalfunctionError,
 } from 'helpful-errors';
+import { given, then, when } from 'test-fns';
 
 import { setEventFrozen } from '../setEventFrozen';
 import { asCallerFault } from './asCallerFault';
@@ -86,12 +87,22 @@ const TEST_CASES: {
 ];
 
 describe('asCallerFault', () => {
-  TEST_CASES.map((thisCase) =>
-    test(thisCase.description, () => {
-      const callerFault = asCallerFault(thisCase.given);
-      expect(callerFault !== null).toEqual(thisCase.expect.isCallerFault);
-      if (thisCase.expect.isCallerFault)
-        expect(callerFault).toBe(thisCase.given.error); // the same value, narrowed
+  TEST_CASES.forEach((thisCase, index) =>
+    given(`[case${index + 1}] ${thisCase.description}`, () => {
+      when('[t0] the throw is classified', () => {
+        then(
+          thisCase.expect.isCallerFault
+            ? 'it is the caller fault, the same value narrowed'
+            : 'it is not a caller fault',
+          () => {
+            // classified inside the then, so a throw fails this case, not the collection
+            const callerFault = asCallerFault(thisCase.given);
+            expect(callerFault !== null).toEqual(thisCase.expect.isCallerFault);
+            if (thisCase.expect.isCallerFault)
+              expect(callerFault).toBe(thisCase.given.error);
+          },
+        );
+      });
     }),
   );
 });

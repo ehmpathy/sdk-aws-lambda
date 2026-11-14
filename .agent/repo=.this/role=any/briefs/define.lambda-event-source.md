@@ -107,16 +107,27 @@ aws sends does not enforce the position; it hides the handlers that violate it b
 ⇒ so: supply the metadata, and let a handler that reads it be caught by review rather than by an
 undefined deref.
 
-## .the pair
+## .the pair — `asLambdaEventSchema`
 
-`ehmpathy/sdk-aws-lambda#13` — prebuilt zod schemas for aws event sources. **same axis, other
-half**: #13 validates an event source's shape, these factories construct it. one source list, two
-directions.
+`asLambdaEvent.from$Source` constructs an envelope; `asLambdaEventSchema.from$Source` validates
+one. same axis, two directions, one `from$Source` grammar. the validate side covers a **subset** of
+the sources, each absence on a stated axis:
+
+| source | `asLambdaEventSchema` | why |
+|---|---|---|
+| sns | `fromSns` | rides `forAsk`, so the schema is its whole input contract |
+| kinesis | `fromKinesis` | same |
+| sqs | absent | `genLambdaEndpoint.forSqs` validates each record itself, with per-record verdicts |
+| apiGateway | absent | `forApiGateway` validates its own reconciled input |
+| s3 | absent | the record carries an object ref, no payload to validate |
+
+a refusal at an sns or kinesis endpoint is a caller fault, so aws drops the event: `forAsk` logs
+`lambda.event.refused` at warn as the only trace.
 
 ## .see also
 
 - `define.lambda-endpoint-run-boundary` — how the constructed event crosses into the endpoint
 - `define.lambda-endpoint-ubiqlang` — the endpoint the event wakes, and the `slug` term to avoid
 - `ehmpathy/sdk-aws-lambda#18` — the v1 `requestContext` deref this factory works around today
-- `ehmpathy/sdk-aws-lambda#13` — the schema half of the event-source axis
+- `domain.terms/asLambdaEventSchema.md` — the schema half of the event-source axis
 

@@ -1,10 +1,11 @@
-import { getIsConstraintError } from '../middleware/getIsConstraintError';
+import { getIsConstraintError } from './getIsConstraintError';
 
 /**
  * .what = the thrown value as a caller fault, or null when it is not one
- * .why = both sqs variants decide delete-vs-redrive on this one answer, so it is stated once: a
- *        variant that disagreed would delete a message its peer redrives
- *        (`invariant.constraint-errors-never-redrive-sqs`)
+ * .why = every family that acts on a caller fault decides on this one answer, so it is stated
+ *        once: both sqs variants decide delete-vs-redrive on it (a variant that disagreed would
+ *        delete a message its peer redrives, `invariant.constraint-errors-never-redrive-sqs`),
+ *        and `forAsk` decides on it whether a dropped aws event owes its warn line
  *
  * .note = a caller fault is an `Error` that `getIsConstraintError` accepts — a `ConstraintError`,
  *         a `BadRequestError`, or a subclass. any other value, a bare `{ name }` bag included, is

@@ -1,0 +1,197 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`forAsk, with an asLambdaEventSchema input given: [case4] the published input contract when: [t0] an sns and a kinesis schema with payload are rendered then: each payload slot shows the wire string, never the decoded shape 1`] = `
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": {},
+  "properties": {
+    "Records": {
+      "items": {
+        "additionalProperties": {},
+        "properties": {
+          "EventSource": {
+            "const": "aws:sns",
+            "type": "string",
+          },
+          "EventSubscriptionArn": {
+            "type": "string",
+          },
+          "EventVersion": {
+            "type": "string",
+          },
+          "Sns": {
+            "additionalProperties": {},
+            "properties": {
+              "Message": {
+                "type": "string",
+              },
+              "MessageAttributes": {
+                "additionalProperties": {
+                  "additionalProperties": {},
+                  "properties": {
+                    "Type": {
+                      "type": "string",
+                    },
+                    "Value": {
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "Type",
+                    "Value",
+                  ],
+                  "type": "object",
+                },
+                "propertyNames": {
+                  "type": "string",
+                },
+                "type": "object",
+              },
+              "MessageId": {
+                "type": "string",
+              },
+              "Signature": {
+                "type": "string",
+              },
+              "SignatureVersion": {
+                "type": "string",
+              },
+              "SigningCertUrl": {
+                "type": "string",
+              },
+              "Subject": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+              },
+              "Timestamp": {
+                "type": "string",
+              },
+              "TopicArn": {
+                "type": "string",
+              },
+              "Type": {
+                "type": "string",
+              },
+              "UnsubscribeUrl": {
+                "type": "string",
+              },
+            },
+            "required": [
+              "SignatureVersion",
+              "Timestamp",
+              "Signature",
+              "MessageId",
+              "Message",
+              "MessageAttributes",
+              "Type",
+              "TopicArn",
+            ],
+            "type": "object",
+          },
+        },
+        "required": [
+          "EventVersion",
+          "EventSubscriptionArn",
+          "EventSource",
+          "Sns",
+        ],
+        "type": "object",
+      },
+      "minItems": 1,
+      "type": "array",
+    },
+  },
+  "required": [
+    "Records",
+  ],
+  "type": "object",
+}
+`;
+
+exports[`forAsk, with an asLambdaEventSchema input given: [case4] the published input contract when: [t0] an sns and a kinesis schema with payload are rendered then: each payload slot shows the wire string, never the decoded shape 2`] = `
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": {},
+  "properties": {
+    "Records": {
+      "items": {
+        "additionalProperties": {},
+        "properties": {
+          "awsRegion": {
+            "type": "string",
+          },
+          "eventID": {
+            "type": "string",
+          },
+          "eventName": {
+            "type": "string",
+          },
+          "eventSource": {
+            "const": "aws:kinesis",
+            "type": "string",
+          },
+          "eventSourceARN": {
+            "type": "string",
+          },
+          "eventVersion": {
+            "type": "string",
+          },
+          "invokeIdentityArn": {
+            "type": "string",
+          },
+          "kinesis": {
+            "additionalProperties": {},
+            "properties": {
+              "approximateArrivalTimestamp": {
+                "type": "number",
+              },
+              "data": {
+                "type": "string",
+              },
+              "kinesisSchemaVersion": {
+                "type": "string",
+              },
+              "partitionKey": {
+                "type": "string",
+              },
+              "sequenceNumber": {
+                "type": "string",
+              },
+            },
+            "required": [
+              "kinesisSchemaVersion",
+              "partitionKey",
+              "sequenceNumber",
+              "data",
+              "approximateArrivalTimestamp",
+            ],
+            "type": "object",
+          },
+        },
+        "required": [
+          "kinesis",
+          "eventSource",
+          "eventVersion",
+          "eventID",
+          "eventName",
+          "invokeIdentityArn",
+          "awsRegion",
+          "eventSourceARN",
+        ],
+        "type": "object",
+      },
+      "type": "array",
+    },
+  },
+  "required": [
+    "Records",
+  ],
+  "type": "object",
+}
+`;
