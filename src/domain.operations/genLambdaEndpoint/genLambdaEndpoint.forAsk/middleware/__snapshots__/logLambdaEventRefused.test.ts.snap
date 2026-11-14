@@ -1,0 +1,27 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`logLambdaEventRefused given: [case1] a schema refusal, whose metadata holds issue summaries when: [t0] the refusal is logged then: one warn line names the source, the ids, the class, the cause, the issues, and the fate 1`] = `
+[
+  {
+    "message": "lambda.event.refused",
+    "metadata": {
+      "class": "ConstraintError",
+      "consequence": "acknowledged; lambda does not retry a success, so this line is the only trace",
+      "errorMessage": "✋ ConstraintError: input invalid",
+      "idLast": null,
+      "ids": [
+        "<id>",
+      ],
+      "idsCount": 1,
+      "issues": [
+        {
+          "message": "expected "notice"",
+          "path": "Records.0.Sns.Message.kind",
+        },
+      ],
+      "issuesCount": 1,
+      "source": "sns",
+    },
+  },
+]
+`;

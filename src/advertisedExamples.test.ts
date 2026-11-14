@@ -1,4 +1,5 @@
 import { given, then, when } from 'test-fns';
+import { z } from 'zod';
 
 import type { ContextAwsLambdaCaller } from './index';
 import {
@@ -6,6 +7,8 @@ import {
   asLambdaEndpointErrorEnvelopeContemp,
   asLambdaEndpointOutput,
   asLambdaEvent,
+  asLambdaEventSchema,
+  genLambdaEndpoint,
   isLambdaEndpointErrorEnvelopeContemp,
   runLambdaEndpoint,
 } from './index';
@@ -142,6 +145,90 @@ describe('docblock examples', () => {
       });
     });
   });
+
+  given(
+    '[case4b] the asLambdaEventSchema docblocks: the family, asLambdaEventSchema.fromSns, asLambdaEventSchema.fromKinesis',
+    () => {
+      // the samples' free variables, declared as a consumer would supply them
+      const schemaOfNotice = z.object({ kind: z.string() });
+      const schemaOfClick = z.object({ url: z.string() });
+      // a fresh recorder per case, so no case reads another's residue
+      // .note = deliberate mutation in a `const` box — the calls land from inside invoke
+      const genHandle = (): {
+        handle: (value: unknown) => Promise<void>;
+        handled: unknown[];
+      } => {
+        const handled: unknown[] = [];
+        return {
+          handled,
+          handle: async (value) => {
+            handled.push(value);
+          },
+        };
+      };
+
+      when('[t0] the family sample is run verbatim', () => {
+        then('it hands invoke the decoded message', async () => {
+          const { handle, handled } = genHandle();
+          const handler = genLambdaEndpoint.forAsk({
+            schema: {
+              input: asLambdaEventSchema.fromSns({ payload: schemaOfNotice }),
+              output: z.void(),
+            },
+            invoke: async ({ payload }) =>
+              handle(payload.Records[0]!.Sns.Message),
+          });
+          await runLambdaEndpoint.onReferenced({
+            handler,
+            struct: { payload: 'ancient' },
+            event: asLambdaEvent.fromSns({
+              messages: [JSON.stringify({ kind: 'alert' })],
+            }),
+          });
+          expect(handled).toEqual([{ kind: 'alert' }]);
+        });
+      });
+
+      when('[t1] the fromSns sample is run verbatim', () => {
+        then('it validates and decodes the message', () => {
+          const schema = {
+            input: asLambdaEventSchema.fromSns({ payload: schemaOfNotice }),
+            output: z.void(),
+          };
+          const parsed = schema.input.parse(
+            asLambdaEvent.fromSns({
+              messages: [JSON.stringify({ kind: 'alert' })],
+            }),
+          );
+          expect(parsed.Records[0]!.Sns.Message).toEqual({ kind: 'alert' });
+        });
+      });
+
+      when('[t2] the fromKinesis sample is run verbatim', () => {
+        then('it decodes each record', async () => {
+          const { handle, handled } = genHandle();
+          const handler = genLambdaEndpoint.forAsk({
+            schema: {
+              input: asLambdaEventSchema.fromKinesis({
+                payload: schemaOfClick,
+              }),
+              output: z.void(),
+            },
+            invoke: async ({ payload }) =>
+              handle(payload.Records.map((record) => record.kinesis.data)),
+          });
+          await runLambdaEndpoint.onReferenced({
+            handler,
+            struct: { payload: 'ancient' },
+            event: asLambdaEvent.fromKinesis({
+              records: [JSON.stringify({ url: '/a' })],
+            }),
+          });
+          expect(handled).toEqual([[{ url: '/a' }]]);
+        });
+      });
+    },
+  );
 
   given('[case5] the onReferenced docblock', () => {
     // 🔴 the dialect frames the INPUT too: a contemp handler receives

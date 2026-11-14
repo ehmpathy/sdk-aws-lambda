@@ -1,0 +1,672 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`asLambdaEventSchema given: [case1] fromSns(), envelope only when: [t1] the aws docs sample is parsed then: the output is the event aws sent, pinned 1`] = `
+{
+  "Records": [
+    {
+      "EventSource": "aws:sns",
+      "EventSubscriptionArn": "arn:aws:sns:us-east-1:123456789012:sns-lambda:21be56ed-a058-49f5-8c98-aedd2564c486",
+      "EventVersion": "1.0",
+      "Sns": {
+        "Message": "Hello from SNS!",
+        "MessageAttributes": {
+          "Test": {
+            "Type": "String",
+            "Value": "TestString",
+          },
+          "TestBinary": {
+            "Type": "Binary",
+            "Value": "TestBinary",
+          },
+        },
+        "MessageId": "95df01b4-ee98-5cb9-9903-4c221d41eb5e",
+        "Signature": "tcc6faL2yUC6dgZdmrwh1Y4cGa/ebXEkAi6RibDsvpi+tE/1+82j...65r==",
+        "SignatureVersion": "1",
+        "SigningCertURL": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-ac565b8b1a6c5d002d285f9598aa1d9b.pem",
+        "Subject": "TestInvoke",
+        "Timestamp": "<timestamp>",
+        "TopicArn": "arn:aws:sns:us-east-1:123456789012:sns-lambda",
+        "Type": "Notification",
+        "UnsubscribeUrl": "https://sns.us-east-1.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:us-east-1:123456789012:test-lambda:21be56ed-a058-49f5-8c98-aedd2564c486",
+      },
+    },
+  ],
+}
+`;
+
+exports[`asLambdaEventSchema given: [case1] fromSns(), envelope only when: [t2] an sqs event is misrouted to it then: it is refused, and the issue names the absent sns key 1`] = `
+[
+  {
+    "code": "invalid_type",
+    "expected": "string",
+    "message": "Invalid input: expected string, received undefined",
+    "path": [
+      "Records",
+      0,
+      "EventVersion",
+    ],
+  },
+  {
+    "code": "invalid_type",
+    "expected": "string",
+    "message": "Invalid input: expected string, received undefined",
+    "path": [
+      "Records",
+      0,
+      "EventSubscriptionArn",
+    ],
+  },
+  {
+    "code": "invalid_value",
+    "message": "Invalid input: expected "aws:sns"",
+    "path": [
+      "Records",
+      0,
+      "EventSource",
+    ],
+    "values": [
+      "aws:sns",
+    ],
+  },
+  {
+    "code": "invalid_type",
+    "expected": "object",
+    "message": "Invalid input: expected object, received undefined",
+    "path": [
+      "Records",
+      0,
+      "Sns",
+    ],
+  },
+]
+`;
+
+exports[`asLambdaEventSchema given: [case1] fromSns(), envelope only when: [t3] aws adds a key the schema does not know then: the key is kept, never stripped or refused 1`] = `
+[
+  "Fresh",
+  "Message",
+  "MessageAttributes",
+  "MessageId",
+  "Signature",
+  "SignatureVersion",
+  "SigningCertUrl",
+  "Subject",
+  "Timestamp",
+  "TopicArn",
+  "Type",
+  "UnsubscribeUrl",
+]
+`;
+
+exports[`asLambdaEventSchema given: [case1] fromSns(), envelope only when: [t4] sns sends a null subject then: it parses, the null subject kept as sent 1`] = `
+{
+  "Records": [
+    {
+      "EventSource": "aws:sns",
+      "EventSubscriptionArn": "arn:aws:sns:us-east-1:123456789012:sns-lambda:21be56ed-a058-49f5-8c98-aedd2564c486",
+      "EventVersion": "1.0",
+      "Sns": {
+        "Message": "Hello from SNS!",
+        "MessageAttributes": {
+          "Test": {
+            "Type": "String",
+            "Value": "TestString",
+          },
+          "TestBinary": {
+            "Type": "Binary",
+            "Value": "TestBinary",
+          },
+        },
+        "MessageId": "95df01b4-ee98-5cb9-9903-4c221d41eb5e",
+        "Signature": "tcc6faL2yUC6dgZdmrwh1Y4cGa/ebXEkAi6RibDsvpi+tE/1+82j...65r==",
+        "SignatureVersion": "1",
+        "SigningCertURL": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-ac565b8b1a6c5d002d285f9598aa1d9b.pem",
+        "Subject": null,
+        "Timestamp": "<timestamp>",
+        "TopicArn": "arn:aws:sns:us-east-1:123456789012:sns-lambda",
+        "Type": "Notification",
+        "UnsubscribeUrl": "https://sns.us-east-1.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:us-east-1:123456789012:test-lambda:21be56ed-a058-49f5-8c98-aedd2564c486",
+      },
+    },
+  ],
+}
+`;
+
+exports[`asLambdaEventSchema given: [case1] fromSns(), envelope only when: [t5] a message attribute lacks its Value then: it is refused at that attribute 1`] = `
+[
+  {
+    "code": "invalid_type",
+    "expected": "string",
+    "message": "Invalid input: expected string, received undefined",
+    "path": [
+      "Records",
+      0,
+      "Sns",
+      "MessageAttributes",
+      "kind",
+      "Value",
+    ],
+  },
+]
+`;
+
+exports[`asLambdaEventSchema given: [case2] fromSns({ payload }), a json message when: [t1] the notice fails the payload schema then: it is refused at the field inside the message 1`] = `
+[
+  {
+    "code": "invalid_value",
+    "message": "Invalid option: expected one of "Bounce"|"Complaint"|"Delivery"",
+    "path": [
+      "Records",
+      0,
+      "Sns",
+      "Message",
+      "notificationType",
+    ],
+    "values": [
+      "Bounce",
+      "Complaint",
+      "Delivery",
+    ],
+  },
+]
+`;
+
+exports[`asLambdaEventSchema given: [case3] fromSns({ payload, deserialize: { payload: false } }) when: [t1] the text fails the payload schema then: it is refused at Message 1`] = `
+[
+  {
+    "code": "too_small",
+    "inclusive": true,
+    "message": "Too small: expected string to have >=1 characters",
+    "minimum": 1,
+    "origin": "string",
+    "path": [
+      "Records",
+      0,
+      "Sns",
+      "Message",
+    ],
+  },
+]
+`;
+
+exports[`asLambdaEventSchema given: [case4] fromKinesis(), envelope only when: [t2] an sns event is misrouted to it then: it is refused at the absent kinesis key 1`] = `
+[
+  {
+    "code": "invalid_type",
+    "expected": "object",
+    "message": "Invalid input: expected object, received undefined",
+    "path": [
+      "Records",
+      0,
+      "kinesis",
+    ],
+  },
+  {
+    "code": "invalid_value",
+    "message": "Invalid input: expected "aws:kinesis"",
+    "path": [
+      "Records",
+      0,
+      "eventSource",
+    ],
+    "values": [
+      "aws:kinesis",
+    ],
+  },
+  {
+    "code": "invalid_type",
+    "expected": "string",
+    "message": "Invalid input: expected string, received undefined",
+    "path": [
+      "Records",
+      0,
+      "eventVersion",
+    ],
+  },
+  {
+    "code": "invalid_type",
+    "expected": "string",
+    "message": "Invalid input: expected string, received undefined",
+    "path": [
+      "Records",
+      0,
+      "eventID",
+    ],
+  },
+  {
+    "code": "invalid_type",
+    "expected": "string",
+    "message": "Invalid input: expected string, received undefined",
+    "path": [
+      "Records",
+      0,
+      "eventName",
+    ],
+  },
+  {
+    "code": "invalid_type",
+    "expected": "string",
+    "message": "Invalid input: expected string, received undefined",
+    "path": [
+      "Records",
+      0,
+      "invokeIdentityArn",
+    ],
+  },
+  {
+    "code": "invalid_type",
+    "expected": "string",
+    "message": "Invalid input: expected string, received undefined",
+    "path": [
+      "Records",
+      0,
+      "awsRegion",
+    ],
+  },
+  {
+    "code": "invalid_type",
+    "expected": "string",
+    "message": "Invalid input: expected string, received undefined",
+    "path": [
+      "Records",
+      0,
+      "eventSourceARN",
+    ],
+  },
+]
+`;
+
+exports[`asLambdaEventSchema given: [case4] fromKinesis(), envelope only when: [t3] the event carries keys the schema does not know then: each key is kept, never stripped or refused 1`] = `
+{
+  "event": [
+    "Records",
+    "state",
+    "window",
+  ],
+  "record": [
+    "awsRegion",
+    "eventID",
+    "eventName",
+    "eventSource",
+    "eventSourceARN",
+    "eventVersion",
+    "fresh",
+    "invokeIdentityArn",
+    "kinesis",
+  ],
+}
+`;
+
+exports[`asLambdaEventSchema given: [case5] fromKinesis({ payload }), a json stream when: [t1] one record in the batch fails the payload schema then: the whole batch is refused, the issue names the bad record 1`] = `
+[
+  {
+    "code": "invalid_type",
+    "expected": "number",
+    "message": "Invalid input: expected number, received undefined",
+    "path": [
+      "Records",
+      1,
+      "kinesis",
+      "data",
+      "at",
+    ],
+  },
+]
+`;
+
+exports[`asLambdaEventSchema given: [case6] fromKinesis({ payload, deserialize: { payload: false } }) when: [t1] one text record in the batch fails the payload schema then: the whole batch is refused, the issue names the bad record 1`] = `
+[
+  {
+    "code": "too_small",
+    "inclusive": true,
+    "message": "Too small: expected string to have >=1 characters",
+    "minimum": 1,
+    "origin": "string",
+    "path": [
+      "Records",
+      1,
+      "kinesis",
+      "data",
+    ],
+  },
+]
+`;
+
+exports[`asLambdaEventSchema given: [case8] kinesis data that is not valid base64, or not text when: [t0] data is not valid base64, under the json default then: the lenient decode yields garbage, refused at data, never thrown 1`] = `
+[
+  {
+    "code": "custom",
+    "message": "expected a json message; fix: for a text message (not json), set \`deserialize: { payload: false }\`",
+    "path": [
+      "Records",
+      0,
+      "kinesis",
+      "data",
+    ],
+  },
+  {
+    "code": "custom",
+    "message": "expected a json message; fix: for a text message (not json), set \`deserialize: { payload: false }\`",
+    "path": [
+      "Records",
+      1,
+      "kinesis",
+      "data",
+    ],
+  },
+]
+`;
+
+exports[`asLambdaEventSchema given: [case8] kinesis data that is not valid base64, or not text when: [t1] data is binary, under the text opt-out with a bare string then: the bytes pass as a mangled string — the doc caution, pinned 1`] = `
+[
+  ""\\u001f�\\b\\u0000��"",
+  ""\\u001f�\\b\\u0000��"",
+]
+`;
+
+exports[`asLambdaEventSchema given: [case8] kinesis data that is not valid base64, or not text when: [t2] data is binary, under the text opt-out with a constrained form then: the doc advice holds: the constrained text schema refuses it 1`] = `
+[
+  {
+    "code": "invalid_format",
+    "format": "regex",
+    "message": "Invalid string: must match pattern /^[\\x20-\\x7E]+$/",
+    "origin": "string",
+    "path": [
+      "Records",
+      0,
+      "kinesis",
+      "data",
+    ],
+    "pattern": "/^[\\x20-\\x7E]+$/",
+  },
+  {
+    "code": "invalid_format",
+    "format": "regex",
+    "message": "Invalid string: must match pattern /^[\\x20-\\x7E]+$/",
+    "origin": "string",
+    "path": [
+      "Records",
+      1,
+      "kinesis",
+      "data",
+    ],
+    "pattern": "/^[\\x20-\\x7E]+$/",
+  },
+]
+`;
+
+exports[`asLambdaEventSchema given: [case9] the outputs a caller reads, pinned when: [t0] each call form decodes its sample then: fromKinesis() keeps data the base64 aws sent 1`] = `
+{
+  "Records": [
+    {
+      "awsRegion": "us-east-2",
+      "eventID": "shardId-000000000006:49590338271490256608559692538361571095921575989136588898",
+      "eventName": "aws:kinesis:record",
+      "eventSource": "aws:kinesis",
+      "eventSourceARN": "arn:aws:kinesis:us-east-2:123456789012:stream/lambda-stream",
+      "eventVersion": "1.0",
+      "invokeIdentityArn": "arn:aws:iam::123456789012:role/lambda-role",
+      "kinesis": {
+        "approximateArrivalTimestamp": 1545084650.987,
+        "data": "SGVsbG8sIHRoaXMgaXMgYSB0ZXN0Lg==",
+        "kinesisSchemaVersion": "1.0",
+        "partitionKey": "1",
+        "sequenceNumber": "49590338271490256608559692538361571095921575989136588898",
+      },
+    },
+    {
+      "awsRegion": "us-east-2",
+      "eventID": "shardId-000000000006:49590338271490256608559692540925702759324208523137515618",
+      "eventName": "aws:kinesis:record",
+      "eventSource": "aws:kinesis",
+      "eventSourceARN": "arn:aws:kinesis:us-east-2:123456789012:stream/lambda-stream",
+      "eventVersion": "1.0",
+      "invokeIdentityArn": "arn:aws:iam::123456789012:role/lambda-role",
+      "kinesis": {
+        "approximateArrivalTimestamp": 1545084711.166,
+        "data": "VGhpcyBpcyBvbmx5IGEgdGVzdC4=",
+        "kinesisSchemaVersion": "1.0",
+        "partitionKey": "1",
+        "sequenceNumber": "49590338271490256608559692540925702759324208523137515618",
+      },
+    },
+  ],
+}
+`;
+
+exports[`asLambdaEventSchema given: [case9] the outputs a caller reads, pinned when: [t0] each call form decodes its sample then: fromKinesis({ payload }) hands the handler each decoded record 1`] = `
+{
+  "Records": [
+    {
+      "awsRegion": "us-east-2",
+      "eventID": "shardId-000000000006:49590338271490256608559692538361571095921575989136588898",
+      "eventName": "aws:kinesis:record",
+      "eventSource": "aws:kinesis",
+      "eventSourceARN": "arn:aws:kinesis:us-east-2:123456789012:stream/lambda-stream",
+      "eventVersion": "1.0",
+      "invokeIdentityArn": "arn:aws:iam::123456789012:role/lambda-role",
+      "kinesis": {
+        "approximateArrivalTimestamp": 1545084650.987,
+        "data": {
+          "at": 0,
+          "url": "/0",
+        },
+        "kinesisSchemaVersion": "1.0",
+        "partitionKey": "1",
+        "sequenceNumber": "49590338271490256608559692538361571095921575989136588898",
+      },
+    },
+    {
+      "awsRegion": "us-east-2",
+      "eventID": "shardId-000000000006:49590338271490256608559692540925702759324208523137515618",
+      "eventName": "aws:kinesis:record",
+      "eventSource": "aws:kinesis",
+      "eventSourceARN": "arn:aws:kinesis:us-east-2:123456789012:stream/lambda-stream",
+      "eventVersion": "1.0",
+      "invokeIdentityArn": "arn:aws:iam::123456789012:role/lambda-role",
+      "kinesis": {
+        "approximateArrivalTimestamp": 1545084711.166,
+        "data": {
+          "at": 1,
+          "url": "/1",
+        },
+        "kinesisSchemaVersion": "1.0",
+        "partitionKey": "1",
+        "sequenceNumber": "49590338271490256608559692540925702759324208523137515618",
+      },
+    },
+  ],
+}
+`;
+
+exports[`asLambdaEventSchema given: [case9] the outputs a caller reads, pinned when: [t0] each call form decodes its sample then: fromKinesis({ payload, text }) hands the handler each utf8 line 1`] = `
+{
+  "Records": [
+    {
+      "awsRegion": "us-east-2",
+      "eventID": "shardId-000000000006:49590338271490256608559692538361571095921575989136588898",
+      "eventName": "aws:kinesis:record",
+      "eventSource": "aws:kinesis",
+      "eventSourceARN": "arn:aws:kinesis:us-east-2:123456789012:stream/lambda-stream",
+      "eventVersion": "1.0",
+      "invokeIdentityArn": "arn:aws:iam::123456789012:role/lambda-role",
+      "kinesis": {
+        "approximateArrivalTimestamp": 1545084650.987,
+        "data": "Hello, this is a test.",
+        "kinesisSchemaVersion": "1.0",
+        "partitionKey": "1",
+        "sequenceNumber": "49590338271490256608559692538361571095921575989136588898",
+      },
+    },
+    {
+      "awsRegion": "us-east-2",
+      "eventID": "shardId-000000000006:49590338271490256608559692540925702759324208523137515618",
+      "eventName": "aws:kinesis:record",
+      "eventSource": "aws:kinesis",
+      "eventSourceARN": "arn:aws:kinesis:us-east-2:123456789012:stream/lambda-stream",
+      "eventVersion": "1.0",
+      "invokeIdentityArn": "arn:aws:iam::123456789012:role/lambda-role",
+      "kinesis": {
+        "approximateArrivalTimestamp": 1545084711.166,
+        "data": "This is only a test.",
+        "kinesisSchemaVersion": "1.0",
+        "partitionKey": "1",
+        "sequenceNumber": "49590338271490256608559692540925702759324208523137515618",
+      },
+    },
+  ],
+}
+`;
+
+exports[`asLambdaEventSchema given: [case9] the outputs a caller reads, pinned when: [t0] each call form decodes its sample then: fromSns({ payload }) hands the handler the decoded notice 1`] = `
+{
+  "Records": [
+    {
+      "EventSource": "aws:sns",
+      "EventSubscriptionArn": "arn:aws:sns:us-east-1:123456789012:sns-lambda:21be56ed-a058-49f5-8c98-aedd2564c486",
+      "EventVersion": "1.0",
+      "Sns": {
+        "Message": {
+          "mail": {
+            "messageId": "m-1",
+          },
+          "notificationType": "Bounce",
+        },
+        "MessageAttributes": {
+          "Test": {
+            "Type": "String",
+            "Value": "TestString",
+          },
+          "TestBinary": {
+            "Type": "Binary",
+            "Value": "TestBinary",
+          },
+        },
+        "MessageId": "95df01b4-ee98-5cb9-9903-4c221d41eb5e",
+        "Signature": "tcc6faL2yUC6dgZdmrwh1Y4cGa/ebXEkAi6RibDsvpi+tE/1+82j...65r==",
+        "SignatureVersion": "1",
+        "SigningCertURL": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-ac565b8b1a6c5d002d285f9598aa1d9b.pem",
+        "Subject": "TestInvoke",
+        "Timestamp": "<timestamp>",
+        "TopicArn": "arn:aws:sns:us-east-1:123456789012:sns-lambda",
+        "Type": "Notification",
+        "UnsubscribeUrl": "https://sns.us-east-1.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:us-east-1:123456789012:test-lambda:21be56ed-a058-49f5-8c98-aedd2564c486",
+      },
+    },
+  ],
+}
+`;
+
+exports[`asLambdaEventSchema given: [case9] the outputs a caller reads, pinned when: [t0] each call form decodes its sample then: fromSns({ payload, text }) hands the handler the raw message 1`] = `
+{
+  "Records": [
+    {
+      "EventSource": "aws:sns",
+      "EventSubscriptionArn": "arn:aws:sns:us-east-1:123456789012:sns-lambda:21be56ed-a058-49f5-8c98-aedd2564c486",
+      "EventVersion": "1.0",
+      "Sns": {
+        "Message": "Hello from SNS!",
+        "MessageAttributes": {
+          "Test": {
+            "Type": "String",
+            "Value": "TestString",
+          },
+          "TestBinary": {
+            "Type": "Binary",
+            "Value": "TestBinary",
+          },
+        },
+        "MessageId": "95df01b4-ee98-5cb9-9903-4c221d41eb5e",
+        "Signature": "tcc6faL2yUC6dgZdmrwh1Y4cGa/ebXEkAi6RibDsvpi+tE/1+82j...65r==",
+        "SignatureVersion": "1",
+        "SigningCertURL": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-ac565b8b1a6c5d002d285f9598aa1d9b.pem",
+        "Subject": "TestInvoke",
+        "Timestamp": "<timestamp>",
+        "TopicArn": "arn:aws:sns:us-east-1:123456789012:sns-lambda",
+        "Type": "Notification",
+        "UnsubscribeUrl": "https://sns.us-east-1.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:us-east-1:123456789012:test-lambda:21be56ed-a058-49f5-8c98-aedd2564c486",
+      },
+    },
+  ],
+}
+`;
+
+exports[`asLambdaEventSchema given: [case9] the outputs a caller reads, pinned when: [t1] a text message meets the json default then: the kinesis refusal a caller reads names the fix 1`] = `
+[
+  {
+    "code": "custom",
+    "message": "expected a json message; fix: for a text message (not json), set \`deserialize: { payload: false }\`",
+    "path": [
+      "Records",
+      0,
+      "kinesis",
+      "data",
+    ],
+  },
+  {
+    "code": "custom",
+    "message": "expected a json message; fix: for a text message (not json), set \`deserialize: { payload: false }\`",
+    "path": [
+      "Records",
+      1,
+      "kinesis",
+      "data",
+    ],
+  },
+]
+`;
+
+exports[`asLambdaEventSchema given: [case9] the outputs a caller reads, pinned when: [t1] a text message meets the json default then: the sns refusal a caller reads names the fix 1`] = `
+[
+  {
+    "code": "custom",
+    "message": "expected a json message; fix: for a text message (not json), set \`deserialize: { payload: false }\`",
+    "path": [
+      "Records",
+      0,
+      "Sns",
+      "Message",
+    ],
+  },
+]
+`;
+
+exports[`asLambdaEventSchema given: [case10] an event with no records when: [t0] each sns schema meets \`Records: []\` then: every sns form refuses it at Records 1`] = `
+[
+  [
+    {
+      "code": "too_small",
+      "inclusive": true,
+      "message": "Too small: expected array to have >=1 items",
+      "minimum": 1,
+      "origin": "array",
+      "path": [
+        "Records",
+      ],
+    },
+  ],
+  [
+    {
+      "code": "too_small",
+      "inclusive": true,
+      "message": "Too small: expected array to have >=1 items",
+      "minimum": 1,
+      "origin": "array",
+      "path": [
+        "Records",
+      ],
+    },
+  ],
+]
+`;
+
+exports[`asLambdaEventSchema given: [case10] an event with no records when: [t1] each kinesis schema meets \`Records: []\` then: every kinesis form accepts it 1`] = `
+[
+  {
+    "Records": [],
+  },
+  {
+    "Records": [],
+  },
+]
+`;

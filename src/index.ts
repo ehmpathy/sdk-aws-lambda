@@ -62,6 +62,14 @@ export { asLambdaEndpoint } from './domain.operations/asLambdaEndpoint/asLambdaE
 // test utils — the event source axis (construct the envelope a source delivers)
 export { asLambdaEvent } from './domain.operations/asLambdaEvent/asLambdaEvent';
 /**
+ * .what = the validate direction of the event source axis — `{ fromSns, fromKinesis }`
+ * .why = an sns or kinesis handler wired via `genLambdaEndpoint.forAsk` gets a validated
+ *        envelope and a typed payload. sqs is served by `genLambdaEndpoint.forSqs`
+ */
+export { asLambdaEventSchema } from './domain.operations/asLambdaEventSchema/asLambdaEventSchema';
+export type { KinesisStreamEventDecoded } from './domain.operations/asLambdaEventSchema/KinesisStreamEventDecoded';
+export type { SnsEventDecoded } from './domain.operations/asLambdaEventSchema/SnsEventDecoded';
+/**
  * .what = the `genLambdaEndpoint` family —
  *         `{ forAsk, forApiGateway, forSqs: { perRecord, perBatch } }`
  * .why = no variant is exported bare beside it, so autocomplete enumerates the family

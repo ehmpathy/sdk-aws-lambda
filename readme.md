@@ -172,6 +172,77 @@ with no dead-letter entry. to retry a fault, throw a `MalfunctionError`; every o
 
 ⇒ zoom in: [records](./.agent/repo=.this/role=any/briefs/domain.terms/records.md)
 
+### an sns or kinesis endpoint
+
+`asLambdaEventSchema` gives `forAsk` the schema of the event aws delivers, and optionally the schema
+of the message inside it. one argument validates the envelope and the message, decoded in place:
+
+```ts
+import { asLambdaEventSchema, genLambdaEndpoint } from 'sdk-aws-lambda';
+
+export const handler = genLambdaEndpoint.forAsk({
+  schema: {
+    input: asLambdaEventSchema.fromSns({ payload: schemaOfSesNotice }), // Message: json → validated
+    output: z.void(),
+  },
+  invoke: async ({ payload }, context) =>
+    handleSesNotice({ notice: payload.Records[0]!.Sns.Message }, context), // typed, no JSON.parse
+});
+```
+
+| call | the handler reads | the handler accepts |
+|---|---|---|
+| `fromSns()` | `SNSEvent`, as sent | `SNSEvent` |
+| `fromSns({ payload })` | `SnsEventDecoded<X>`: `Records[].Sns.Message` decoded | `SNSEvent` |
+| `fromKinesis()` | `KinesisStreamEvent`, `data` still base64 | `KinesisStreamEvent` |
+| `fromKinesis({ payload })` | `KinesisStreamEventDecoded<X>`: `Records[].kinesis.data` base64-decoded | `KinesisStreamEvent` |
+
+- the message is parsed as json by default. a text message (a log line, a csv row) sets
+  `deserialize: { payload: false }`, and `payload` meets the utf8 string. a text stream left on the
+  json default refuses every event; the refusal's issue names the opt-out
+- a caller fault is acknowledged, never retried: a refusal by the schema, or a `ConstraintError` (or
+  `BadRequestError`) your `invoke` throws, makes the invoke succeed, so sns does not retry it and
+  kinesis advances the shard, outside a tumble window. no dead-letter queue or on-failure destination receives it. a
+  `lambda.event.refused` warn line names the source, the cause, the issue paths, and the ids (sns
+  `MessageId`, kinesis `eventID`), since the log is its only trace
+- to retry, throw a `MalfunctionError` (or any other error): the invoke fails. for sns, lambda's
+  async invoke retries it (twice by default), then hands it to the function's on-failure
+  destination or dead-letter queue; for kinesis, the batch retries and the shard halts until it
+  succeeds or the records expire. that holds for a plain `Error` a payload `.transform()` throws
+  too, so a transform that cannot build its value should throw a `ConstraintError` to drop it
+- alarm on the warn line's volume, e.g. a cloudwatch metric filter on the term
+  `"lambda.event.refused"`, which matches under the text and the json log format alike: a schema
+  bug of ours acknowledges every event, with no lambda error to alarm on
+- on a wide kinesis batch, the line shows the first 100 ids and 20 issues, with `idsCount`,
+  `issuesCount`, and `idLast` beside them, so it fits one cloudwatch event and still bounds the
+  range to replay
+- `.refine()`, `.describe()` and `.meta()` on the built schema keep its source, so its refusals still
+  warn. a schema that wraps it (`.optional()`, `.nullable()`, `.default()`, `.transform()`,
+  `.pipe()`, a union) is a new schema, so its refusals log at debug only, as any other `forAsk`
+  caller's do. to check a whole batch, `.refine()` the built schema rather than wrap it
+- kinesis `Records` may be empty (aws's own sample handlers guard it, and a tumble window's final
+  invoke may carry none), so check its length before `Records[0]`. sns always delivers one
+- kinesis response configs: under tumble windows, an answer with no `state` fails the invoke, so a
+  refusal suspends the shard rather than advance it; under `ReportBatchItemFailures`, return
+  `{ batchItemFailures }` from an envelope-only (`fromKinesis()`) handler to retry only the bad
+  records, which also answers the whole-batch caution below
+- ⚠️ **kinesis: one refused record refuses the whole batch**, good records included. for a stream of
+  mixed quality, use `fromKinesis()` (envelope only) and judge each record in the handler. binary
+  data (a KPL aggregate, cloudwatch-logs gzip) does not fit `payload` either: under
+  `deserialize: { payload: false }` the bytes arrive as a mangled string a bare `z.string()`
+  accepts, so use the envelope-only form for a binary stream, and constrain a text schema's form
+  (e.g. a regex)
+- **sqs has no `asLambdaEventSchema.fromSqs`**: use `genLambdaEndpoint.forSqs`, which validates each
+  record's body and refuses a bad message alone, never with its batch. api gateway has no
+  `fromApiGateway` on the same axis (`genLambdaEndpoint.forApiGateway` validates its own
+  `schema.input`), and s3 has no `fromS3`, since an s3 notice carries a reference, never a payload
+- one zod in your tree: a `payload` schema from another zod copy or major is a type error. pin one
+  version via `pnpm.overrides.zod`
+- in a test, pass `struct: { payload: 'ancient' }` to `runLambdaEndpoint.onReferenced` with an
+  `asLambdaEvent.fromSns` / `fromKinesis` event: aws sends the bare event, so a refusal there answers
+  the flat `{ errorMessage, errorType }` body prod meets. the contemp default frames a
+  `{ event, trail }` wrapper aws never sends, and answers the nested `{ error: { class, … } }` body
+
 ## ask an endpoint
 
 ```ts
@@ -418,6 +489,8 @@ z.object({ rider: Surfer.contract().ref('primary') }).optional()
   - `onSerialized()` — you hold the slug; a caller fault **throws**. `at: 'cloud' | 'local'`
 - **asLambdaEvent** — cast a payload into the envelope aws delivers, wire-faithful by default
   - `fromApiGateway()`, `fromSqs()`, `fromSns()`, `fromKinesis()`, `fromS3()`
+- **asLambdaEventSchema** — the zod schema of the event aws delivers, with an optional message schema
+  - `fromSns()`, `fromKinesis()`; sqs is served by `genLambdaEndpoint.forSqs`
 - **trace-id propagation** — pass `log`, and `trail.exid` threads through the lambda-to-lambda call
   chain. http and sqs triggers mint a fresh `exid` per invoke
 - **introspection** — expose json-schema via `{ introspect: 'schema' }` (prep only), collected by

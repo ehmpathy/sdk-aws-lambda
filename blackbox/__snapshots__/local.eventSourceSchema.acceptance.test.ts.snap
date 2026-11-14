@@ -1,0 +1,690 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`asLambdaEventSchema, via the public surface given: [case1] an ses-notice handler on an sns topic when: [t0] sns delivers a valid notice then: invoke read the decoded, typed message 1`] = `
+{
+  "messageId": "m-1",
+  "type": "Bounce",
+}
+`;
+
+exports[`asLambdaEventSchema, via the public surface given: [case1] an ses-notice handler on an sns topic when: [t1] sns delivers a notice type the schema does not know then: one refusal line names the source and the field 1`] = `
+{
+  "line": {
+    "level": "warn",
+    "message": "lambda.event.refused",
+    "metadata": {
+      "class": "ConstraintError",
+      "consequence": "acknowledged; lambda does not retry a success, so this line is the only trace",
+      "errorMessage": "✋ ConstraintError: validation failed: Records.0.Sns.Message.notificationType: Invalid option: expected one of "Bounce"|"Complaint"|"Delivery"",
+      "idLast": null,
+      "ids": [
+        "<id:0>",
+      ],
+      "idsCount": 1,
+      "issues": [
+        {
+          "code": "invalid_value",
+          "message": "Invalid option: expected one of "Bounce"|"Complaint"|"Delivery"",
+          "path": "Records.0.Sns.Message.notificationType",
+        },
+      ],
+      "issuesCount": 1,
+      "source": "sns",
+    },
+    "timestamp": "<timestamp>",
+    "trail": {
+      "exid": "<exid>",
+      "stack": [],
+    },
+  },
+  "result": {
+    "details": {
+      "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`",
+      "issues": [
+        {
+          "code": "invalid_value",
+          "message": "Invalid option: expected one of "Bounce"|"Complaint"|"Delivery"",
+          "path": "Records.0.Sns.Message.notificationType",
+        },
+      ],
+    },
+    "errorMessage": "✋ ConstraintError: validation failed: Records.0.Sns.Message.notificationType: Invalid option: expected one of "Bounce"|"Complaint"|"Delivery"
+
+{
+  "issues": [
+    {
+      "path": "Records.0.Sns.Message.notificationType",
+      "message": "Invalid option: expected one of \\"Bounce\\"|\\"Complaint\\"|\\"Delivery\\"",
+      "code": "invalid_value"
+    }
+  ],
+  "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
+}",
+    "errorType": "BadRequestError",
+  },
+}
+`;
+
+exports[`asLambdaEventSchema, via the public surface given: [case2] a cloudfront log line handler on a kinesis stream when: [t0] kinesis delivers a batch of tab-separated log lines then: invoke read each decoded line 1`] = `
+[
+  [
+    "1700000000",
+    "/a",
+    "200",
+  ],
+  [
+    "1700000001",
+    "/b",
+    "404",
+  ],
+]
+`;
+
+exports[`asLambdaEventSchema, via the public surface given: [case2] a cloudfront log line handler on a kinesis stream when: [t1] one record in the batch is not a log line then: the refusal line names the bad record and every eventID 1`] = `
+{
+  "line": {
+    "level": "warn",
+    "message": "lambda.event.refused",
+    "metadata": {
+      "class": "ConstraintError",
+      "consequence": "the whole batch is answered as a success, so lambda does not retry it; this line is the only trace",
+      "errorMessage": "✋ ConstraintError: validation failed: Records.1.kinesis.data: expected a tab-separated log line",
+      "idLast": null,
+      "ids": [
+        "<id:0>",
+        "<id:1>",
+      ],
+      "idsCount": 2,
+      "issues": [
+        {
+          "code": "invalid_format",
+          "message": "expected a tab-separated log line",
+          "path": "Records.1.kinesis.data",
+        },
+      ],
+      "issuesCount": 1,
+      "source": "kinesis",
+    },
+    "timestamp": "<timestamp>",
+    "trail": {
+      "exid": "<exid>",
+      "stack": [],
+    },
+  },
+  "result": {
+    "details": {
+      "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`",
+      "issues": [
+        {
+          "code": "invalid_format",
+          "message": "expected a tab-separated log line",
+          "path": "Records.1.kinesis.data",
+        },
+      ],
+    },
+    "errorMessage": "✋ ConstraintError: validation failed: Records.1.kinesis.data: expected a tab-separated log line
+
+{
+  "issues": [
+    {
+      "path": "Records.1.kinesis.data",
+      "message": "expected a tab-separated log line",
+      "code": "invalid_format"
+    }
+  ],
+  "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
+}",
+    "errorType": "BadRequestError",
+  },
+}
+`;
+
+exports[`asLambdaEventSchema, via the public surface given: [case3] handlers wired with the envelope-only forms when: [t0] sns delivers a message then: invoke read the message as the wire string 1`] = `
+{
+  "message": "{"kind":"alert"}",
+}
+`;
+
+exports[`asLambdaEventSchema, via the public surface given: [case3] handlers wired with the envelope-only forms when: [t1] kinesis delivers a record then: invoke read the data still base64 1`] = `
+{
+  "data": "aGVsbG8=",
+  "decoded": "hello",
+}
+`;
+
+exports[`asLambdaEventSchema, via the public surface given: [case3] handlers wired with the envelope-only forms when: [t2] an sqs event is misrouted to the sns handler then: the answer is a caller fault, refused at the envelope 1`] = `
+{
+  "line": {
+    "level": "warn",
+    "message": "lambda.event.refused",
+    "metadata": {
+      "class": "ConstraintError",
+      "consequence": "acknowledged; lambda does not retry a success, so this line is the only trace",
+      "errorMessage": "✋ ConstraintError: validation failed: Records.0.EventVersion: Invalid input: expected string, received undefined; Records.0.EventSubscriptionArn: Invalid input: expected string, received undefined; Records.0.EventSource: Invalid input: expected "aws:sns"; Records.0.Sns: Invalid input: expected object, received undefined",
+      "idLast": null,
+      "ids": [],
+      "idsCount": 0,
+      "issues": [
+        {
+          "code": "invalid_type",
+          "message": "Invalid input: expected string, received undefined",
+          "path": "Records.0.EventVersion",
+        },
+        {
+          "code": "invalid_type",
+          "message": "Invalid input: expected string, received undefined",
+          "path": "Records.0.EventSubscriptionArn",
+        },
+        {
+          "code": "invalid_value",
+          "message": "Invalid input: expected "aws:sns"",
+          "path": "Records.0.EventSource",
+        },
+        {
+          "code": "invalid_type",
+          "message": "Invalid input: expected object, received undefined",
+          "path": "Records.0.Sns",
+        },
+      ],
+      "issuesCount": 4,
+      "source": "sns",
+    },
+    "timestamp": "<timestamp>",
+    "trail": {
+      "exid": "<exid>",
+      "stack": [],
+    },
+  },
+  "result": {
+    "details": {
+      "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`",
+      "issues": [
+        {
+          "code": "invalid_type",
+          "message": "Invalid input: expected string, received undefined",
+          "path": "Records.0.EventVersion",
+        },
+        {
+          "code": "invalid_type",
+          "message": "Invalid input: expected string, received undefined",
+          "path": "Records.0.EventSubscriptionArn",
+        },
+        {
+          "code": "invalid_value",
+          "message": "Invalid input: expected "aws:sns"",
+          "path": "Records.0.EventSource",
+        },
+        {
+          "code": "invalid_type",
+          "message": "Invalid input: expected object, received undefined",
+          "path": "Records.0.Sns",
+        },
+      ],
+    },
+    "errorMessage": "✋ ConstraintError: validation failed: Records.0.EventVersion: Invalid input: expected string, received undefined; Records.0.EventSubscriptionArn: Invalid input: expected string, received undefined; Records.0.EventSource: Invalid input: expected "aws:sns"; Records.0.Sns: Invalid input: expected object, received undefined
+
+{
+  "issues": [
+    {
+      "path": "Records.0.EventVersion",
+      "message": "Invalid input: expected string, received undefined",
+      "code": "invalid_type"
+    },
+    {
+      "path": "Records.0.EventSubscriptionArn",
+      "message": "Invalid input: expected string, received undefined",
+      "code": "invalid_type"
+    },
+    {
+      "path": "Records.0.EventSource",
+      "message": "Invalid input: expected \\"aws:sns\\"",
+      "code": "invalid_value"
+    },
+    {
+      "path": "Records.0.Sns",
+      "message": "Invalid input: expected object, received undefined",
+      "code": "invalid_type"
+    }
+  ],
+  "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
+}",
+    "errorType": "BadRequestError",
+  },
+}
+`;
+
+exports[`asLambdaEventSchema, via the public surface given: [case4] a click handler on a kinesis stream, json by default when: [t0] kinesis delivers a batch of json clicks then: invoke read each record decoded and parsed 1`] = `
+{
+  "urls": [
+    "/a",
+    "/b",
+  ],
+}
+`;
+
+exports[`asLambdaEventSchema, via the public surface given: [case4] a click handler on a kinesis stream, json by default when: [t1] the stream sends text, but the schema was left on the json default then: the batch is acknowledged, and the refusal line names the opt-out 1`] = `
+{
+  "line": {
+    "level": "warn",
+    "message": "lambda.event.refused",
+    "metadata": {
+      "class": "ConstraintError",
+      "consequence": "the whole batch is answered as a success, so lambda does not retry it; this line is the only trace",
+      "errorMessage": "✋ ConstraintError: validation failed: Records.0.kinesis.data: expected a json message; fix: for a text message (not json), set \`deserialize: { payload: false }\`",
+      "idLast": null,
+      "ids": [
+        "<id:0>",
+      ],
+      "idsCount": 1,
+      "issues": [
+        {
+          "code": "custom",
+          "message": "expected a json message; fix: for a text message (not json), set \`deserialize: { payload: false }\`",
+          "path": "Records.0.kinesis.data",
+        },
+      ],
+      "issuesCount": 1,
+      "source": "kinesis",
+    },
+    "timestamp": "<timestamp>",
+    "trail": {
+      "exid": "<exid>",
+      "stack": [],
+    },
+  },
+  "result": {
+    "details": {
+      "hint": "each entry in \`issues\` names its own fix — apply the one at the path named there. ⚠️ where a message says the schema ACCEPTED the value, the fix belongs to the endpoint author, never to the caller",
+      "issues": [
+        {
+          "code": "custom",
+          "message": "expected a json message; fix: for a text message (not json), set \`deserialize: { payload: false }\`",
+          "path": "Records.0.kinesis.data",
+        },
+      ],
+    },
+    "errorMessage": "✋ ConstraintError: validation failed: Records.0.kinesis.data: expected a json message; fix: for a text message (not json), set \`deserialize: { payload: false }\`
+
+{
+  "issues": [
+    {
+      "path": "Records.0.kinesis.data",
+      "message": "expected a json message; fix: for a text message (not json), set \`deserialize: { payload: false }\`",
+      "code": "custom"
+    }
+  ],
+  "hint": "each entry in \`issues\` names its own fix — apply the one at the path named there. ⚠️ where a message says the schema ACCEPTED the value, the fix belongs to the endpoint author, never to the caller"
+}",
+    "errorType": "BadRequestError",
+  },
+}
+`;
+
+exports[`asLambdaEventSchema, via the public surface given: [case4] a click handler on a kinesis stream, json by default when: [t2] the handler itself refuses the batch with a ConstraintError then: the batch is acknowledged, and the refusal line names the cause 1`] = `
+{
+  "line": {
+    "level": "warn",
+    "message": "lambda.event.refused",
+    "metadata": {
+      "class": "ConstraintError",
+      "consequence": "the whole batch is answered as a success, so lambda does not retry it; this line is the only trace",
+      "errorMessage": "✋ ConstraintError: clicks on /blocked are not counted",
+      "idLast": null,
+      "ids": [
+        "<id:0>",
+      ],
+      "idsCount": 1,
+      "issues": [],
+      "issuesCount": 0,
+      "source": "kinesis",
+    },
+    "timestamp": "<timestamp>",
+    "trail": {
+      "exid": "<exid>",
+      "stack": [],
+    },
+  },
+  "result": {
+    "details": {
+      "urls": [
+        "/blocked",
+      ],
+    },
+    "errorMessage": "✋ ConstraintError: clicks on /blocked are not counted
+
+{
+  "urls": [
+    "/blocked"
+  ]
+}",
+    "errorType": "BadRequestError",
+  },
+}
+`;
+
+exports[`asLambdaEventSchema, via the public surface given: [case5] an sns handler whose invoke refuses a notice when: [t0] sns delivers a complaint then: the notice is acknowledged, and the refusal line names the cause 1`] = `
+{
+  "line": {
+    "level": "warn",
+    "message": "lambda.event.refused",
+    "metadata": {
+      "class": "BadRequestError",
+      "consequence": "acknowledged; lambda does not retry a success, so this line is the only trace",
+      "errorMessage": "BadRequestError: complaints route to the abuse desk",
+      "idLast": null,
+      "ids": [
+        "<id:0>",
+      ],
+      "idsCount": 1,
+      "issues": [],
+      "issuesCount": 0,
+      "source": "sns",
+    },
+    "timestamp": "<timestamp>",
+    "trail": {
+      "exid": "<exid>",
+      "stack": [],
+    },
+  },
+  "result": {
+    "errorMessage": "BadRequestError: complaints route to the abuse desk",
+    "errorType": "BadRequestError",
+  },
+}
+`;
+
+exports[`asLambdaEventSchema, via the public surface given: [case6] an sns handler, tested on the default struct when: [t0] a notice of the wrong shape is sent then: the refusal answers in the contemp body, and the line still names the id 1`] = `
+{
+  "line": {
+    "level": "warn",
+    "message": "lambda.event.refused",
+    "metadata": {
+      "class": "ConstraintError",
+      "consequence": "acknowledged; lambda does not retry a success, so this line is the only trace",
+      "errorMessage": "✋ ConstraintError: validation failed: Records.0.Sns.Message.notificationType: Invalid input: expected string, received undefined",
+      "idLast": null,
+      "ids": [
+        "<id:0>",
+      ],
+      "idsCount": 1,
+      "issues": [
+        {
+          "code": "invalid_type",
+          "message": "Invalid input: expected string, received undefined",
+          "path": "Records.0.Sns.Message.notificationType",
+        },
+      ],
+      "issuesCount": 1,
+      "source": "sns",
+    },
+    "timestamp": "<timestamp>",
+    "trail": {
+      "exid": "<exid>",
+      "stack": [],
+    },
+  },
+  "result": {
+    "error": {
+      "_serde": "LambdaEndpointError::contemp@v1",
+      "class": "ConstraintError",
+      "details": {
+        "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`",
+        "issues": [
+          {
+            "code": "invalid_type",
+            "message": "Invalid input: expected string, received undefined",
+            "path": "Records.0.Sns.Message.notificationType",
+          },
+        ],
+      },
+      "message": "✋ ConstraintError: validation failed: Records.0.Sns.Message.notificationType: Invalid input: expected string, received undefined
+
+{
+  "issues": [
+    {
+      "path": "Records.0.Sns.Message.notificationType",
+      "message": "Invalid input: expected string, received undefined",
+      "code": "invalid_type"
+    }
+  ],
+  "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
+}",
+    },
+  },
+}
+`;
+
+exports[`asLambdaEventSchema, via the public surface given: [case7] an sns handler in prep, asked for its contract when: [t0] a caller introspects it then: the published input is the wire face: a non-empty Records of sns notices, Message a string 1`] = `
+{
+  "input": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": {},
+    "properties": {
+      "Records": {
+        "items": {
+          "additionalProperties": {},
+          "properties": {
+            "EventSource": {
+              "const": "aws:sns",
+              "type": "string",
+            },
+            "EventSubscriptionArn": {
+              "type": "string",
+            },
+            "EventVersion": {
+              "type": "string",
+            },
+            "Sns": {
+              "additionalProperties": {},
+              "properties": {
+                "Message": {
+                  "type": "string",
+                },
+                "MessageAttributes": {
+                  "additionalProperties": {
+                    "additionalProperties": {},
+                    "properties": {
+                      "Type": {
+                        "type": "string",
+                      },
+                      "Value": {
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "Type",
+                      "Value",
+                    ],
+                    "type": "object",
+                  },
+                  "propertyNames": {
+                    "type": "string",
+                  },
+                  "type": "object",
+                },
+                "MessageId": {
+                  "type": "string",
+                },
+                "Signature": {
+                  "type": "string",
+                },
+                "SignatureVersion": {
+                  "type": "string",
+                },
+                "SigningCertUrl": {
+                  "type": "string",
+                },
+                "Subject": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                    },
+                    {
+                      "type": "null",
+                    },
+                  ],
+                },
+                "Timestamp": {
+                  "type": "string",
+                },
+                "TopicArn": {
+                  "type": "string",
+                },
+                "Type": {
+                  "type": "string",
+                },
+                "UnsubscribeUrl": {
+                  "type": "string",
+                },
+              },
+              "required": [
+                "SignatureVersion",
+                "Timestamp",
+                "Signature",
+                "MessageId",
+                "Message",
+                "MessageAttributes",
+                "Type",
+                "TopicArn",
+              ],
+              "type": "object",
+            },
+          },
+          "required": [
+            "EventVersion",
+            "EventSubscriptionArn",
+            "EventSource",
+            "Sns",
+          ],
+          "type": "object",
+        },
+        "minItems": 1,
+        "type": "array",
+      },
+    },
+    "required": [
+      "Records",
+    ],
+    "type": "object",
+  },
+  "output": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "properties": {
+      "handled": {
+        "type": "boolean",
+      },
+    },
+    "required": [
+      "handled",
+    ],
+    "type": "object",
+  },
+}
+`;
+
+exports[`asLambdaEventSchema, via the public surface given: [case9] a kinesis handler in prep, asked for its contract when: [t0] a caller introspects it then: the published input is the wire face: data a string, not the decoded shape 1`] = `
+{
+  "input": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": {},
+    "properties": {
+      "Records": {
+        "items": {
+          "additionalProperties": {},
+          "properties": {
+            "awsRegion": {
+              "type": "string",
+            },
+            "eventID": {
+              "type": "string",
+            },
+            "eventName": {
+              "type": "string",
+            },
+            "eventSource": {
+              "const": "aws:kinesis",
+              "type": "string",
+            },
+            "eventSourceARN": {
+              "type": "string",
+            },
+            "eventVersion": {
+              "type": "string",
+            },
+            "invokeIdentityArn": {
+              "type": "string",
+            },
+            "kinesis": {
+              "additionalProperties": {},
+              "properties": {
+                "approximateArrivalTimestamp": {
+                  "type": "number",
+                },
+                "data": {
+                  "type": "string",
+                },
+                "kinesisSchemaVersion": {
+                  "type": "string",
+                },
+                "partitionKey": {
+                  "type": "string",
+                },
+                "sequenceNumber": {
+                  "type": "string",
+                },
+              },
+              "required": [
+                "kinesisSchemaVersion",
+                "partitionKey",
+                "sequenceNumber",
+                "data",
+                "approximateArrivalTimestamp",
+              ],
+              "type": "object",
+            },
+          },
+          "required": [
+            "kinesis",
+            "eventSource",
+            "eventVersion",
+            "eventID",
+            "eventName",
+            "invokeIdentityArn",
+            "awsRegion",
+            "eventSourceARN",
+          ],
+          "type": "object",
+        },
+        "type": "array",
+      },
+    },
+    "required": [
+      "Records",
+    ],
+    "type": "object",
+  },
+  "output": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "properties": {
+      "urls": {
+        "items": {
+          "type": "string",
+        },
+        "type": "array",
+      },
+    },
+    "required": [
+      "urls",
+    ],
+    "type": "object",
+  },
+}
+`;
+
+exports[`asLambdaEventSchema, via the public surface given: [case10] an envelope-only kinesis handler that reports per-record failures when: [t0] kinesis delivers a batch with one bad record then: the answer names only the bad record, by its sequence number 1`] = `
+[
+  {
+    "itemIdentifier": "<seq:0>",
+  },
+]
+`;

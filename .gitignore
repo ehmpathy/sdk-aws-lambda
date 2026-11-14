@@ -1,4 +1,4 @@
-.build
+**/.claude/scheduled_tasks*
 **/.claude/scheduled_tasks.lock
 *-debug.log
 *-error.log
@@ -6,7 +6,10 @@
 *.local.json
 *.log
 *.tsbuildinfo
+.agent/.cache/
+.agent/.notes/
 .artifact
+.build
 .env
 .radio
 .serverless
@@ -21,4 +24,6 @@
 coverage
 dist
 node_modules
+!.test*/**/node_modules
+!.test*/**/node_modules/**
 !.agent/.actors/actor.via.repo=ambient/
