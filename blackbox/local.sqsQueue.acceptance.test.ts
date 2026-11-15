@@ -3,6 +3,7 @@ import { given, then, useThen, when } from 'test-fns';
 import { z } from 'zod';
 
 import { asSqsEvent } from '../src/__test_assets__/asSqsEvent';
+import { asLogLineMasked } from './__test_assets__/asLogLineMasked';
 import { genLambdaEndpoint, runLambdaEndpoint } from '../src/index';
 
 /**
@@ -62,9 +63,23 @@ const asWarnLineMasked = (input: {
       typeof found.metadata === 'string'
         ? JSON.parse(found.metadata)
         : found.metadata,
-    ...(trail ? { trail: { ...trail, exid: '<exid>' } } : {}),
+    ...(trail ? { trail: { ...trail, exid: 'exid:[masked]' } } : {}),
   };
 };
+
+/**
+ * .what = the level of each `handler.output` line at warn or above, in the order written
+ * .why = on-call filters by that level; a debug line goes to another outlet, so it is absent here
+ */
+const asOutputLevels = (input: { lines: unknown[] }): unknown[] =>
+  input.lines
+    .filter(
+      (line): line is Record<string, unknown> =>
+        typeof line === 'object' &&
+        line !== null &&
+        (line as { message?: unknown }).message === 'handler.output',
+    )
+    .map((line) => line.level);
 
 /**
  * .what = how one invoke settled, with a rejection's class and headline kept
@@ -713,6 +728,120 @@ describe('the sqs queue input', () => {
         expect(metadata.id).toEqual('msg-1');
         expect(metadata.errorMessage).toEqual('the refine callback broke');
         expect(outcome.entry).toMatchSnapshot();
+      });
+    });
+  });
+
+  given('[case10] the handler.output level of each sqs failure the chain observes', () => {
+    /**
+     * .what = the level on-call filters by, per sqs leaf and per fault class
+     * .why = a failed invoke that logs at debug hides the failure (sdk-aws-lambda#77)
+     */
+    const runOne = async (input: { handler: Parameters<typeof runLambdaEndpoint.onReferenced>[0]['handler'] }) => {
+      const { result: settled, lines } = await withWarnLines(async () =>
+        asInvokeSettled(
+          runLambdaEndpoint.onReferenced({
+            handler: input.handler,
+            struct: { payload: 'ancient' },
+            event: asSqsEvent({
+              messages: [{ body: JSON.stringify({ orderId: 'ord-0' }) }],
+            }),
+          }),
+        ),
+      );
+      // each handler.output and handler.error line is kept whole, save its volatile fields
+      const asLinesOf = (of: { message: string }) =>
+        lines
+          .filter(
+            (line): line is Record<string, unknown> =>
+              typeof line === 'object' &&
+              line !== null &&
+              (line as { message?: unknown }).message === of.message,
+          )
+          .map((line) => asLogLineMasked({ line }));
+      return {
+        failed: settled.failed,
+        outputLevels: asOutputLevels({ lines }),
+        outputs: asLinesOf({ message: 'handler.output' }),
+        errors: asLinesOf({ message: 'handler.error' }),
+      };
+    };
+
+    when('[t0] a perRecord handler throws a MalfunctionError', () => {
+      const outcome = useThen('the invoke settles', async () =>
+        runOne({
+          handler: genLambdaEndpoint.forSqs.perRecord({
+            schema: SCHEMA_ORDER,
+            invoke: async () => {
+              throw new MalfunctionError('the upstream is down');
+            },
+          }),
+        }),
+      );
+
+      then('handler.output is written at error', () => {
+        expect(outcome.failed).toEqual(true);
+        expect(outcome.outputLevels).toEqual(['error']);
+      });
+
+      then('handler.error is written once, at error', () => {
+        expect(outcome.errors.map((line) => line.level)).toEqual(['error']);
+      });
+
+      then('the outcome and its lines match snapshot', () => {
+        expect(outcome).toMatchSnapshot();
+      });
+    });
+
+    when('[t1] a perBatch handler throws a ConstraintError', () => {
+      const outcome = useThen('the invoke settles', async () =>
+        runOne({
+          handler: genLambdaEndpoint.forSqs.perBatch({
+            schema: SCHEMA_ORDER,
+            invoke: async () => {
+              throw new ConstraintError('the batch is refused');
+            },
+          }),
+        }),
+      );
+
+      then('handler.output is written at warn', () => {
+        expect(outcome.failed).toEqual(true);
+        expect(outcome.outputLevels).toEqual(['warn']);
+      });
+
+      then('no handler.error is written: a caller fault is no server fault', () => {
+        expect(outcome.errors).toEqual([]);
+      });
+
+      then('the outcome and its lines match snapshot', () => {
+        expect(outcome).toMatchSnapshot();
+      });
+    });
+
+    when('[t2] a perBatch handler throws a MalfunctionError', () => {
+      const outcome = useThen('the invoke settles', async () =>
+        runOne({
+          handler: genLambdaEndpoint.forSqs.perBatch({
+            schema: SCHEMA_ORDER,
+            invoke: async () => {
+              throw new MalfunctionError('the upstream is down');
+            },
+          }),
+        }),
+      );
+
+      then('handler.output is written at error', () => {
+        expect(outcome.failed).toEqual(true);
+        expect(outcome.outputLevels).toEqual(['error']);
+      });
+
+      then('handler.error is written once, at error', () => {
+        expect(outcome.errors.map((line) => line.level)).toEqual(['error']);
+      });
+
+      then('the outcome and its lines match snapshot', () => {
+        expect(outcome).toMatchSnapshot();
       });
     });
   });

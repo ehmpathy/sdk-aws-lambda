@@ -1,0 +1,176 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`the failure log level of an endpoint given: [case1] a forAsk endpoint, through the export when: [t0] the handler succeeds then: the lines match snapshot 1`] = `
+{
+  "invokeRejected": false,
+  "lines": [
+    {
+      "console": "log",
+      "line": {
+        "level": "debug",
+        "message": "handler.output",
+        "metadata": {
+          "response": {
+            "salute": "aloha, Kai",
+          },
+        },
+        "timestamp": "<timestamp>",
+        "trail": {
+          "exid": "exid:[masked]",
+          "stack": [],
+        },
+      },
+    },
+  ],
+}
+`;
+
+exports[`the failure log level of an endpoint given: [case1] a forAsk endpoint, through the export when: [t1] the handler throws a ConstraintError then: the lines match snapshot 1`] = `
+{
+  "invokeRejected": false,
+  "lines": [
+    {
+      "console": "warn",
+      "line": {
+        "level": "warn",
+        "message": "handler.output",
+        "metadata": {
+          "errorMessage": "✋ ConstraintError: the surf spot is closed",
+          "stackTrace": "Error: ✋ ConstraintError: the surf spot is closed
+    at [frames]",
+        },
+        "timestamp": "<timestamp>",
+        "trail": {
+          "exid": "exid:[masked]",
+          "stack": [],
+        },
+      },
+    },
+  ],
+}
+`;
+
+exports[`the failure log level of an endpoint given: [case1] a forAsk endpoint, through the export when: [t2] the handler throws a MalfunctionError then: the lines match snapshot 1`] = `
+{
+  "invokeRejected": true,
+  "lines": [
+    {
+      "console": "warn",
+      "line": {
+        "level": "error",
+        "message": "handler.output",
+        "metadata": {
+          "errorMessage": "💥 MalfunctionError: the wave feed is down",
+          "stackTrace": "Error: 💥 MalfunctionError: the wave feed is down
+    at [frames]",
+        },
+        "timestamp": "<timestamp>",
+        "trail": {
+          "exid": "exid:[masked]",
+          "stack": [],
+        },
+      },
+    },
+    {
+      "console": "warn",
+      "line": {
+        "level": "error",
+        "message": "handler.error",
+        "metadata": {
+          "endpoint": "run-lambda-endpoint",
+          "errorMessage": "💥 MalfunctionError: the wave feed is down",
+          "stackTrace": "Error: 💥 MalfunctionError: the wave feed is down
+    at [frames]",
+        },
+        "timestamp": "<timestamp>",
+        "trail": {
+          "exid": "exid:[masked]",
+          "stack": [],
+        },
+      },
+    },
+  ],
+}
+`;
+
+exports[`the failure log level of an endpoint given: [case2] a forApiGateway endpoint, through the export when: [t0] the handler succeeds then: the lines match snapshot 1`] = `
+{
+  "invokeRejected": false,
+  "lines": [
+    {
+      "console": "log",
+      "line": {
+        "level": "debug",
+        "message": "handler.output",
+        "metadata": {
+          "response": {
+            "body": "{"salute":"aloha, Kai"}",
+            "headers": {
+              "Content-Type": "application/json",
+              "Origin-Agent-Cluster": "?1",
+              "Referrer-Policy": "no-referrer",
+              "Strict-Transport-Security": "max-age=15552000; includeSubDomains; preload",
+              "X-Content-Type-Options": "nosniff",
+              "X-DNS-Prefetch-Control": "off",
+              "X-Download-Options": "noopen",
+              "X-Permitted-Cross-Domain-Policies": "none",
+            },
+            "statusCode": 200,
+          },
+        },
+        "timestamp": "<timestamp>",
+        "trail": {
+          "exid": "exid:[masked]",
+          "stack": [],
+        },
+      },
+    },
+  ],
+}
+`;
+
+exports[`the failure log level of an endpoint given: [case3] a forSqs.perRecord endpoint, through the export when: [t0] the handler succeeds on its one record then: the lines match snapshot 1`] = `
+{
+  "invokeRejected": false,
+  "lines": [
+    {
+      "console": "log",
+      "line": {
+        "level": "debug",
+        "message": "handler.output",
+        "metadata": {},
+        "timestamp": "<timestamp>",
+        "trail": {
+          "exid": "exid:[masked]",
+          "stack": [],
+        },
+      },
+    },
+  ],
+}
+`;
+
+exports[`the failure log level of an endpoint given: [case4] a forSqs.perBatch endpoint, through the export when: [t0] the handler succeeds on its one record then: the lines match snapshot 1`] = `
+{
+  "invokeRejected": false,
+  "lines": [
+    {
+      "console": "log",
+      "line": {
+        "level": "debug",
+        "message": "handler.output",
+        "metadata": {
+          "response": {
+            "batchItemFailures": [],
+          },
+        },
+        "timestamp": "<timestamp>",
+        "trail": {
+          "exid": "exid:[masked]",
+          "stack": [],
+        },
+      },
+    },
+  ],
+}
+`;

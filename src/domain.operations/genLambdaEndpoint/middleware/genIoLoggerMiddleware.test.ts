@@ -1,4 +1,9 @@
 import { DomainEntity } from 'domain-objects';
+import {
+  BadRequestError,
+  ConstraintError,
+  MalfunctionError,
+} from 'helpful-errors';
 import { given, then, when } from 'test-fns';
 import { z } from 'zod';
 
@@ -100,9 +105,11 @@ describe('genIoLoggerMiddleware', () => {
 
         await middleware.onError!(request);
 
-        expect(mockLog.debug).toHaveBeenCalledWith('handler.output', {
+        // a failure logs at its class's level, never at debug (sdk-aws-lambda#77)
+        expect(mockLog.error).toHaveBeenCalledWith('handler.output', {
           response: { statusCode: 400 },
         });
+        expect(mockLog.debug).not.toHaveBeenCalled();
       });
     });
   });
@@ -123,10 +130,167 @@ describe('genIoLoggerMiddleware', () => {
 
         await middleware.onError!(request);
 
-        expect(mockLog.debug).toHaveBeenCalledWith('handler.output', {
+        expect(mockLog.error).toHaveBeenCalledWith('handler.output', {
           errorMessage: 'test error',
           stackTrace: error.stack,
         });
+        expect(mockLog.debug).not.toHaveBeenCalled();
+      });
+    });
+  });
+
+  /**
+   * .what = the failure line's level, per error class
+   * .why = a handled failure reads a success to aws, so a debug line beside each success hid 24
+   *        prod failures from on-call (sdk-aws-lambda#77). this clamps the level by class
+   */
+  given('[case9] onError, per error class', () => {
+    const asErrorRequest = (input: {
+      error: Error;
+      log: ReturnType<typeof createMockLog>;
+    }) =>
+      ({
+        event: {},
+        response: undefined,
+        error: input.error,
+        context: { log: input.log },
+        internal: {},
+      }) as unknown as Parameters<
+        NonNullable<ReturnType<typeof genIoLoggerMiddleware>['onError']>
+      >[0];
+
+    when('[t0] the handler threw a ConstraintError', () => {
+      then('handler.output logs at warn, not debug', async () => {
+        const mockLog = createMockLog();
+        const error = new ConstraintError('the surf spot is closed');
+        await genIoLoggerMiddleware().onError(
+          asErrorRequest({ error, log: mockLog }),
+        );
+        expect(mockLog.warn).toHaveBeenCalledWith('handler.output', {
+          errorMessage: error.message,
+          stackTrace: error.stack,
+        });
+        expect(mockLog.debug).not.toHaveBeenCalled();
+        expect(mockLog.error).not.toHaveBeenCalled();
+      });
+    });
+
+    when('[t1] the handler threw a BadRequestError', () => {
+      then('handler.output logs at warn', async () => {
+        const mockLog = createMockLog();
+        const error = new BadRequestError('a board size is required');
+        await genIoLoggerMiddleware().onError(
+          asErrorRequest({ error, log: mockLog }),
+        );
+        expect(mockLog.warn).toHaveBeenCalledWith(
+          'handler.output',
+          expect.objectContaining({ errorMessage: error.message }),
+        );
+        expect(mockLog.debug).not.toHaveBeenCalled();
+      });
+    });
+
+    when('[t3] the handler threw a non-Error value', () => {
+      then(
+        'handler.output logs at error, and names the thrown value',
+        async () => {
+          const values: unknown[] = [
+            'upstream said no',
+            '',
+            0,
+            null,
+            false,
+            undefined,
+          ];
+          await Promise.all(
+            values.map(async (value) => {
+              const mockLog = createMockLog();
+              await genIoLoggerMiddleware().onError(
+                asErrorRequest({ error: value as Error, log: mockLog }),
+              );
+              expect(mockLog.error).toHaveBeenCalledWith('handler.output', {
+                errorMessage: String(value),
+                stackTrace: null,
+              });
+              expect(mockLog.debug).not.toHaveBeenCalled();
+            }),
+          );
+        },
+      );
+    });
+
+    when('[t2] the handler threw a MalfunctionError', () => {
+      then('handler.output logs at error', async () => {
+        const mockLog = createMockLog();
+        const error = new MalfunctionError('the wave report feed is down');
+        await genIoLoggerMiddleware().onError(
+          asErrorRequest({ error, log: mockLog }),
+        );
+        expect(mockLog.error).toHaveBeenCalledWith(
+          'handler.output',
+          expect.objectContaining({ errorMessage: error.message }),
+        );
+        expect(mockLog.debug).not.toHaveBeenCalled();
+        expect(mockLog.warn).not.toHaveBeenCalled();
+      });
+    });
+  });
+
+  /**
+   * .what = a failure thrown before trail put `log` on the context
+   * .why = `forApiGateway`'s normalization runs ahead of trail and throws a ConstraintError for an
+   *        event that is neither v1 nor v2. with no `log`, the failure line used to vanish
+   *
+   * .note = console is spied, never mocked away: the real console still runs
+   */
+  given('[case10] onError with no log in context', () => {
+    when('[t0] a ConstraintError was thrown before trail', () => {
+      then('the failure line goes to console.warn', async () => {
+        const spyWarn = jest.spyOn(console, 'warn');
+        try {
+          const error = new ConstraintError('neither a v1 nor a v2 event');
+          const request = {
+            event: {},
+            response: undefined,
+            error,
+            context: {},
+            internal: {},
+          } as unknown as Parameters<
+            NonNullable<ReturnType<typeof genIoLoggerMiddleware>['onError']>
+          >[0];
+          await genIoLoggerMiddleware().onError(request);
+          expect(spyWarn).toHaveBeenCalledWith('handler.output', {
+            errorMessage: error.message,
+            stackTrace: error.stack,
+          });
+        } finally {
+          spyWarn.mockRestore();
+        }
+      });
+    });
+
+    when('[t1] a MalfunctionError was thrown before trail', () => {
+      then('the failure line goes to console.error', async () => {
+        const spyError = jest.spyOn(console, 'error');
+        try {
+          const error = new MalfunctionError('the normalizer broke');
+          const request = {
+            event: {},
+            response: undefined,
+            error,
+            context: {},
+            internal: {},
+          } as unknown as Parameters<
+            NonNullable<ReturnType<typeof genIoLoggerMiddleware>['onError']>
+          >[0];
+          await genIoLoggerMiddleware().onError(request);
+          expect(spyError).toHaveBeenCalledWith(
+            'handler.output',
+            expect.objectContaining({ errorMessage: error.message }),
+          );
+        } finally {
+          spyError.mockRestore();
+        }
       });
     });
   });
@@ -186,6 +350,45 @@ describe('genIoLoggerMiddleware', () => {
           response: { success: true, token: '[REDACTED]' },
         });
       });
+    });
+
+    /**
+     * .what = pins the scope of `logTranslate.output`: the response, never a thrown error
+     * .why = a consumer that redacts must be able to read, from a test, what its translate covers.
+     *        the failure line carries the error's own message raw, as `handler.error` already does
+     *        for a server fault; a translate for the error branch is a caught dream
+     *        (`.dream/2026_11_06.v2026-11-06-feat-log-translate-for-error-branch.dream.md`)
+     */
+    when('[t1] the handler threw, with an output translate configured', () => {
+      then(
+        'the translate is not called, and the failure line holds the raw message',
+        async () => {
+          const mockLog = createMockLog();
+          const translate = jest.fn((response: unknown) => ({
+            ...(response as object),
+            token: '[REDACTED]',
+          }));
+          const middleware = genIoLoggerMiddleware({
+            logTranslate: { output: translate },
+          });
+          const error = new ConstraintError('token jwt-token is expired');
+          const request = {
+            event: {},
+            response: undefined,
+            error,
+            context: { log: mockLog },
+            internal: {},
+          } as unknown as Parameters<NonNullable<typeof middleware.onError>>[0];
+
+          await middleware.onError!(request);
+
+          expect(translate).not.toHaveBeenCalled();
+          expect(mockLog.warn).toHaveBeenCalledWith('handler.output', {
+            errorMessage: error.message,
+            stackTrace: error.stack,
+          });
+        },
+      );
     });
   });
 

@@ -21,6 +21,14 @@ one family, one leaf per trigger:
 | `genLambdaEndpoint.forSqs.perRecord` | one queue message per invoke |
 | `genLambdaEndpoint.forSqs.perBatch` | a whole queue batch per invoke |
 
+every failure an endpoint's chain observes logs `handler.output` at warn (a caller fault: a
+`ConstraintError` or `BadRequestError`) or error (all else), with its message and stack. a success
+stays at debug. a failure thrown before the trail sets a `log` still logs, through `console`.
+upgrade from 0.8: such a failure logged at debug, so a warn-keyed alarm now sees more volume.
+one exception: a caller fault a `forSqs.perRecord` handler throws is acknowledged inside the leaf,
+so the chain sees a success and writes `handler.output` at debug. its trace is the
+`sqs.record.refused` warn line.
+
 ### genLambdaEndpoint.forAsk
 
 a direct invoke, e.g. from `askLambdaEndpoint`.

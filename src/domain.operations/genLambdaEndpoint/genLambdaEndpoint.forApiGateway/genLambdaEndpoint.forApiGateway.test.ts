@@ -8,6 +8,7 @@ import type { ApiGatewayOnwireVersion } from '../../../__test_assets__/asApiGate
 import { asApiGatewayRequestEventOnwire } from '../../../__test_assets__/asApiGatewayRequestEventOnwire';
 import { asParsedResponseBody } from '../../../__test_assets__/asParsedResponseBody';
 import { asResponseOnwireSnapshot } from '../../../__test_assets__/asResponseOnwireSnapshot';
+import type { ApiGatewayRequestEventOnwire } from '../../../domain.objects/ApiGatewayRequestEventOnwire';
 import { forAsk } from '../genLambdaEndpoint.forAsk/genLambdaEndpoint.forAsk';
 import type {
   ApiGatewayHeadersMerged,
@@ -2852,6 +2853,83 @@ describe('genLambdaEndpoint.forApiGateway', () => {
           });
         },
       );
+    },
+  );
+
+  /**
+   * .what = a failure thrown by the event normalizer, through the composed chain
+   * .why = the normalizer can throw before trail puts a `log` on the context, so the failure line
+   *        must still reach on-call via the console fallback (sdk-aws-lambda#77). the unit case
+   *        (`genIoLoggerMiddleware [case10]`) proves the fallback; this proves the chain reaches it
+   */
+  given(
+    '[case29] an event the normalizer refuses, before the handler runs',
+    () => {
+      when('[t0] a { event, trail } wrapper reaches the endpoint', () => {
+        const outcome = useThen('the sdk answers the wire', async () => {
+          const spyWarn = jest
+            .spyOn(console, 'warn')
+            .mockImplementation(() => {});
+          const spyError = jest
+            .spyOn(console, 'error')
+            .mockImplementation(() => {});
+          try {
+            const handler = forApiGateway({
+              schema: {
+                input: z.object({ payload: z.object({ name: z.string() }) }),
+                output: asApiGatewayResponseSchema({
+                  payload: z.object({ ok: z.boolean() }),
+                }),
+              },
+              invoke: async () => ({ payload: { ok: true } }),
+            });
+
+            // .as = a wrapper is not an api gateway event, and that is the point: aws never sends
+            //       one, so its type cannot hold one (precedent: asApiGatewayRequestEventUnified.test.ts)
+            const wrapped = {
+              event: createV1Event({ name: 'Kai' }),
+              trail: { exid: 'exid:wrapped', stack: [] },
+            } as unknown as ApiGatewayRequestEventOnwire;
+            const result = await handler(wrapped, createMockContext());
+            const asLine = (args: unknown[]): string =>
+              args
+                .map((arg) =>
+                  typeof arg === 'string' ? arg : JSON.stringify(arg),
+                )
+                .join(' ');
+            const linesWarn = spyWarn.mock.calls.map(asLine);
+            const linesError = spyError.mock.calls.map(asLine);
+            return { result, linesWarn, linesError };
+          } finally {
+            spyWarn.mockRestore();
+            spyError.mockRestore();
+          }
+        });
+
+        then('the http caller gets a 400 that names the cause', () => {
+          expect(outcome.result.statusCode).toBe(400);
+          expect(outcome.result.body).toContain('a { event, trail } wrapper');
+        });
+
+        then('the whole 400 wire matches snapshot', () => {
+          expect(
+            asResponseOnwireSnapshot({ wire: outcome.result }),
+          ).toMatchSnapshot();
+        });
+
+        then(
+          'a handler.output line names the refusal, at warn: a caller fault',
+          () => {
+            const isOutputLine = (line: string): boolean =>
+              line.includes('handler.output') &&
+              line.includes('a { event, trail } wrapper');
+            const lineOutput = outcome.linesWarn.find(isOutputLine);
+            expect(lineOutput).toBeDefined();
+            expect(lineOutput).not.toMatch(/"level":\s*"error"/);
+            expect(outcome.linesError.find(isOutputLine)).toBeUndefined();
+          },
+        );
+      });
     },
   );
 });

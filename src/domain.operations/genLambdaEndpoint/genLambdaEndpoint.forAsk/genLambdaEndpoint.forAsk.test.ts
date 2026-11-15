@@ -1,6 +1,6 @@
 import type { Context } from 'aws-lambda';
 import { DomainEntity, DomainLiteral, withImmute } from 'domain-objects';
-import { getError } from 'helpful-errors';
+import { ConstraintError, getError, MalfunctionError } from 'helpful-errors';
 import { given, then, useThen, when } from 'test-fns';
 import { z } from 'zod';
 
@@ -1422,6 +1422,89 @@ describe('forAsk', () => {
           (outcome.rejected?.cause as Error | undefined)?.message ??
             outcome.rejected?.message,
         ).toContain('a frozen Date refuses .setFullYear()');
+      });
+    });
+  });
+
+  /**
+   * .what = the failure line's level, through the composed ask chain
+   * .why = a handled failure reads a success to aws, so the level is the only signal on-call gets
+   *        (sdk-aws-lambda#77). the level rests on middy's hook order in this chain, so this pins
+   *        it here, per chain
+   */
+  given('[case17] a handler that throws, through the composed chain', () => {
+    const schema = {
+      input: z.object({ name: z.string() }),
+      output: z.object({ salute: z.string() }),
+    };
+
+    /**
+     * .what = invokes the chain once, and returns every handler.output line it wrote at warn or error
+     * .why = sdk-logs writes warn AND error through `console.warn`, and names the level in the line
+     */
+    const genLinesOutput = async (input: {
+      error: Error;
+    }): Promise<string[]> => {
+      const spyWarn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      const spyError = jest
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
+      try {
+        const handler = forAsk({
+          schema,
+          invoke: async () => {
+            throw input.error;
+          },
+        });
+        // a caller fault resolves as an error body, a server fault rejects; the lines are the claim
+        await handler({ name: 'Kai' }, createMockContext()).catch(
+          (error: unknown) => error,
+        );
+        return [...spyWarn.mock.calls, ...spyError.mock.calls]
+          .map((args) =>
+            args
+              .map((arg) =>
+                typeof arg === 'string' ? arg : JSON.stringify(arg),
+              )
+              .join(' '),
+          )
+          .filter((line) => line.includes('handler.output'));
+      } finally {
+        spyWarn.mockRestore();
+        spyError.mockRestore();
+      }
+    };
+
+    when('[t0] the handler throws a ConstraintError', () => {
+      const lines = useThen('the chain answers', async () => ({
+        all: await genLinesOutput({
+          error: new ConstraintError('the surf spot is closed'),
+        }),
+      }));
+
+      then('handler.output is written at warn, never error', () => {
+        const line = lines.all.find((each) =>
+          each.includes('the surf spot is closed'),
+        );
+        expect(line).toBeDefined();
+        expect(line).toMatch(/"level":\s*"warn"/);
+        expect(line).not.toMatch(/"level":\s*"error"/);
+      });
+    });
+
+    when('[t1] the handler throws a MalfunctionError', () => {
+      const lines = useThen('the chain answers', async () => ({
+        all: await genLinesOutput({
+          error: new MalfunctionError('the wave feed is down'),
+        }),
+      }));
+
+      then('handler.output is written at error', () => {
+        const line = lines.all.find((each) =>
+          each.includes('the wave feed is down'),
+        );
+        expect(line).toBeDefined();
+        expect(line).toMatch(/"level":\s*"error"/);
       });
     });
   });

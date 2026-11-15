@@ -108,7 +108,7 @@ exports[`the sqs queue input given: [case6] a perRecord handler meets a message 
     },
     "timestamp": "<timestamp>",
     "trail": {
-      "exid": "<exid>",
+      "exid": "exid:[masked]",
       "stack": [],
     },
   },
@@ -152,7 +152,7 @@ exports[`the sqs queue input given: [case6] a perRecord handler meets a message 
     },
     "timestamp": "<timestamp>",
     "trail": {
-      "exid": "<exid>",
+      "exid": "exid:[masked]",
       "stack": [],
     },
   },
@@ -223,7 +223,7 @@ exports[`the sqs queue input given: [case7] a fault that must redrive, through t
     },
     "timestamp": "<timestamp>",
     "trail": {
-      "exid": "<exid>",
+      "exid": "exid:[masked]",
       "stack": [],
     },
   },
@@ -250,8 +250,118 @@ exports[`the sqs queue input given: [case8] a perBatch schema whose own callback
   },
   "timestamp": "<timestamp>",
   "trail": {
-    "exid": "<exid>",
+    "exid": "exid:[masked]",
     "stack": [],
   },
+}
+`;
+
+exports[`the sqs queue input given: [case10] the handler.output level of each sqs failure the chain observes when: [t0] a perRecord handler throws a MalfunctionError then: the outcome and its lines match snapshot 1`] = `
+{
+  "errors": [
+    {
+      "level": "error",
+      "message": "handler.error",
+      "metadata": {
+        "endpoint": "run-lambda-endpoint",
+        "errorMessage": "💥 MalfunctionError: the upstream is down",
+        "stackTrace": "Error: 💥 MalfunctionError: the upstream is down
+    at [frames]",
+      },
+      "timestamp": "<timestamp>",
+      "trail": {
+        "exid": "exid:[masked]",
+        "stack": [],
+      },
+    },
+  ],
+  "failed": true,
+  "outputLevels": [
+    "error",
+  ],
+  "outputs": [
+    {
+      "level": "error",
+      "message": "handler.output",
+      "metadata": {
+        "errorMessage": "💥 MalfunctionError: the upstream is down",
+        "stackTrace": "Error: 💥 MalfunctionError: the upstream is down
+    at [frames]",
+      },
+      "timestamp": "<timestamp>",
+      "trail": {
+        "exid": "exid:[masked]",
+        "stack": [],
+      },
+    },
+  ],
+}
+`;
+
+exports[`the sqs queue input given: [case10] the handler.output level of each sqs failure the chain observes when: [t1] a perBatch handler throws a ConstraintError then: the outcome and its lines match snapshot 1`] = `
+{
+  "errors": [],
+  "failed": true,
+  "outputLevels": [
+    "warn",
+  ],
+  "outputs": [
+    {
+      "level": "warn",
+      "message": "handler.output",
+      "metadata": {
+        "errorMessage": "✋ ConstraintError: the batch is refused",
+        "stackTrace": "Error: ✋ ConstraintError: the batch is refused
+    at [frames]",
+      },
+      "timestamp": "<timestamp>",
+      "trail": {
+        "exid": "exid:[masked]",
+        "stack": [],
+      },
+    },
+  ],
+}
+`;
+
+exports[`the sqs queue input given: [case10] the handler.output level of each sqs failure the chain observes when: [t2] a perBatch handler throws a MalfunctionError then: the outcome and its lines match snapshot 1`] = `
+{
+  "errors": [
+    {
+      "level": "error",
+      "message": "handler.error",
+      "metadata": {
+        "endpoint": "run-lambda-endpoint",
+        "errorMessage": "💥 MalfunctionError: the upstream is down",
+        "stackTrace": "Error: 💥 MalfunctionError: the upstream is down
+    at [frames]",
+      },
+      "timestamp": "<timestamp>",
+      "trail": {
+        "exid": "exid:[masked]",
+        "stack": [],
+      },
+    },
+  ],
+  "failed": true,
+  "outputLevels": [
+    "error",
+  ],
+  "outputs": [
+    {
+      "level": "error",
+      "message": "handler.output",
+      "metadata": {
+        "errorMessage": "💥 MalfunctionError: the upstream is down",
+        "stackTrace": "Error: 💥 MalfunctionError: the upstream is down
+    at [frames]",
+      },
+      "timestamp": "<timestamp>",
+      "trail": {
+        "exid": "exid:[masked]",
+        "stack": [],
+      },
+    },
+  ],
 }
 `;
