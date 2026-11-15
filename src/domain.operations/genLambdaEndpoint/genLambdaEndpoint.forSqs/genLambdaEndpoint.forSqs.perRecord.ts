@@ -1,29 +1,20 @@
-import middy from '@middy/core';
+import type middy from '@middy/core';
 import type { Context, SQSEvent } from 'aws-lambda';
-import { MalfunctionError } from 'helpful-errors';
 import type { ContextLogTrail } from 'sdk-logs';
 import type { FrozenDeep } from 'type-fns';
 import type { ZodSchema } from 'zod';
 
 import type { ContextAwsLambdaServer } from '../../../domain.objects/ContextAwsLambdaServer';
-import { setHandlerTrailCarrier } from '../../lambdaEndpointWire/frame/setHandlerTrailCarrier';
-import { asContextLogTrail } from '../asContextLogTrail';
-import { asCallerFault } from '../middleware/asCallerFault';
-import { setEventFrozen } from '../setEventFrozen';
+import { DESERIALIZE_DEFAULT } from '../record/asRecordBodyParsed';
+import { genRecordEndpointPerRecord } from '../record/genRecordEndpointPerRecord';
 import type { TranslateLog } from '../TranslateLog';
 import { asSqsEventDecoded } from './asSqsEventDecoded';
-import { DESERIALIZE_DEFAULT } from './asSqsRecordDecoded';
-import {
-  CARRIER_SQS,
-  genSqsEndpointMiddlewares,
-} from './genSqsEndpointMiddlewares';
-import { logSqsRecordRefused } from './logSqsRecordRefused';
+import { RECORD_SOURCE_SQS } from './genLambdaEndpoint.forSqs.constants';
 import type {
   SqsEventDecoded,
   SqsHeadersDeclared,
   SqsHeadersMerged,
 } from './SqsEventDecoded';
-import { setSqsRecordValidated } from './setSqsRecordValidated';
 
 /**
  * .what = sdk contract type for `genLambdaEndpoint.forSqs.perRecord`
@@ -162,105 +153,27 @@ export const perRecord = <THeaders extends SqsHeadersDeclared, TPayload>(
 
   const deserialize = config.deserialize ?? DESERIALIZE_DEFAULT;
 
-  /**
-   * .what = the handler's own step: decode, refuse a batch, validate, invoke
-   * .why = by here the chain has produced the trail log, so this reads as narrative
-   */
-  const logic = async (
-    event: SQSEvent,
-    lambdaContext: Context,
-  ): Promise<void> => {
-    // read the trail log `genTrailMiddleware` wrote; the cast lives in the shared reader
-    const { log } = asContextLogTrail({ context: lambdaContext });
+  // the serve is the shared one; this variant supplies sqs's facts and its own slots
+  return genRecordEndpointPerRecord<
+    SQSEvent,
+    SqsEventDecoded<{ headers: SqsHeadersMerged<THeaders>; payload: TPayload }>,
+    Parameters<ForSqsPerRecordInput<THeaders, TPayload>['invoke']>[0]
+  >({
+    variant: 'forSqs.perRecord',
+    source: RECORD_SOURCE_SQS,
+    fixBatchCount:
+      'set the event source `batchSize` to 1, or reach for `genLambdaEndpoint.forSqs.perBatch`',
+    decode: ({ wire }) => asSqsEventDecoded({ wire }, { deserialize }),
+    deserialize,
+    schema: config.schema.input,
 
-    const decoded = asSqsEventDecoded({ wire: event }, { deserialize });
-
-    /**
-     * .what = the cardinality refusal this variant exists for
-     * .why = see the batch-size note above. the message names the fix because the author who
-     *        meets it cannot see the trigger config from the code they read
-     */
-    if (decoded.records.length !== 1)
-      MalfunctionError.throw(
-        'forSqs.perRecord received a batch of other than one message',
-        {
-          count: decoded.records.length,
-          fix: 'set the event source `batchSize` to 1, or reach for `genLambdaEndpoint.forSqs.perBatch`',
-          ids: decoded.records.map((record) => record.id),
-        },
-      );
-
-    const record = decoded.records[0]!;
-
-    /**
-     * .what = serves the one record: validate, freeze, invoke
-     * .why = a caller fault on this message is acknowledged — logged, and the invoke succeeds, so
-     *        sqs deletes it once. the same bytes fail the same way on every receive, so a redrive
-     *        could only page someone for the producer's fault
-     *        (`invariant.constraint-errors-never-redrive-sqs`). any other fault escapes, so sqs
-     *        redrives it (`rule.forbid.failhide`)
-     * .note = the batch-size refusal above stays outside this catch: it is the deployer's fault,
-     *         and a `MalfunctionError` besides
-     */
-    try {
-      /**
-       * .what = validates the one record, and writes the parsed values back into it
-       * .note = its return is that same object, narrowed. the read happens off `eventFrozen`
-       *         below instead, which narrows the whole envelope and the record with it
-       */
-      setSqsRecordValidated({ record, schema: config.schema.input });
-
-      /**
-       * .what = seals the envelope before the handler's turn
-       * .why = the envelope it hands over is the same shape `perBatch` hands over, and a
-       *        guarantee that holds on one variant and not its peer is a trap for an author who
-       *        moves between them (`rule.forbid.parallel-codepaths`)
-       * .where = after the validator, which writes the parsed values back into the record
-       *
-       * .as = the validated values were written into the record, so the envelope now carries
-       *       them too — a fact typescript cannot track from a mutation
-       * .removal = drops when the decode is parameterized on the schema's own output types
-       */
-      const eventFrozen = setEventFrozen({
-        event: decoded as SqsEventDecoded<{
-          headers: SqsHeadersMerged<THeaders>;
-          payload: TPayload;
-        }>,
-      });
-      const recordFrozen = eventFrozen.records[0]!;
-
-      /**
-       * .what = hands over the pair, the envelope, and the lineage. the two lifted fields are
-       *         projections of the record's slots
-       * .note = read off `eventFrozen` rather than `decoded` — the same reference, since the
-       *         freeze is in place, and the narrowed type is what carries the readonly guarantee
-       *         to the handler. a read off `decoded` hands over the pre-freeze type and drops it
-       */
-      await config.invoke(
-        {
-          payload: recordFrozen.payload,
-          headers: recordFrozen.headers,
-          event: eventFrozen,
-        },
-        { log },
-      );
-    } catch (error) {
-      // rethrow every fault that is not the caller's, so sqs redrives it; the escaped throw is its trace
-      const callerFault = asCallerFault({ error });
-      if (!callerFault) throw error;
-
-      // acknowledge the caller fault, by the leaves `setSqsRecordsValidated` shares; the return deletes it
-      logSqsRecordRefused(
-        { message: record._.raw, error: callerFault },
-        { log },
-      );
-    }
-  };
-
-  return setHandlerTrailCarrier({
-    handler: middy(logic).use(
-      genSqsEndpointMiddlewares({ logTranslate: config.logTranslate }),
-    ),
-    carrier: CARRIER_SQS,
+    // the pair and the envelope; the two lifted fields are projections of the one record's slots
+    asInvokeInput: ({ event }) => ({
+      payload: event.records[0]!.payload,
+      headers: event.records[0]!.headers,
+      event,
+    }),
+    invoke: config.invoke,
+    logTranslate: config.logTranslate ?? null,
   });
 };

@@ -721,7 +721,7 @@ describe('genLambdaEndpoint.forSqs.perBatch', () => {
           expect(observed.entry).toContain('msg-1');
           expect(observed.entry).toContain('class');
           expect(observed.entry).toContain('Error: the refine callback broke'); // the stack's head
-          expect(observed.entry).toContain('setSqsRecordsValidated'); // a frame of the stack
+          expect(observed.entry).toContain('setRecordsValidated'); // a frame of the stack
         },
       );
     });

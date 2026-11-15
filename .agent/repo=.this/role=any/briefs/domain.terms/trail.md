@@ -69,10 +69,12 @@ family's caller puts its trail:
 | `forAsk` | `wrapper` | ✅ from `WrappedPayload.trail.exid` |
 | `forApiGateway` | `headers` | ✅ from `x-trail-exid`; a `{ event, trail }` wrapper is refused, since aws never sends one |
 | `forSqs.*` | `wrapper` | ⛔ generated — `asSqsRecordDecoded.ts` reads no `exid` or `trail`, and an sqs envelope cannot match the wrapper |
+| `forSns` | `none` | ⛔ generated — the `MessageAttributes` lift is unbuilt |
+| `forKinesis.*` | `none` | ⛔ generated — a kinesis record carries no metadata bag to lift from |
 
-so a producer that sets an `exid` on an sqs `messageAttribute` is ignored, and a trace breaks at
-that boundary. the sqs lift is unbuilt: the send side comes first, then the batch-grain read. ⛔ never
-cite it as built.
+so a producer that sets an `exid` on an sqs `messageAttribute` or an sns `MessageAttribute` is
+ignored, and a trace breaks at that boundary. the sqs and sns lifts are unbuilt: the send side comes
+first, then the read. ⛔ never cite either as built.
 
 ## .the grain — one invoke, one lineage
 

@@ -20,6 +20,13 @@ one family, one leaf per trigger:
 | `genLambdaEndpoint.forApiGateway` | http, via api gateway |
 | `genLambdaEndpoint.forSqs.perRecord` | one queue message per invoke |
 | `genLambdaEndpoint.forSqs.perBatch` | a whole queue batch per invoke |
+| `genLambdaEndpoint.forSns` | one topic message per invoke |
+| `genLambdaEndpoint.forKinesis.perRecord` | one stream record per invoke |
+| `genLambdaEndpoint.forKinesis.perBatch` | a whole stream batch per invoke |
+
+every record source has both halves: an endpoint here, and its event schema at
+`asLambdaEventSchema.fromX` (`fromSqs`, `fromSns`, `fromKinesis`), for a handler you wire via
+`forAsk` yourself.
 
 ### genLambdaEndpoint.forAsk
 
@@ -128,7 +135,7 @@ a queue, one leaf per cardinality.
 export const handler = genLambdaEndpoint.forSqs.perRecord({
   schema: {
     input: z.object({
-      headers: z.object({ source: z.string().optional() }), // message attributes
+      headers: z.object({ source: z.string().optional() }), // message attributes; names verbatim, never lowercased
       payload: z.object({ orderId: z.string() }),
     }),
   },
@@ -172,7 +179,67 @@ with no dead-letter entry. to retry a fault, throw a `MalfunctionError`; every o
 
 ⇒ zoom in: [records](./.agent/repo=.this/role=any/briefs/domain.terms/records.md)
 
-### an sns or kinesis endpoint
+### genLambdaEndpoint.forSns and genLambdaEndpoint.forKinesis
+
+the same record contract as `forSqs`: `schema.input` describes one record, a caller fault is
+acknowledged with a `sns.record.refused` / `kinesis.record.refused` warn line, and any other throw
+retries.
+
+```ts
+// sns delivers one message per invoke, so forSns is a plain variant
+export const handler = genLambdaEndpoint.forSns({
+  schema: {
+    input: z.object({
+      headers: z.object({ origin: z.string().optional() }), // message attributes, flattened; names verbatim, never lowercased
+      payload: schemaOfSesNotice,
+    }),
+  },
+  invoke: async ({ payload }, context) => handleSesNotice({ notice: payload }, context),
+});
+
+// kinesis delivers a batch, so forKinesis has both leaves; a record has no headers
+export const handler = genLambdaEndpoint.forKinesis.perBatch({
+  schema: { input: z.object({ payload: schemaOfClick }) }, // data: base64 → json → validated
+  invoke: async ({ records }, context) => {
+    await setClicks({ clicks: records.map((record) => record.payload) }, context);
+    return { successes: records };
+  },
+});
+```
+
+- a kinesis record's `id` is its `sequenceNumber`. a record left out of `successes` retries from
+  that sequence number, with every record after it in the shard, so a handler must be idempotent.
+  the event source must declare `functionResponseTypes: ['ReportBatchItemFailures']`
+- a refused record that sits after a failed one is redelivered with it, so its
+  `kinesis.record.refused` warn may repeat
+- `forKinesis.perRecord` and `forSns` refuse any count but one, loudly, with the fix named
+- a `forKinesis.perBatch` throw retries the whole batch, a `ConstraintError` included, and holds
+  the shard while it does. to drop one bad record, log it, and return it in `successes`
+- a text topic or stream needs `deserialize: { payload: false }` beside a `z.string()` payload. left
+  on the json default under a `z.object` payload, every record is refused, and each refusal line
+  names that fix. under a `z.string()` payload the loss is partial and silent: a line that is not
+  json passes as text, and one that is also json (`42`, `true`) is refused with no hint
+- an sns invoke is async: a server fault retries twice, then sns drops the message unless the
+  function declares an on-failure destination or a dead-letter queue
+- a server fault retries, and kinesis holds the shard while it does. a fault that a record
+  causes on every attempt holds the shard until the record expires, so bound it on the event
+  source: `maximumRetryAttempts`, `maximumRecordAgeInSeconds`, `bisectBatchOnFunctionError`, and
+  an on-failure destination
+- `deserialize: { payload: false }` hands the schema the base64-decoded utf-8 text. binary data
+  does not survive that decode; read the untouched base64 at `record._.raw.kinesis.data`
+- tumble windows are out of scope: a windowed handler must carry `state`, so keep `forAsk` with
+  `asLambdaEventSchema.fromKinesis()`
+- neither source carries a trail, so each invoke mints a fresh `exid`
+
+to move an sns handler from `forAsk` with `asLambdaEventSchema.fromSns` onto `forSns`:
+
+- `schema.input` describes the one message, `{ headers?, payload }`, not the whole event
+- read `payload`, where `forAsk` read `payload.Records[0].Sns.Message`
+- drop `schema.output`: no caller awaits an sns invoke, so `invoke` returns naught
+- a refusal no longer answers as a caller-fault body; it is acknowledged, with a
+  `sns.record.refused` warn line
+
+### validate a source's event under forAsk
 
 `asLambdaEventSchema` gives `forAsk` the schema of the event aws delivers, and optionally the schema
 of the message inside it. one argument validates the envelope and the message, decoded in place:
@@ -232,9 +299,10 @@ export const handler = genLambdaEndpoint.forAsk({
   `deserialize: { payload: false }` the bytes arrive as a mangled string a bare `z.string()`
   accepts, so use the envelope-only form for a binary stream, and constrain a text schema's form
   (e.g. a regex)
-- **sqs has no `asLambdaEventSchema.fromSqs`**: use `genLambdaEndpoint.forSqs`, which validates each
-  record's body and refuses a bad message alone, never with its batch. api gateway has no
-  `fromApiGateway` on the same axis (`genLambdaEndpoint.forApiGateway` validates its own
+- 🟡 **sqs: `fromSqs` under `forAsk` refuses the whole batch** for one bad message, and the
+  invoke succeeds, so sqs deletes every message in it. prefer `genLambdaEndpoint.forSqs`, which
+  refuses a bad message alone; likewise `forSns` and `forKinesis` for per-record verdicts. api
+  gateway has no `fromApiGateway` (`genLambdaEndpoint.forApiGateway` validates its own
   `schema.input`), and s3 has no `fromS3`, since an s3 notice carries a reference, never a payload
 - one zod in your tree: a `payload` schema from another zod copy or major is a type error. pin one
   version via `pnpm.overrides.zod`
@@ -481,6 +549,8 @@ z.object({ rider: Surfer.contract().ref('primary') }).optional()
   - `genLambdaEndpoint.forApiGateway()` — http via api gateway, with full wire-response control
   - `genLambdaEndpoint.forSqs.perRecord()` — one queue message per invoke
   - `genLambdaEndpoint.forSqs.perBatch()` — a whole queue batch per invoke, fail-safe
+  - `genLambdaEndpoint.forSns()` — one topic message per invoke
+  - `genLambdaEndpoint.forKinesis.perRecord()` / `.perBatch()` — stream records, fail-safe
 - **domain objects at the border** — `X.contract()` in a schema hands `invoke` real instances, at
   every depth, with no `as` cast (above)
 - **askLambdaEndpoint** — ask another lambda with typed request/response, automatic trail propagation
@@ -490,9 +560,9 @@ z.object({ rider: Surfer.contract().ref('primary') }).optional()
 - **asLambdaEvent** — cast a payload into the envelope aws delivers, wire-faithful by default
   - `fromApiGateway()`, `fromSqs()`, `fromSns()`, `fromKinesis()`, `fromS3()`
 - **asLambdaEventSchema** — the zod schema of the event aws delivers, with an optional message schema
-  - `fromSns()`, `fromKinesis()`; sqs is served by `genLambdaEndpoint.forSqs`
+  - `fromSqs()`, `fromSns()`, `fromKinesis()` — one per record source, each paired with its endpoint
 - **trace-id propagation** — pass `log`, and `trail.exid` threads through the lambda-to-lambda call
-  chain. http and sqs triggers mint a fresh `exid` per invoke
+  chain. http, sqs, sns, and kinesis triggers mint a fresh `exid` per invoke
 - **introspection** — expose json-schema via `{ introspect: 'schema' }` (prep only), collected by
   `getOneLambdaContract` / `getAllLambdaContracts` for sdk generation
 

@@ -135,6 +135,10 @@ export const onReferenced = async <
 
   /**
    * the trail to carry. supplies the exid only — it never selects the dialect.
+   *
+   * .note = a handler whose source carries no trail (`forSns`, `forKinesis`) reads none, since aws
+   *         never hands it one: this input is ignored there, and the handler mints a fresh exid.
+   *         the runner frames exactly the event that source's aws trigger sends
    */
   trail?: { exid?: string } | null;
 

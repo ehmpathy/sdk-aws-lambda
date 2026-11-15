@@ -1,5 +1,11 @@
 import type { SQSEvent, SQSRecord } from 'aws-lambda';
 
+import type {
+  RecordHeadersDeclared,
+  RecordHeadersMerged,
+  RecordHeadersOnwire,
+} from '../record/RecordDecoded';
+
 /**
  * .what = the header bag as the wire carries it — one name per value, each a string or absent
  * .why = `headers` names the metadata bag that rides beside the body, in any transport that
@@ -12,8 +18,9 @@ import type { SQSEvent, SQSRecord } from 'aws-lambda';
  *         `stringValue` would make a binary attribute read as absent
  * .note = aws declares `stringListValues` / `binaryListValues` "Not implemented. Reserved for
  *         future use.", so neither is carried
+ * .note = the shared record bag, under the name this family shipped
  */
-export type SqsHeadersOnwire = Record<string, string | undefined>;
+export type SqsHeadersOnwire = RecordHeadersOnwire;
 
 /**
  * .what = the shape an author's `schema.input.headers` may name — the wire bag, or absent
@@ -24,7 +31,7 @@ export type SqsHeadersOnwire = Record<string, string | undefined>;
  *         the wire bag: `{ ...'abc' }` yields `{ 0: 'a', 1: 'b', 2: 'c' }` — a char map under the
  *         name of a header bag. the bound is the only layer that refuses it
  */
-export type SqsHeadersDeclared = SqsHeadersOnwire | undefined;
+export type SqsHeadersDeclared = RecordHeadersDeclared;
 
 /**
  * .what = the header bag a handler receives — the declared keys, beside every other attribute set
@@ -37,9 +44,7 @@ export type SqsHeadersDeclared = SqsHeadersOnwire | undefined;
  * .note = clamped at the type level by `perRecord`'s `[case13]`, on both arms
  */
 export type SqsHeadersMerged<THeadersDeclared extends SqsHeadersDeclared> =
-  THeadersDeclared extends undefined
-    ? SqsHeadersOnwire
-    : SqsHeadersOnwire & THeadersDeclared;
+  RecordHeadersMerged<THeadersDeclared>;
 
 /**
  * .what = the two slots a caller may constrain on one sqs record

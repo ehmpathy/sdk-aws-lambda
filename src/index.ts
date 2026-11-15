@@ -62,16 +62,18 @@ export { asLambdaEndpoint } from './domain.operations/asLambdaEndpoint/asLambdaE
 // test utils — the event source axis (construct the envelope a source delivers)
 export { asLambdaEvent } from './domain.operations/asLambdaEvent/asLambdaEvent';
 /**
- * .what = the validate direction of the event source axis — `{ fromSns, fromKinesis }`
- * .why = an sns or kinesis handler wired via `genLambdaEndpoint.forAsk` gets a validated
- *        envelope and a typed payload. sqs is served by `genLambdaEndpoint.forSqs`
+ * .what = the validate direction of the event source axis — `{ fromSqs, fromSns, fromKinesis }`
+ * .why = a handler wired via `genLambdaEndpoint.forAsk` gets a validated envelope and a typed
+ *        payload. each source also has its own endpoint, `genLambdaEndpoint.forX`
+ *        (`rule.require.event-source-symmetry`)
  */
 export { asLambdaEventSchema } from './domain.operations/asLambdaEventSchema/asLambdaEventSchema';
 export type { KinesisStreamEventDecoded } from './domain.operations/asLambdaEventSchema/KinesisStreamEventDecoded';
 export type { SnsEventDecoded } from './domain.operations/asLambdaEventSchema/SnsEventDecoded';
+export type { SqsEventBodyDecoded } from './domain.operations/asLambdaEventSchema/SqsEventBodyDecoded';
 /**
- * .what = the `genLambdaEndpoint` family —
- *         `{ forAsk, forApiGateway, forSqs: { perRecord, perBatch } }`
+ * .what = the `genLambdaEndpoint` family — `{ forAsk, forApiGateway, forSqs: { perRecord,
+ *         perBatch }, forSns, forKinesis: { perRecord, perBatch } }`
  * .why = no variant is exported bare beside it, so autocomplete enumerates the family
  *        (`rule.forbid.unqualified-variant-exports`)
  */
@@ -101,11 +103,31 @@ export type {
   WrappedPayload,
 } from './domain.operations/genLambdaEndpoint/genLambdaEndpoint.forAsk/genLambdaEndpoint.forAsk';
 export { genZodEventValidationMiddleware } from './domain.operations/genLambdaEndpoint/genLambdaEndpoint.forAsk/middleware/genZodEventValidationMiddleware';
+export type { ForKinesisPerBatchInput } from './domain.operations/genLambdaEndpoint/genLambdaEndpoint.forKinesis/genLambdaEndpoint.forKinesis.perBatch';
+export type { ForKinesisPerRecordInput } from './domain.operations/genLambdaEndpoint/genLambdaEndpoint.forKinesis/genLambdaEndpoint.forKinesis.perRecord';
+export type {
+  KinesisEventRecords,
+  KinesisRecord,
+  KinesisRecordShape,
+} from './domain.operations/genLambdaEndpoint/genLambdaEndpoint.forKinesis/KinesisEventRecords';
+/**
+ * .what = the `forSns` variant's and the `forKinesis` sub-family's types
+ * .why = each is reachable from its `For*Input`, so a consumer must be able to name it
+ */
+export type { ForSnsInput } from './domain.operations/genLambdaEndpoint/genLambdaEndpoint.forSns/genLambdaEndpoint.forSns';
+export type {
+  SnsEventRecords,
+  SnsHeadersDeclared,
+  SnsHeadersMerged,
+  SnsHeadersOnwire,
+  SnsRecord,
+  SnsRecordShape,
+} from './domain.operations/genLambdaEndpoint/genLambdaEndpoint.forSns/SnsEventRecords';
 /**
  * .what = the `forSqs` sub-family's types, through `SqsEventDecoded`
  * .why = each is reachable from `ForSqsPerRecordInput` / `ForSqsPerBatchInput`, so a consumer
  *        must be able to name it
- * .note = the chain's own operations (`asSqsEventDecoded`, `setSqsRecordValidated`, …) stay
+ * .note = the chain's own operations (`asSqsEventDecoded`, `setRecordValidated`, …) stay
  *         unexported, as do the api-gateway peers
  */
 export type {
@@ -173,6 +195,7 @@ export {
 } from './domain.operations/genLambdaEndpoint/middleware/getValidatedOutput';
 export type { ValidationErrorMetadata } from './domain.operations/genLambdaEndpoint/middleware/getValidationError';
 export type { ZodIssueSummary } from './domain.operations/genLambdaEndpoint/middleware/getZodIssuesSummary';
+export type { RecordSuccessRef } from './domain.operations/genLambdaEndpoint/record/genRecordEndpointPerBatch';
 /**
  * .what = the `logTranslate` config type
  * .note = `TranslateLog` is public because `logTranslate` accepts it, and it replaces the

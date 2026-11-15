@@ -110,19 +110,21 @@ undefined deref.
 ## .the pair — `asLambdaEventSchema`
 
 `asLambdaEvent.from$Source` constructs an envelope; `asLambdaEventSchema.from$Source` validates
-one. same axis, two directions, one `from$Source` grammar. the validate side covers a **subset** of
-the sources, each absence on a stated axis:
+one. same axis, two directions, one `from$Source` grammar. every record source has a schema and an
+endpoint (`rule.require.event-source-symmetry`); each absence sits on a stated axis:
 
-| source | `asLambdaEventSchema` | why |
-|---|---|---|
-| sns | `fromSns` | rides `forAsk`, so the schema is its whole input contract |
-| kinesis | `fromKinesis` | same |
-| sqs | absent | `genLambdaEndpoint.forSqs` validates each record itself, with per-record verdicts |
-| apiGateway | absent | `forApiGateway` validates its own reconciled input |
-| s3 | absent | the record carries an object ref, no payload to validate |
+| source | `asLambdaEventSchema` | `genLambdaEndpoint` | why an absence |
+|---|---|---|---|
+| sqs | `fromSqs` | `forSqs.{perRecord, perBatch}` | — |
+| sns | `fromSns` | `forSns` | — |
+| kinesis | `fromKinesis` | `forKinesis.{perRecord, perBatch}` | — |
+| apiGateway | absent | `forApiGateway` | `forApiGateway` validates its own reconciled input |
+| ask | absent | `forAsk` | a direct invoke has no envelope; the event is the payload |
+| s3 | absent | absent | the record carries an object ref, no payload to validate |
 
-a refusal at an sns or kinesis endpoint is a caller fault, so aws drops the event: `forAsk` logs
-`lambda.event.refused` at warn as the only trace.
+a schema rides `forAsk`, which judges the whole event: one refusal is a caller fault, so aws drops
+the whole event and `forAsk` logs `lambda.event.refused` at warn as the only trace. an endpoint
+`forX` judges each record, and refuses the bad one alone.
 
 ## .see also
 

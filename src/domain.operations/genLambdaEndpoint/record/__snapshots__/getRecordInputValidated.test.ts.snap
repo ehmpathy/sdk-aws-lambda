@@ -1,0 +1,16 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`getRecordInputValidated given: [case1] a text body left on the json default when: [t0] the object schema refuses the string it met then: the refusal names the \`deserialize\` fix 1`] = `
+"✋ ConstraintError: validation failed: fix: the payload reached the schema as text, since the body is not json (or is a json string). for a text source, set \`deserialize: { payload: false }\` and declare a text payload schema
+
+{
+  "issues": [
+    {
+      "path": "payload",
+      "message": "Invalid input: expected object, received string",
+      "code": "invalid_type"
+    }
+  ],
+  "hint": "fix: the payload reached the schema as text, since the body is not json (or is a json string). for a text source, set \`deserialize: { payload: false }\` and declare a text payload schema"
+}"
+`;

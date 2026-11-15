@@ -4,7 +4,11 @@
  *        keys its per-source table by it — so a new source is one entry here, and every
  *        `Record<LambdaEventSchemaSourceName, …>` that lacks it fails to compile
  */
-export const LAMBDA_EVENT_SCHEMA_SOURCE_NAMES = ['sns', 'kinesis'] as const;
+export const LAMBDA_EVENT_SCHEMA_SOURCE_NAMES = [
+  'sqs',
+  'sns',
+  'kinesis',
+] as const;
 
 /**
  * .what = the name of an event source an `asLambdaEventSchema.*` schema validates

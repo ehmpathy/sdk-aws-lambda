@@ -189,4 +189,34 @@ describe('asCarriedPayload', () => {
       });
     });
   });
+
+  given('[case3] the none carrier', () => {
+    const event = { Records: [{ EventSource: 'aws:sns' }] };
+
+    when('[t0] contemp', () => {
+      then('the event crosses untouched: no carrier is written', () => {
+        const result = asCarriedPayload({
+          event,
+          trail: { exid: 'exid:1' },
+          dialect: 'contemp',
+          carrier: 'none',
+        });
+        expect(result).toBe(event);
+        expect(getIsWrappedPayload(result)).toEqual(false);
+      });
+    });
+
+    when('[t1] ancient', () => {
+      then('the event crosses untouched', () => {
+        expect(
+          asCarriedPayload({
+            event,
+            trail: null,
+            dialect: 'ancient',
+            carrier: 'none',
+          }),
+        ).toBe(event);
+      });
+    });
+  });
 });

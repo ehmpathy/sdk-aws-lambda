@@ -92,7 +92,8 @@ describe('sdk-aws-lambda', () => {
   given('[case1] public exports', () => {
     when('[t0] imports evaluated', () => {
       /**
-       * 🔴 .what this clamps = the family shape, `{ forAsk, forApiGateway, forSqs }`
+       * 🔴 .what this clamps = the family shape,
+       *         `{ forAsk, forApiGateway, forSqs, forSns, forKinesis }`
        *
        * .why = the family's name must belong to the FAMILY, never to one of its variants
        *        (`rule.forbid.unqualified-variant-exports`), so every variant is a key on it and
@@ -107,6 +108,8 @@ describe('sdk-aws-lambda', () => {
         expect(Object.keys(genLambdaEndpoint).sort()).toEqual([
           'forApiGateway',
           'forAsk',
+          'forKinesis',
+          'forSns',
           'forSqs',
         ]);
       });
@@ -143,6 +146,27 @@ describe('sdk-aws-lambda', () => {
        */
       then('the forSqs key set is exactly { perRecord, perBatch }', () => {
         expect(Object.keys(genLambdaEndpoint.forSqs).sort()).toEqual([
+          'perBatch',
+          'perRecord',
+        ]);
+      });
+
+      /**
+       * .what = sns delivers one message per invoke, so `forSns` is a plain variant, a function
+       * .why = a sub-family exists only where a trigger forces a cardinality choice; a `for*`
+       *        object with one leaf would be a variant with an extra hop
+       */
+      then('genLambdaEndpoint.forSns rides on the family, as a function', () => {
+        expect(typeof genLambdaEndpoint.forSns).toBe('function');
+      });
+
+      /**
+       * .what = kinesis batches, as sqs does, so `forKinesis` is a sub-family with the same two
+       *         leaves
+       */
+      then('the forKinesis key set is exactly { perRecord, perBatch }', () => {
+        expect(typeof genLambdaEndpoint.forKinesis).toBe('object');
+        expect(Object.keys(genLambdaEndpoint.forKinesis).sort()).toEqual([
           'perBatch',
           'perRecord',
         ]);
@@ -210,6 +234,7 @@ describe('sdk-aws-lambda', () => {
         const members = [
           ...Object.keys(genLambdaEndpoint),
           ...Object.keys(genLambdaEndpoint.forSqs),
+          ...Object.keys(genLambdaEndpoint.forKinesis),
         ];
 
         expect(members.filter((member) => exported.has(member))).toEqual([]);

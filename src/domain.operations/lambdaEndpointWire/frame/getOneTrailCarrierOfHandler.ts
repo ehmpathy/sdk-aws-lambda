@@ -1,4 +1,7 @@
-import type { TrailCarrier } from '../../../domain.objects/TrailCarrier';
+import {
+  TRAIL_CARRIERS,
+  type TrailCarrier,
+} from '../../../domain.objects/TrailCarrier';
 import { HANDLER_TRAIL_CARRIER } from './setHandlerTrailCarrier';
 
 /**
@@ -11,6 +14,5 @@ export const getOneTrailCarrierOfHandler = (input: {
 }): TrailCarrier | null => {
   if (typeof input.handler !== 'function') return null;
   const carrier: unknown = Reflect.get(input.handler, HANDLER_TRAIL_CARRIER);
-  if (carrier === 'wrapper' || carrier === 'headers') return carrier;
-  return null;
+  return TRAIL_CARRIERS.find((each) => each === carrier) ?? null;
 };

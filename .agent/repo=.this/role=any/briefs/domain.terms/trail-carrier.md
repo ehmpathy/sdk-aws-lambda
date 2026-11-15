@@ -2,7 +2,7 @@
 
 ## .the term
 
-`TrailCarrier` — where a family's caller puts its trail exid and its contemp opt-in. a dobj: a closed set of two values, `'wrapper' | 'headers'`.
+`TrailCarrier` — where a family's caller puts its trail exid and its contemp opt-in. a dobj: a closed set of three values, `'wrapper' | 'headers' | 'none'`.
 
 ## .the etymology
 
@@ -15,7 +15,18 @@ a carrier is what carries a signal across a transport (a carrier wave carries a 
 | `channel` | overloaded with radio and log channels in this repo |
 | `frame` | names the `{ event, trail }` shape alone; `headers` is not a frame |
 | `mode`, `kind` | state no sense: a carrier says what it holds |
-| `none` (a third value) | a family that reads no trail is a gap, not a carrier. `forSqs.*` keeps `wrapper` as it ran before, since a test runner frames one; the deployed lift is recorded as next |
+
+
+### dispute: `none` as a third value — raised 2026-11-15 — status: RESOLVED (`none` admitted)
+
+- claim against = a family that reads no trail is a gap, not a carrier
+- claim for = `forSns` and `forKinesis` are aws-delivered families with no built lift. the only other
+  values are `wrapper`, which the invariant forbids a new aws-delivered family to honor, and
+  `headers`, which a kinesis record has no bag for. so a family that reads naught must say so, or it
+  inherits a forbidden slot
+- resolution = `none` is the declared absence: the middleware mints a fresh exid and treats the
+  caller as ancient; the runner passes the event untouched. `forSqs.*` keeps `wrapper`, the named
+  debt (`invariant.ancient-vs-contemp-callers.md`)
 
 ## .the evidence — dimensional decomposition
 
@@ -34,6 +45,7 @@ cells:
 | yes | — | `wrapper` | `forAsk` |
 | no | yes | `headers` | `forApiGateway` |
 | no | no | `wrapper`, read from a test runner's frame only | `forSqs.*` (until the send side decides its bag) |
+| no | no | `none` | `forSns` (lift unbuilt), `forKinesis.*` (no bag at all) |
 
 forbidden cells:
 - `wrapper` at a family where aws builds the envelope, read as if aws sent it: aws never sends one, so a deployed endpoint of that family reads no trail from it
@@ -53,6 +65,7 @@ forbidden cells:
 |---|---|---|
 | `wrapper` | `{ event, trail }` | `asCarriedPayload` wrapper arm |
 | `headers` | `x-trail-exid` in the reconciled headers | `asCarriedPayload` headers arm |
+| `none` | naught; a fresh exid per invoke | `asCarriedPayload` passes the event untouched |
 
 ## .invariants
 

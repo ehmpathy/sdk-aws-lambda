@@ -1,0 +1,406 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`the record sources beside sqs given: [case1] an sns topic served by genLambdaEndpoint.forSns when: [t0] a valid notice arrives then: the handler reads the decoded payload 1`] = `
+{
+  "result": undefined,
+  "seen": {
+    "headers": {},
+    "payload": {
+      "notice": "n-1",
+    },
+  },
+}
+`;
+
+exports[`the record sources beside sqs given: [case1] an sns topic served by genLambdaEndpoint.forSns when: [t1] a notice the schema refuses arrives then: one refusal line names the source and the schema path 1`] = `
+{
+  "level": "warn",
+  "message": "sns.record.refused",
+  "metadata": {
+    "class": "ConstraintError",
+    "consequence": "acknowledged only if this invoke succeeds; lambda retries it if it fails",
+    "errorMessage": "✋ ConstraintError: validation failed: payload.notice: Invalid input: expected string, received number
+
+{
+  "issues": [
+    {
+      "path": "payload.notice",
+      "message": "Invalid input: expected string, received number",
+      "code": "invalid_type"
+    }
+  ],
+  "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
+}",
+    "id": "<uuid>",
+    "message": {
+      "EventSource": "aws:sns",
+      "EventSubscriptionArn": "arn:aws:sns:us-east-1:000000000000:example-topic:<uuid>",
+      "EventVersion": "1.0",
+      "Sns": {
+        "Message": "{"notice":7}",
+        "MessageAttributes": {},
+        "MessageId": "<uuid>",
+        "Signature": "EXAMPLE",
+        "SignatureVersion": "1",
+        "SigningCertUrl": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-example.pem",
+        "Subject": "",
+        "Timestamp": "<timestamp>",
+        "TopicArn": "arn:aws:sns:us-east-1:000000000000:example-topic",
+        "Type": "Notification",
+        "UnsubscribeUrl": "https://sns.us-east-1.amazonaws.com/?Action=Unsubscribe",
+      },
+    },
+  },
+  "timestamp": "<timestamp>",
+  "trail": {
+    "exid": "exid:<uuid>",
+    "stack": [],
+  },
+}
+`;
+
+exports[`the record sources beside sqs given: [case1] an sns topic served by genLambdaEndpoint.forSns when: [t2] a text message arrives on the json default then: the refusal line names the \`deserialize\` fix 1`] = `
+{
+  "level": "warn",
+  "message": "sns.record.refused",
+  "metadata": {
+    "class": "ConstraintError",
+    "consequence": "acknowledged only if this invoke succeeds; lambda retries it if it fails",
+    "errorMessage": "✋ ConstraintError: validation failed: fix: the payload reached the schema as text, since the body is not json (or is a json string). for a text source, set \`deserialize: { payload: false }\` and declare a text payload schema
+
+{
+  "issues": [
+    {
+      "path": "payload",
+      "message": "Invalid input: expected object, received string",
+      "code": "invalid_type"
+    }
+  ],
+  "hint": "fix: the payload reached the schema as text, since the body is not json (or is a json string). for a text source, set \`deserialize: { payload: false }\` and declare a text payload schema"
+}",
+    "id": "<uuid>",
+    "message": {
+      "EventSource": "aws:sns",
+      "EventSubscriptionArn": "arn:aws:sns:us-east-1:000000000000:example-topic:<uuid>",
+      "EventVersion": "1.0",
+      "Sns": {
+        "Message": "your mail bounced",
+        "MessageAttributes": {},
+        "MessageId": "<uuid>",
+        "Signature": "EXAMPLE",
+        "SignatureVersion": "1",
+        "SigningCertUrl": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-example.pem",
+        "Subject": "",
+        "Timestamp": "<timestamp>",
+        "TopicArn": "arn:aws:sns:us-east-1:000000000000:example-topic",
+        "Type": "Notification",
+        "UnsubscribeUrl": "https://sns.us-east-1.amazonaws.com/?Action=Unsubscribe",
+      },
+    },
+  },
+  "timestamp": "<timestamp>",
+  "trail": {
+    "exid": "exid:<uuid>",
+    "stack": [],
+  },
+}
+`;
+
+exports[`the record sources beside sqs given: [case1] an sns topic served by genLambdaEndpoint.forSns when: [t3] a notice arrives with message attributes then: headers are the flattened attributes, names verbatim 1`] = `
+{
+  "headers": {
+    "Origin": "ses",
+  },
+  "payload": {
+    "notice": "n-2",
+  },
+}
+`;
+
+exports[`the record sources beside sqs given: [case1] an sns topic served by genLambdaEndpoint.forSns when: [t4] the handler throws a ConstraintError then: one refusal line names the class and the reason 1`] = `
+{
+  "level": "warn",
+  "message": "sns.record.refused",
+  "metadata": {
+    "class": "ConstraintError",
+    "consequence": "acknowledged only if this invoke succeeds; lambda retries it if it fails",
+    "errorMessage": "✋ ConstraintError: notice is for a closed account",
+    "id": "<uuid>",
+    "message": {
+      "EventSource": "aws:sns",
+      "EventSubscriptionArn": "arn:aws:sns:us-east-1:000000000000:example-topic:<uuid>",
+      "EventVersion": "1.0",
+      "Sns": {
+        "Message": "{"notice":"n-4"}",
+        "MessageAttributes": {},
+        "MessageId": "<uuid>",
+        "Signature": "EXAMPLE",
+        "SignatureVersion": "1",
+        "SigningCertUrl": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-example.pem",
+        "Subject": "",
+        "Timestamp": "<timestamp>",
+        "TopicArn": "arn:aws:sns:us-east-1:000000000000:example-topic",
+        "Type": "Notification",
+        "UnsubscribeUrl": "https://sns.us-east-1.amazonaws.com/?Action=Unsubscribe",
+      },
+    },
+  },
+  "timestamp": "<timestamp>",
+  "trail": {
+    "exid": "exid:<uuid>",
+    "stack": [],
+  },
+}
+`;
+
+exports[`the record sources beside sqs given: [case1] an sns topic served by genLambdaEndpoint.forSns when: [t5] the handler throws a MalfunctionError then: the throw escapes, so sns retries the delivery 1`] = `"💥 MalfunctionError: the mail store is down"`;
+
+exports[`the record sources beside sqs given: [case2] a kinesis stream served by genLambdaEndpoint.forKinesis.perRecord when: [t0] a valid click arrives under a strict schema then: the handler reads the decoded click 1`] = `
+{
+  "result": undefined,
+  "seen": {
+    "clickId": "c-1",
+  },
+}
+`;
+
+exports[`the record sources beside sqs given: [case2] a kinesis stream served by genLambdaEndpoint.forKinesis.perRecord when: [t1] a text record arrives on the json default then: the refusal line names the \`deserialize\` fix 1`] = `
+{
+  "level": "warn",
+  "message": "kinesis.record.refused",
+  "metadata": {
+    "class": "ConstraintError",
+    "consequence": "skipped only if this invoke succeeds; the shard retries it if it fails",
+    "errorMessage": "✋ ConstraintError: validation failed: fix: the payload reached the schema as text, since the body is not json (or is a json string). for a text source, set \`deserialize: { payload: false }\` and declare a text payload schema
+
+{
+  "issues": [
+    {
+      "path": "payload",
+      "message": "Invalid input: expected object, received string",
+      "code": "invalid_type"
+    }
+  ],
+  "hint": "fix: the payload reached the schema as text, since the body is not json (or is a json string). for a text source, set \`deserialize: { payload: false }\` and declare a text payload schema"
+}",
+    "id": "49590000000000000000000000000000000000000000000000000000",
+    "record": {
+      "awsRegion": "us-east-1",
+      "eventID": "shardId-000000000000:49590000000000000000000000000000000000000000000000000000",
+      "eventName": "aws:kinesis:record",
+      "eventSource": "aws:kinesis",
+      "eventSourceARN": "arn:aws:kinesis:us-east-1:000000000000:stream/example-stream",
+      "eventVersion": "1.0",
+      "invokeIdentityArn": "arn:aws:iam::000000000000:role/example-role",
+      "kinesis": {
+        "approximateArrivalTimestamp": 1757289600,
+        "data": "aGVsbG8gd29ybGQ=",
+        "kinesisSchemaVersion": "1.0",
+        "partitionKey": "partition-0",
+        "sequenceNumber": "49590000000000000000000000000000000000000000000000000000",
+      },
+    },
+  },
+  "timestamp": "<timestamp>",
+  "trail": {
+    "exid": "exid:<uuid>",
+    "stack": [],
+  },
+}
+`;
+
+exports[`the record sources beside sqs given: [case2] a kinesis stream served by genLambdaEndpoint.forKinesis.perRecord when: [t2] the handler throws a ConstraintError then: one refusal line names the class and the reason 1`] = `
+{
+  "level": "warn",
+  "message": "kinesis.record.refused",
+  "metadata": {
+    "class": "ConstraintError",
+    "consequence": "skipped only if this invoke succeeds; the shard retries it if it fails",
+    "errorMessage": "✋ ConstraintError: click is from a banned caller",
+    "id": "49590000000000000000000000000000000000000000000000000000",
+    "record": {
+      "awsRegion": "us-east-1",
+      "eventID": "shardId-000000000000:49590000000000000000000000000000000000000000000000000000",
+      "eventName": "aws:kinesis:record",
+      "eventSource": "aws:kinesis",
+      "eventSourceARN": "arn:aws:kinesis:us-east-1:000000000000:stream/example-stream",
+      "eventVersion": "1.0",
+      "invokeIdentityArn": "arn:aws:iam::000000000000:role/example-role",
+      "kinesis": {
+        "approximateArrivalTimestamp": 1757289600,
+        "data": "eyJjbGlja0lkIjoiYy1iYW5uZWQifQ==",
+        "kinesisSchemaVersion": "1.0",
+        "partitionKey": "partition-0",
+        "sequenceNumber": "49590000000000000000000000000000000000000000000000000000",
+      },
+    },
+  },
+  "timestamp": "<timestamp>",
+  "trail": {
+    "exid": "exid:<uuid>",
+    "stack": [],
+  },
+}
+`;
+
+exports[`the record sources beside sqs given: [case2] a kinesis stream served by genLambdaEndpoint.forKinesis.perRecord when: [t3] the handler throws a MalfunctionError then: the throw escapes, so kinesis retries the record 1`] = `"💥 MalfunctionError: the click store is down"`;
+
+exports[`the record sources beside sqs given: [case3] a kinesis stream served by genLambdaEndpoint.forKinesis.perBatch when: [t0] a batch of a valid, a failed, and a refused record arrives then: batchItemFailures names the failed record alone 1`] = `
+{
+  "batchItemFailures": [
+    {
+      "itemIdentifier": "49590000000000000000000000000000000000000000000000000001",
+    },
+  ],
+}
+`;
+
+exports[`the record sources beside sqs given: [case3] a kinesis stream served by genLambdaEndpoint.forKinesis.perBatch when: [t0] a batch of a valid, a failed, and a refused record arrives then: the refused record leaves one refusal line 1`] = `
+{
+  "level": "warn",
+  "message": "kinesis.record.refused",
+  "metadata": {
+    "class": "ConstraintError",
+    "consequence": "skipped only if this invoke succeeds; the shard retries it if it fails",
+    "errorMessage": "✋ ConstraintError: validation failed: payload.clickId: Invalid input: expected string, received undefined
+
+{
+  "issues": [
+    {
+      "path": "payload.clickId",
+      "message": "Invalid input: expected string, received undefined",
+      "code": "invalid_type"
+    }
+  ],
+  "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
+}",
+    "id": "49590000000000000000000000000000000000000000000000000002",
+    "record": {
+      "awsRegion": "us-east-1",
+      "eventID": "shardId-000000000000:49590000000000000000000000000000000000000000000000000002",
+      "eventName": "aws:kinesis:record",
+      "eventSource": "aws:kinesis",
+      "eventSourceARN": "arn:aws:kinesis:us-east-1:000000000000:stream/example-stream",
+      "eventVersion": "1.0",
+      "invokeIdentityArn": "arn:aws:iam::000000000000:role/example-role",
+      "kinesis": {
+        "approximateArrivalTimestamp": 1757289600,
+        "data": "eyJhdCI6M30=",
+        "kinesisSchemaVersion": "1.0",
+        "partitionKey": "partition-2",
+        "sequenceNumber": "49590000000000000000000000000000000000000000000000000002",
+      },
+    },
+  },
+  "timestamp": "<timestamp>",
+  "trail": {
+    "exid": "exid:<uuid>",
+    "stack": [],
+  },
+}
+`;
+
+exports[`the record sources beside sqs given: [case3] a kinesis stream served by genLambdaEndpoint.forKinesis.perBatch when: [t1] the handler throws a ConstraintError then: the throw escapes, so the whole batch retries 1`] = `"✋ ConstraintError: click is from a banned caller"`;
+
+exports[`the record sources beside sqs given: [case4] an sqs schema from asLambdaEventSchema.fromSqs, under forAsk when: [t0] a batch of valid messages arrives then: the handler reads each decoded body 1`] = `
+{
+  "orderIds": [
+    "o-1",
+    "o-2",
+  ],
+}
+`;
+
+exports[`the record sources beside sqs given: [case4] an sqs schema from asLambdaEventSchema.fromSqs, under forAsk when: [t1] one message in the batch is refused then: the batch is answered as a caller fault 1`] = `
+{
+  "error": {
+    "_serde": "LambdaEndpointError::contemp@v1",
+    "class": "ConstraintError",
+    "details": {
+      "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`",
+      "issues": [
+        {
+          "code": "invalid_type",
+          "message": "Invalid input: expected string, received undefined",
+          "path": "Records.1.body.orderId",
+        },
+      ],
+    },
+    "message": "✋ ConstraintError: validation failed: Records.1.body.orderId: Invalid input: expected string, received undefined
+
+{
+  "issues": [
+    {
+      "path": "Records.1.body.orderId",
+      "message": "Invalid input: expected string, received undefined",
+      "code": "invalid_type"
+    }
+  ],
+  "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
+}",
+  },
+}
+`;
+
+exports[`the record sources beside sqs given: [case4] an sqs schema from asLambdaEventSchema.fromSqs, under forAsk when: [t1] one message in the batch is refused then: the warn line names the deletion and the family to move to 1`] = `
+{
+  "level": "warn",
+  "message": "lambda.event.refused",
+  "metadata": {
+    "class": "ConstraintError",
+    "consequence": "the whole batch is answered as a success, so sqs deletes every message in it, good ones included; this line is the only trace. serve sqs with genLambdaEndpoint.forSqs to acknowledge a refused message alone",
+    "errorMessage": "✋ ConstraintError: validation failed: Records.1.body.orderId: Invalid input: expected string, received undefined",
+    "idLast": null,
+    "ids": [
+      "<uuid>",
+      "<uuid>",
+    ],
+    "idsCount": 2,
+    "issues": [
+      {
+        "code": "invalid_type",
+        "message": "Invalid input: expected string, received undefined",
+        "path": "Records.1.body.orderId",
+      },
+    ],
+    "issuesCount": 1,
+    "source": "sqs",
+  },
+  "timestamp": "<timestamp>",
+  "trail": {
+    "exid": "exid:<uuid>",
+    "stack": [],
+  },
+}
+`;
+
+exports[`the record sources beside sqs given: [case5] the verbatim aws-docs sample events when: [t0] the sns sample reaches genLambdaEndpoint.forSns then: the handler reads the message and its attributes 1`] = `
+[
+  {
+    "headers": {
+      "Test": "TestString",
+      "TestBinary": "TestBinary",
+    },
+    "payload": "Hello from SNS!",
+  },
+]
+`;
+
+exports[`the record sources beside sqs given: [case5] the verbatim aws-docs sample events when: [t1] the kinesis sample reaches genLambdaEndpoint.forKinesis.perBatch then: the answer retries no record 1`] = `
+{
+  "batchItemFailures": [],
+}
+`;
+
+exports[`the record sources beside sqs given: [case5] the verbatim aws-docs sample events when: [t1] the kinesis sample reaches genLambdaEndpoint.forKinesis.perBatch then: the handler reads each decoded record, keyed by sequence number 1`] = `
+[
+  {
+    "id": "49590338271490256608559692538361571095921575989136588898",
+    "payload": "Hello, this is a test.",
+  },
+  {
+    "id": "49590338271490256608559692540925702759324208523137515618",
+    "payload": "This is only a test.",
+  },
+]
+`;
