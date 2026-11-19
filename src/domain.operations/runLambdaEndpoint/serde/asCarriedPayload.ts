@@ -21,6 +21,7 @@ import { isEventWithHeaders } from './isEventWithHeaders';
  * |---------|---------|---------|
  * | wrapper | `{ event, trail }` | the event, untouched |
  * | headers | the event + `x-trail-exid` | the event, untouched: the sdk adds no opt-in |
+ * | none    | the event, untouched: the endpoint reads no carrier | the event, untouched |
  *
  * .note = the `wrapper` arm is `asFramedPayload`, unchanged. this adds the second carrier and
  *         owns no copy of the first (rule.forbid.parallel-codepaths)
@@ -41,12 +42,19 @@ export const asCarriedPayload = (input: {
   dialect: LambdaEndpointDialect;
   carrier: TrailCarrier;
 }): unknown => {
-  // the carrier is exhaustive: a third one added to the type fails to compile until it is handled here
-  if (input.carrier !== 'wrapper' && input.carrier !== 'headers')
+  // the carrier is exhaustive: one added to the type fails to compile until it is handled here
+  if (
+    input.carrier !== 'wrapper' &&
+    input.carrier !== 'headers' &&
+    input.carrier !== 'none'
+  )
     return MalfunctionError.throw('the trail carrier is not one this writes', {
       carrier: input.carrier satisfies never,
     });
   if (input.carrier === 'wrapper') return asFramedPayload(input);
+
+  // no carrier: the endpoint reads no trail, so the event crosses untouched, as aws hands it over
+  if (input.carrier === 'none') return input.event;
 
   // ancient: the sdk adds no opt-in, exactly as a browser's request carries none
   if (input.dialect === 'ancient') return input.event;

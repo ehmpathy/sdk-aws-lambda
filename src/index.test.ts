@@ -54,13 +54,36 @@ describe('[case1] the migrant swaps the import', () => {
         expect('fromAsk' in sdk.asLambdaEvent).toEqual(false);
       });
 
-      then('the schema family covers sns and kinesis, and no sqs', () => {
-        // sqs is served by `genLambdaEndpoint.forSqs`, which refuses a bad message alone;
-        // a `fromSqs` here would be a second sqs path that refuses the whole batch
+      then('the schema family covers sqs, sns, and kinesis', () => {
+        // every record source has both halves (`rule.require.event-source-symmetry`)
         expect(Object.keys(sdk.asLambdaEventSchema).sort()).toEqual([
           'fromKinesis',
           'fromSns',
+          'fromSqs',
         ]);
+      });
+
+      then('the endpoint family names every variant as a key', () => {
+        // a variant exported bare beside the family is a defect
+        // (`rule.forbid.unqualified-variant-exports`), so the key set is the clamp
+        expect(Object.keys(sdk.genLambdaEndpoint).sort()).toEqual([
+          'forApiGateway',
+          'forAsk',
+          'forKinesis',
+          'forSns',
+          'forSqs',
+        ]);
+        expect(Object.keys(sdk.genLambdaEndpoint.forSqs).sort()).toEqual([
+          'perBatch',
+          'perRecord',
+        ]);
+        expect(Object.keys(sdk.genLambdaEndpoint.forKinesis).sort()).toEqual([
+          'perBatch',
+          'perRecord',
+        ]);
+        expect(Object.keys(sdk).filter((key) => key.startsWith('for'))).toEqual(
+          [],
+        );
       });
     });
 
@@ -301,6 +324,49 @@ describe('[case1] the migrant swaps the import', () => {
             'a log line';
           expect(sns.id).toEqual('n-1');
           expect(kinesis).toEqual('a log line');
+        },
+      );
+
+      /**
+       * .what = the record-source endpoint types are reachable from the root
+       * .why = a consumer whose `invoke` is declared apart from the call site must name what
+       *        `forSns` and `forKinesis.*` hand it; only this compile proves it
+       */
+      then(
+        'SqsEventBodyDecoded and the sns + kinesis endpoint types are reachable',
+        () => {
+          const sqsBody: sdk.SqsEventBodyDecoded<{
+            id: string;
+          }>['Records'][number]['body'] = { id: 'm-1' };
+          const snsRecord: sdk.SnsRecord<{
+            headers: sdk.SnsHeadersOnwire;
+            payload: { id: string };
+          }>['payload'] = { id: 'n-1' };
+          const kinesisRecord: sdk.KinesisRecord<{
+            payload: string;
+          }>['payload'] = 'a click';
+          const ref: sdk.RecordSuccessRef = { id: 'seq-1' };
+          const snsInput: keyof sdk.ForSnsInput<undefined, unknown> = 'invoke';
+          const kinesisInputs: [
+            keyof sdk.ForKinesisPerRecordInput<unknown>,
+            keyof sdk.ForKinesisPerBatchInput<unknown>,
+          ] = ['invoke', 'invoke'];
+          expect([
+            sqsBody.id,
+            snsRecord.id,
+            kinesisRecord,
+            ref.id,
+            snsInput,
+            ...kinesisInputs,
+          ]).toEqual([
+            'm-1',
+            'n-1',
+            'a click',
+            'seq-1',
+            'invoke',
+            'invoke',
+            'invoke',
+          ]);
         },
       );
     });

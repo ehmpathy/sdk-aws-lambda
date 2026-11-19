@@ -1,6 +1,7 @@
 import type { KinesisStreamEvent } from 'aws-lambda';
 import { type ZodType, z } from 'zod';
 
+import { asKinesisDataText } from '../asKinesisDataText/asKinesisDataText';
 import { setLambdaEventSchemaSource } from '../lambdaEndpointWire/frame/setLambdaEventSchemaSource';
 import {
   asLambdaEventPayloadSchema,
@@ -28,14 +29,6 @@ export type FromKinesis = {
     deserialize?: { payload: boolean };
   }): ZodType<KinesisStreamEventDecoded<TPayload>, KinesisStreamEvent>;
 };
-
-/**
- * .what = decodes kinesis `data` from base64 to utf8 text
- * .why = kinesis always delivers `data` base64-encoded; `payload` describes the text inside
- * .note = node's base64 decode never throws; bad base64 yields text the next step refuses
- */
-const asKinesisDataText = (input: { wire: string }): string =>
-  Buffer.from(input.wire, 'base64').toString('utf8');
 
 /**
  * .what = the schema of the kinesis envelope, with the data slot supplied

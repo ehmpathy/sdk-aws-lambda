@@ -50,4 +50,26 @@ describe('getParsedJson', () => {
       });
     });
   });
+
+  /**
+   * .what = the clamp on the allowlist: only a SyntaxError means "not json"
+   * .why = any other throw is a defect, and a swallow would read it as text (`rule.forbid.failhide`)
+   * .note = the real `JSON.parse` throws, never a mock: it calls `ToString` on its argument, so a
+   *         value whose `toString` throws makes it throw a `TypeError`. `Reflect.apply` hands that
+   *         value past the `string` type with no `as` cast
+   */
+  given('[case5] a parse that throws aught but a SyntaxError', () => {
+    when('[t0] parsed', () => {
+      then('the throw escapes, unchanged', () => {
+        const jsonThatFaults = {
+          toString: () => {
+            throw new TypeError('a defect, not a syntax fault');
+          },
+        };
+        expect(() =>
+          Reflect.apply(getParsedJson, null, [{ json: jsonThatFaults }]),
+        ).toThrow('a defect, not a syntax fault');
+      });
+    });
+  });
 });

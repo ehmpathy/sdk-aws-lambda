@@ -1,0 +1,140 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`genLambdaEndpoint.forSns given: [case1] a valid notice when: [t0] aws delivers it then: invoke receives the decoded, validated payload 1`] = `
+{
+  "event": {
+    "_": {
+      "raw": {
+        "Records": [
+          {
+            "EventSource": "aws:sns",
+            "EventSubscriptionArn": "arn:aws:sns:us-east-1:000000000000:example-topic:<uuid>",
+            "EventVersion": "1.0",
+            "Sns": {
+              "Message": "{"notificationType":"Bounce"}",
+              "MessageAttributes": {
+                "Origin": {
+                  "Type": "String",
+                  "Value": "ses",
+                },
+                "origin": {
+                  "Type": "String",
+                  "Value": "kept apart",
+                },
+              },
+              "MessageId": "<uuid>",
+              "Signature": "EXAMPLE",
+              "SignatureVersion": "1",
+              "SigningCertUrl": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-example.pem",
+              "Subject": "",
+              "Timestamp": "<timestamp>",
+              "TopicArn": "arn:aws:sns:us-east-1:000000000000:example-topic",
+              "Type": "Notification",
+              "UnsubscribeUrl": "https://sns.us-east-1.amazonaws.com/?Action=Unsubscribe",
+            },
+          },
+        ],
+      },
+    },
+    "records": [
+      {
+        "_": {
+          "raw": {
+            "EventSource": "aws:sns",
+            "EventSubscriptionArn": "arn:aws:sns:us-east-1:000000000000:example-topic:<uuid>",
+            "EventVersion": "1.0",
+            "Sns": {
+              "Message": "{"notificationType":"Bounce"}",
+              "MessageAttributes": {
+                "Origin": {
+                  "Type": "String",
+                  "Value": "ses",
+                },
+                "origin": {
+                  "Type": "String",
+                  "Value": "kept apart",
+                },
+              },
+              "MessageId": "<uuid>",
+              "Signature": "EXAMPLE",
+              "SignatureVersion": "1",
+              "SigningCertUrl": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-example.pem",
+              "Subject": "",
+              "Timestamp": "<timestamp>",
+              "TopicArn": "arn:aws:sns:us-east-1:000000000000:example-topic",
+              "Type": "Notification",
+              "UnsubscribeUrl": "https://sns.us-east-1.amazonaws.com/?Action=Unsubscribe",
+            },
+          },
+        },
+        "headers": {
+          "Origin": "ses",
+          "origin": "kept apart",
+        },
+        "id": "<uuid>",
+        "payload": {
+          "notificationType": "Bounce",
+        },
+      },
+    ],
+  },
+  "headers": {
+    "Origin": "ses",
+    "origin": "kept apart",
+  },
+  "payload": {
+    "notificationType": "Bounce",
+  },
+}
+`;
+
+exports[`genLambdaEndpoint.forSns given: [case5] an invoke of other than one message when: [t0] two messages arrive then: it fails loud, and names the fix 1`] = `
+"💥 MalfunctionError: forSns received a batch of other than one message
+
+{
+  "count": 2,
+  "fix": "sns delivers one message per invoke; check that this lambda is subscribed to an sns topic, and not invoked by another source",
+  "ids": [
+    "<uuid>",
+    "<uuid>"
+  ]
+}"
+`;
+
+exports[`genLambdaEndpoint.forSns given: [case5] an invoke of other than one message when: [t1] an empty batch arrives then: it fails loud too: the count is not one 1`] = `
+"💥 MalfunctionError: forSns received a batch of other than one message
+
+{
+  "count": 0,
+  "fix": "sns delivers one message per invoke; check that this lambda is subscribed to an sns topic, and not invoked by another source",
+  "ids": []
+}"
+`;
+
+exports[`genLambdaEndpoint.forSns given: [case7] an event that is not from sns when: [t0] an sqs event is misrouted to it then: it fails loud: the wire is not an sns shape 1`] = `
+"💥 MalfunctionError: wire is not an sns event shape
+
+{
+  "fix": "check that this lambda is subscribed to an sns topic, and not invoked by another source. a queue is served by genLambdaEndpoint.forSqs, a stream by genLambdaEndpoint.forKinesis",
+  "wire": {
+    "Records": [
+      {
+        "messageId": "<uuid>",
+        "receiptHandle": "receipt-handle-0",
+        "body": "{}",
+        "attributes": {
+          "ApproximateReceiveCount": "1",
+          "SentTimestamp": "1757289600000",
+          "SenderId": "AIDA00000000000000000",
+          "ApproximateFirstReceiveTimestamp": "1757289600000"
+        },
+        "messageAttributes": {},
+        "md5OfBody": "00000000000000000000000000000000",
+        "eventSource": "aws:sqs",
+        "eventSourceARN": "arn:aws:sqs:us-east-1:000000000000:example-queue",
+        "awsRegion": "us-east-1"
+      }
+    ]
+  }
+}"
+`;

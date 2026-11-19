@@ -1,0 +1,44 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`asSnsEventRecords given: [case5] a wire value that is not an sns event when: [t0] decoded then: it throws rather than decodes, and names the fix 1`] = `
+"💥 MalfunctionError: wire is not an sns event shape
+
+{
+  "fix": "check that this lambda is subscribed to an sns topic, and not invoked by another source. a queue is served by genLambdaEndpoint.forSqs, a stream by genLambdaEndpoint.forKinesis",
+  "wire": {
+    "Records": [
+      {
+        "messageId": "<uuid>",
+        "receiptHandle": "receipt-handle-0",
+        "body": "{}",
+        "attributes": {
+          "ApproximateReceiveCount": "1",
+          "SentTimestamp": "1757289600000",
+          "SenderId": "AIDA00000000000000000",
+          "ApproximateFirstReceiveTimestamp": "1757289600000"
+        },
+        "messageAttributes": {},
+        "md5OfBody": "00000000000000000000000000000000",
+        "eventSource": "aws:sqs",
+        "eventSourceARN": "arn:aws:sqs:us-east-1:000000000000:example-queue",
+        "awsRegion": "us-east-1"
+      }
+    ]
+  }
+}"
+`;
+
+exports[`asSnsEventRecords given: [case6] an sns-stamped record that lacks its \`Sns\` bag when: [t0] decoded then: it throws the named refusal, never a TypeError 1`] = `
+"💥 MalfunctionError: wire is not an sns event shape
+
+{
+  "fix": "check that this lambda is subscribed to an sns topic, and not invoked by another source. a queue is served by genLambdaEndpoint.forSqs, a stream by genLambdaEndpoint.forKinesis",
+  "wire": {
+    "Records": [
+      {
+        "EventSource": "aws:sns"
+      }
+    ]
+  }
+}"
+`;

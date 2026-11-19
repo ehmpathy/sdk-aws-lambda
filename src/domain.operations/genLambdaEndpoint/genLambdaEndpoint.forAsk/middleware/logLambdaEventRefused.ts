@@ -13,6 +13,7 @@ import { getAllLambdaEventIds } from './getAllLambdaEventIds';
  *        the source name list, so a new source that lacks its fate fails to compile
  */
 const CONSEQUENCE_BY_SOURCE: Record<LambdaEventSchemaSourceName, string> = {
+  sqs: 'the whole batch is answered as a success, so sqs deletes every message in it, good ones included; this line is the only trace. serve sqs with genLambdaEndpoint.forSqs to acknowledge a refused message alone',
   sns: 'acknowledged; lambda does not retry a success, so this line is the only trace',
   kinesis:
     'the whole batch is answered as a success, so lambda does not retry it; this line is the only trace',
@@ -74,8 +75,9 @@ const getIssuesOfRefusal = (input: { error: Error }): unknown[] => {
  * .what = records that an aws-delivered event was refused, by its `asLambdaEventSchema.*` schema
  *         or by the handler as a caller fault
  * .why = `forAsk` answers the refusal as a caller fault, so the invoke succeeds and aws drops the
- *        event (sns does not retry a success; kinesis advances the shard, outside a tumble window). this line is its one
- *        durable trace: the source, the cause, the issue paths, and the ids to find or replay it
+ *        event (sqs deletes the batch; sns does not retry a success; kinesis advances the shard,
+ *        outside a tumble window). this line is its one durable trace: the source, the cause, the
+ *        issue paths, and the ids to find or replay it
  *
  * .note = warn, not error: the lambda ran as intended and the producer is at fault, as for
  *         `sqs.record.refused`
@@ -83,7 +85,7 @@ const getIssuesOfRefusal = (input: { error: Error }): unknown[] => {
  *         log, since a direct caller reads the refusal in its own response
  * .note = `error` is any throw `asCallerFault` accepts, so it is typed `Error`: a
  *         `BadRequestError`, or another copy's `ConstraintError`, is not this copy's class
- * .note = `class` reads `constructor.name`, as `logSqsRecordRefused` does: an operator searches
+ * .note = `class` reads `constructor.name`, as `logRecordRefused` does: an operator searches
  *         for the class the author threw, which the wire's `errorType` (`.name`) may not carry
  * .note = each list is capped (`LINE_LIMIT`), with its full count beside it, so the line fits
  *         one cloudwatch event at any batch size

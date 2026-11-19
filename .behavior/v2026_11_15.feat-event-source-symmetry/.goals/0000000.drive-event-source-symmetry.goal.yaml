@@ -1,0 +1,15 @@
+slug: 'drive-event-source-symmetry'
+source: 'peer:human'
+status:
+  choice: 'fulfilled'
+  reason: 'pr 82 open, titled with fromSqs, every ci check green; no merge, no release'
+updatedAt: '2026-11-15'
+why:
+  ask: 'hi, please drive'
+  purpose: 'human wants the bound route (event-source symmetry wish) driven to its end autonomously'
+  benefit: 'sqs, sns, kinesis each get both genLambdaEndpoint.forX and asLambdaEventSchema.fromX, with the symmetry law clamped by a test'
+what:
+  outcome: 'pr titled with fromSqs, pushed at the done gate, git.release --watch green, F01 + F02 commander questions in its body; scope whole (forKinesis.perRecord kept); no merge, no release'
+how:
+  task: 'drive stones 1.vision -> 5.1.execution -> 5.3.verification, then open the pr'
+  gate: 'pr open with fromSqs in title; git.release --watch green; F01 + F02 in body; route.drive reports no next stone'

@@ -52,6 +52,13 @@ const getTrailFromCarrier = (input: {
       return getTrailFromHeaders({ event: input.event });
     case 'wrapper':
       return getUnwrappedEventWithExid({ payload: input.event });
+    case 'none':
+      // no carrier is read, so the event crosses as is and the caller is ancient by construction
+      return {
+        exidFromPayload: null,
+        unwrappedEvent: input.event,
+        isContempCaller: false,
+      };
     default: {
       // a carrier added to the type and not handled here fails to compile at this line
       const carrierUnhandled: never = input.carrier;
@@ -70,6 +77,7 @@ const getTrailFromCarrier = (input: {
  * |---------|----------------------------------|-----------|----------|
  * | wrapper | `{ event: X, trail: { exid } }`  | unwrap to X, contemp | event as is, ancient |
  * | headers | `event.headers['x-trail-exid']`  | event as is, contemp | event as is, ancient |
+ * | none    | nowhere                          | —                    | event as is, fresh exid |
  *
  * .note = `headers` reads the RECONCILED bag, so a family that carries it places this entry after
  *         its event normalization. a `{ event, trail }` wrapper is not honored there

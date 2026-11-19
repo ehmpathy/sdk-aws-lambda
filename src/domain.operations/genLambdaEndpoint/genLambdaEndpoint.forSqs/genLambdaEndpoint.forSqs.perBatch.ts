@@ -1,42 +1,32 @@
-import middy from '@middy/core';
+import type middy from '@middy/core';
 import type { Context, SQSBatchResponse, SQSEvent } from 'aws-lambda';
-import { MalfunctionError } from 'helpful-errors';
 import type { ContextLogTrail } from 'sdk-logs';
 import type { FrozenDeep } from 'type-fns';
 import type { ZodSchema } from 'zod';
 
 import type { ContextAwsLambdaServer } from '../../../domain.objects/ContextAwsLambdaServer';
-import { setHandlerTrailCarrier } from '../../lambdaEndpointWire/frame/setHandlerTrailCarrier';
-import { asContextLogTrail } from '../asContextLogTrail';
-import { setEventFrozen } from '../setEventFrozen';
-import type { TranslateLog } from '../TranslateLog';
-import { asSqsBatchResponse } from './asSqsBatchResponse';
-import { asSqsEventDecoded } from './asSqsEventDecoded';
-import { DESERIALIZE_DEFAULT } from './asSqsRecordDecoded';
-import { asSqsRecordIds } from './asSqsRecordIds';
+import { DESERIALIZE_DEFAULT } from '../record/asRecordBodyParsed';
 import {
-  CARRIER_SQS,
-  genSqsEndpointMiddlewares,
-} from './genSqsEndpointMiddlewares';
-import { getAllSqsIdsRetried } from './getAllSqsIdsRetried';
-import { getAllSqsIdsUnclaimable } from './getAllSqsIdsUnclaimable';
-import { getAllSqsSuccessRefsMalformed } from './getAllSqsSuccessRefsMalformed';
+  genRecordEndpointPerBatch,
+  type RecordSuccessRef,
+} from '../record/genRecordEndpointPerBatch';
+import type { TranslateLog } from '../TranslateLog';
+import { asSqsEventDecoded } from './asSqsEventDecoded';
+import { RECORD_SOURCE_SQS } from './genLambdaEndpoint.forSqs.constants';
 import type {
   SqsEventDecoded,
   SqsHeadersDeclared,
   SqsHeadersMerged,
   SqsRecordDecoded,
 } from './SqsEventDecoded';
-import { setSqsRecordsValidated } from './setSqsRecordsValidated';
 
 /**
  * .what = the one fact sqs needs to delete a message: its `id`
  * .why = a record carries its `id`, so `return { successes: recordsThatSucceeded }` needs no
  *        re-shape. `id`, never aws's wire name `itemIdentifier` (`domain.terms/.readme.md`)
+ * .note = the shared `RecordSuccessRef`, under the name this family shipped
  */
-export interface SqsRecordSuccessRef {
-  id: string;
-}
+export type SqsRecordSuccessRef = RecordSuccessRef;
 
 /**
  * .what = sdk contract type for `genLambdaEndpoint.forSqs.perBatch`
@@ -129,109 +119,21 @@ export const perBatch = <THeaders extends SqsHeadersDeclared, TPayload>(
 
   const deserialize = config.deserialize ?? DESERIALIZE_DEFAULT;
 
-  /**
-   * .what = decode, validate each, invoke, report every record not claimed as a success
-   * .why = the chain has produced the trail log by here, so this reads as narrative
-   */
-  const logic = async (
-    event: SQSEvent,
-    lambdaContext: Context,
-  ): Promise<SQSBatchResponse> => {
-    // read the trail log `genTrailMiddleware` wrote
-    const { log } = asContextLogTrail({ context: lambdaContext });
-
-    const decoded = asSqsEventDecoded({ wire: event }, { deserialize });
-
-    // validate each record; a caller fault is acknowledged, a server fault retried alone
-    const { recordsValidated, idsRefused } = setSqsRecordsValidated(
-      { records: decoded.records, schema: config.schema.input },
-      { log },
-    );
-
-    // the only ids a handler may claim; read before its turn, so no write it makes can widen them
-    const idsClaimable = asSqsRecordIds({ records: recordsValidated });
-
-    /**
-     * .what = seals the envelope before the handler's turn (`rule.require.frozen-invoke-inputs`)
-     * .where = after validation, since the validator writes parsed values back into each record
-     * .as = the envelope now carries the validated values, a fact typescript cannot track from a
-     *       mutation. drops when the decode is parameterized on the schema's output types
-     */
-    const frozen = setEventFrozen({
-      event: {
-        records: recordsValidated,
-        event: decoded as SqsEventDecoded<{
-          headers: SqsHeadersMerged<THeaders>;
-          payload: TPayload;
-        }>,
-      },
-    });
-
-    /**
-     * .what = hands the batch to the handler; a throw escapes unchanged, whatever its class
-     * .why = a throw names no record, so it carries no verdict on any one of them — the handler
-     *        may have served some before it threw. to acknowledge the batch would delete records
-     *        of unknown outcome, so the throw is forwarded and the whole batch redrives. a
-     *        handler that refuses one record acknowledges it by name, in `successes`
-     */
-    const answer = await config.invoke(
-      { records: frozen.records, event: frozen.event },
-      { log },
-    );
-
-    // refuse an answer with no `successes` array; the throw retries the whole batch
-    if (!Array.isArray(answer?.successes))
-      MalfunctionError.throw(
-        'forSqs.perBatch handler answered without a `successes` array',
-        {
-          got: answer === undefined ? 'undefined' : typeof answer,
-          keys: answer ? Object.keys(answer) : [],
-          fix: 'return `{ successes: recordsThatSucceeded }` — the records themselves. none succeeded? `{ successes: [] }`',
-        },
-      );
-
-    // refuse an entry with no string `id`; the throw retries the whole batch
-    const refsMalformed = getAllSqsSuccessRefsMalformed({
-      successes: answer.successes,
-    });
-    if (refsMalformed.length)
-      MalfunctionError.throw(
-        'forSqs.perBatch handler answered with a success that carries no `id`',
-        {
-          indexes: refsMalformed.map((ref) => ref.index),
-          got: refsMalformed.map((ref) => ref.got),
-          fix: 'return the records themselves — `return { successes: recordsThatSucceeded }` — rather than bare id strings',
-        },
-      );
-
-    // refuse a claim on a record the handler was not handed; the throw retries the whole batch
-    const idsUnclaimable = getAllSqsIdsUnclaimable({
-      successes: answer.successes,
-      idsClaimable,
-    });
-    if (idsUnclaimable.length)
-      MalfunctionError.throw(
-        'forSqs.perBatch handler claimed a success for a record it was not handed',
-        {
-          idsUnclaimable,
-          idsClaimable: [...idsClaimable],
-          fix: 'return the records themselves — `return { successes: recordsThatSucceeded }` — drawn from `records`, never from `event.records` or a hand-written id',
-        },
-      );
-
-    // answer sqs: a record neither claimed nor refused is retried
-    const idsRetried = getAllSqsIdsRetried({
-      records: decoded.records,
-      successes: answer.successes,
-      idsRefused,
-    });
-    return asSqsBatchResponse({ idsRetried });
-  };
-
-  return setHandlerTrailCarrier({
-    handler: middy(logic).use(
-      genSqsEndpointMiddlewares({ logTranslate: config.logTranslate }),
-    ),
-    carrier: CARRIER_SQS,
+  // the serve is the shared one; this variant supplies sqs's facts
+  return genRecordEndpointPerBatch<
+    SQSEvent,
+    SqsRecordDecoded<{
+      headers: SqsHeadersMerged<THeaders>;
+      payload: TPayload;
+    }>,
+    SqsEventDecoded<{ headers: SqsHeadersMerged<THeaders>; payload: TPayload }>
+  >({
+    variant: 'forSqs.perBatch',
+    source: RECORD_SOURCE_SQS,
+    decode: ({ wire }) => asSqsEventDecoded({ wire }, { deserialize }),
+    deserialize,
+    schema: config.schema.input,
+    invoke: config.invoke,
+    logTranslate: config.logTranslate ?? null,
   });
 };

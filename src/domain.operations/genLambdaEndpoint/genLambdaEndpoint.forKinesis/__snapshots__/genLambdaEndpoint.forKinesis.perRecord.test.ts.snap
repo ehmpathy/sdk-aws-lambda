@@ -1,0 +1,82 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`genLambdaEndpoint.forKinesis.perRecord given: [case3] a valid click when: [t0] aws delivers it then: invoke receives the base64-decoded, parsed, validated payload 1`] = `
+{
+  "event": {
+    "_": {
+      "raw": {
+        "Records": [
+          {
+            "awsRegion": "us-east-1",
+            "eventID": "shardId-000000000000:49590000000000000000000000000000000000000000000000000000",
+            "eventName": "aws:kinesis:record",
+            "eventSource": "aws:kinesis",
+            "eventSourceARN": "arn:aws:kinesis:us-east-1:000000000000:stream/example-stream",
+            "eventVersion": "1.0",
+            "invokeIdentityArn": "arn:aws:iam::000000000000:role/example-role",
+            "kinesis": {
+              "approximateArrivalTimestamp": 1757289600,
+              "data": "eyJjbGlja0lkIjoiYy0xIn0=",
+              "kinesisSchemaVersion": "1.0",
+              "partitionKey": "partition-0",
+              "sequenceNumber": "49590000000000000000000000000000000000000000000000000000",
+            },
+          },
+        ],
+      },
+    },
+    "records": [
+      {
+        "_": {
+          "raw": {
+            "awsRegion": "us-east-1",
+            "eventID": "shardId-000000000000:49590000000000000000000000000000000000000000000000000000",
+            "eventName": "aws:kinesis:record",
+            "eventSource": "aws:kinesis",
+            "eventSourceARN": "arn:aws:kinesis:us-east-1:000000000000:stream/example-stream",
+            "eventVersion": "1.0",
+            "invokeIdentityArn": "arn:aws:iam::000000000000:role/example-role",
+            "kinesis": {
+              "approximateArrivalTimestamp": 1757289600,
+              "data": "eyJjbGlja0lkIjoiYy0xIn0=",
+              "kinesisSchemaVersion": "1.0",
+              "partitionKey": "partition-0",
+              "sequenceNumber": "49590000000000000000000000000000000000000000000000000000",
+            },
+          },
+        },
+        "id": "49590000000000000000000000000000000000000000000000000000",
+        "payload": {
+          "clickId": "c-1",
+        },
+      },
+    ],
+  },
+  "payload": {
+    "clickId": "c-1",
+  },
+}
+`;
+
+exports[`genLambdaEndpoint.forKinesis.perRecord given: [case4] an invoke of other than one record when: [t0] two records arrive, as under batchSize 10 then: it fails loud, and names the fix 1`] = `
+"💥 MalfunctionError: forKinesis.perRecord received a batch of other than one record
+
+{
+  "count": 2,
+  "fix": "set the event source \`batchSize\` to 1, or reach for \`genLambdaEndpoint.forKinesis.perBatch\`",
+  "ids": [
+    "49590000000000000000000000000000000000000000000000000000",
+    "49590000000000000000000000000000000000000000000000000001"
+  ]
+}"
+`;
+
+exports[`genLambdaEndpoint.forKinesis.perRecord given: [case4] an invoke of other than one record when: [t1] an empty batch arrives then: it fails loud too: the count is not one 1`] = `
+"💥 MalfunctionError: forKinesis.perRecord received a batch of other than one record
+
+{
+  "count": 0,
+  "fix": "set the event source \`batchSize\` to 1, or reach for \`genLambdaEndpoint.forKinesis.perBatch\`",
+  "ids": []
+}"
+`;

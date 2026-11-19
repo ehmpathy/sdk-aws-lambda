@@ -45,27 +45,28 @@ the forbidden `input.trail` legal (`domain.terms/trail.md`).
 
 ## .the audit, as it stands
 
-| slot | `forAsk` | `forApiGateway` | `forSqs.perRecord` | `forSqs.perBatch` |
-|---|---|---|---|---|
-| `event` | ✅ | ✅ | ✅ | ✅ |
-| `payload` | ✅ | ✅ | ✅ | ⛔ excluded |
-| `headers` | ⛔ excluded | ✅ lowercased | ✅ verbatim | ⛔ excluded |
-| `records` | ⛔ excluded | ⛔ excluded | ⛔ excluded | ✅ |
-| `context` | `ContextLogTrail` | same | same | same |
-| `schema.input` | `ZodSchema<TInput>` | `ZodSchema<{headers?,payload}>` | same | same |
-| `schema.output` | `ZodSchema<TOutput>` | `ZodSchema<ApiGatewayResponse>` | ⛔ excluded | ⛔ excluded |
-| `logTranslate?` | ✅ | ✅ | ✅ | ✅ |
-| `deserialize?.payload` | ⛔ excluded | ✅ | ✅ | ✅ |
-| `cors?` | ⛔ excluded | ✅ | ⛔ excluded | ⛔ excluded |
+| slot | `forAsk` | `forApiGateway` | `forSqs.perRecord` | `forSqs.perBatch` | `forSns` | `forKinesis.perRecord` | `forKinesis.perBatch` |
+|---|---|---|---|---|---|---|---|
+| `event` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `payload` | ✅ | ✅ | ✅ | ⛔ excluded | ✅ | ✅ | ⛔ excluded |
+| `headers` | ⛔ excluded | ✅ lowercased | ✅ verbatim | ⛔ excluded | ✅ verbatim | ⛔ excluded | ⛔ excluded |
+| `records` | ⛔ excluded | ⛔ excluded | ⛔ excluded | ✅ | ⛔ excluded | ⛔ excluded | ✅ |
+| `context` | `ContextLogTrail` | same | same | same | same | same | same |
+| `schema.input` | `ZodSchema<TInput>` | `ZodSchema<{headers?,payload}>` | same | same | same | `ZodSchema<{payload}>` | same |
+| `schema.output` | `ZodSchema<TOutput>` | `ZodSchema<ApiGatewayResponse>` | ⛔ excluded | ⛔ excluded | ⛔ excluded | ⛔ excluded | ⛔ excluded |
+| `logTranslate?` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `deserialize?.payload` | ⛔ excluded | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `cors?` | ⛔ excluded | ✅ | ⛔ excluded | ⛔ excluded | ⛔ excluded | ⛔ excluded | ⛔ excluded |
 
 every ⛔ traces to an axis, stated at the variant's declaration:
 
 | exclusion | axis |
 |---|---|
 | no `headers` at `forAsk` | a direct invoke carries no metadata bag beside its body |
+| no `headers` at `forKinesis.*` | a kinesis record carries no metadata bag — a partition key and data, naught else |
 | no `records` outside `perBatch` | the others carry one message per invoke |
 | no `headers` / `payload` at `perBatch` | N messages; the pair rides per record |
-| no `schema.output` at sqs | an sqs handler answers no one — sqs reads success or failure only |
+| no `schema.output` at a record source | sqs, sns, and kinesis answer no caller — each reads success or failure only |
 | no `deserialize` at `forAsk` | the runtime hands it a parsed object; no wire string |
 | no `cors` outside `forApiGateway` | cors is http's |
 
@@ -73,8 +74,8 @@ two rows look like divergences and are exclusions under an axis:
 
 | looks like | axis |
 |---|---|
-| `headers` lowercased at http, verbatim at sqs | rfc 9110 makes http names case-insensitive; sqs names are case-sensitive |
-| `schema.input` names a value at `forAsk`, a pair elsewhere | the schema describes the slots a caller may constrain; `forAsk` has one |
+| `headers` lowercased at http, verbatim at sqs and sns | rfc 9110 makes http names case-insensitive; sqs and sns names are case-sensitive |
+| `schema.input` names a value at `forAsk`, a pair elsewhere, a lone `payload` at kinesis | the schema describes the slots a caller may constrain; `forAsk` and kinesis have one |
 
 ## .the test — for the proposer
 
@@ -88,7 +89,7 @@ before you add or rename a slot: **does the family already have a word for this 
 
 ## .the test — for the reviewer
 
-read the four `invoke` input declarations side by side. the tells:
+read every variant's `invoke` input declaration side by side. the tells:
 
 - a slot word on exactly one variant with no axis stated
 - a doc-comment that explains why this variant's word differs (`rule.forbid.defended-exceptions`)
@@ -134,7 +135,7 @@ is that old shape, held under `@ts-expect-error`.
 ## .the caveat
 
 - the return type is out of scope — each variant answers a different transport
-- `context` is already one shape (`ContextLogTrail`) on all four
+- `context` is already one shape (`ContextLogTrail`) on every variant
 - inner shapes of optional config members are not clamped
 - a genuinely new concept earns a new word and a new superset slot
 

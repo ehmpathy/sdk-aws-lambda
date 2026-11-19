@@ -18,6 +18,14 @@ describe('getOneTrailCarrierOfHandler', () => {
     expect(getOneTrailCarrierOfHandler({ handler })).toEqual('wrapper');
   });
 
+  test('reads the carrier a builder stamped: none', () => {
+    const handler = setHandlerTrailCarrier({
+      handler: async () => 'ok',
+      carrier: 'none',
+    });
+    expect(getOneTrailCarrierOfHandler({ handler })).toEqual('none');
+  });
+
   test('the stamp is not enumerable: it shows in no spread of the handler', () => {
     const handler = setHandlerTrailCarrier({
       handler: async () => 'ok',

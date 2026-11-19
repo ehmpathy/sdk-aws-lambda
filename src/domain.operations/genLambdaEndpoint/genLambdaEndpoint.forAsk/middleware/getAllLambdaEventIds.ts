@@ -3,6 +3,9 @@ import { z } from 'zod';
 import type { LambdaEventSchemaSourceName } from '../../../../domain.objects/LambdaEventSchemaSource';
 
 // the one path each source's ids sit at; every other key may be absent on a misrouted event
+const schemaOfSqsIds = z.object({
+  Records: z.array(z.object({ messageId: z.string() })),
+});
 const schemaOfSnsIds = z.object({
   Records: z.array(z.object({ Sns: z.object({ MessageId: z.string() }) })),
 });
@@ -14,13 +17,19 @@ const schemaOfKinesisIds = z.object({
  * .what = how to read the ids of an event, per source
  * .why = a `Record` keyed by the source name list, so a new source that lacks its reader fails to
  *        compile
- * .note = sns: the `MessageId` an operator searches for. kinesis: the `eventID`, which is
- *         `${shardId}:${sequenceNumber}`, so it names the range an operator replays
+ * .note = sqs: the `messageId` an operator searches for. sns: its `MessageId`, likewise.
+ *         kinesis: the `eventID`, which is `${shardId}:${sequenceNumber}`, so it names the range
+ *         an operator replays
  */
 const GET_ALL_IDS_BY_SOURCE: Record<
   LambdaEventSchemaSourceName,
   (input: { event: unknown }) => string[]
 > = {
+  sqs: (input) => {
+    const parsed = schemaOfSqsIds.safeParse(input.event);
+    if (!parsed.success) return [];
+    return parsed.data.Records.map((record) => record.messageId);
+  },
   sns: (input) => {
     const parsed = schemaOfSnsIds.safeParse(input.event);
     if (!parsed.success) return [];

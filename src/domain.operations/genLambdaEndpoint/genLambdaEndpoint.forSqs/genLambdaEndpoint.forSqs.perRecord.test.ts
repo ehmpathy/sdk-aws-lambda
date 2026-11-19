@@ -425,7 +425,7 @@ describe('genLambdaEndpoint.forSqs.perRecord', () => {
    *        .the repair, unapplied = `getValidationError` takes the transport fact from its
    *           caller. left because it reaches a shared file with production and test call sites
    *           across two peer families, so it is not clean to ride along
-   *           (`rule.always.fix-forward-under-scouts-honor`) — see `setSqsRecordValidated.ts`
+   *           (`rule.always.fix-forward-under-scouts-honor`) — see `setRecordValidated.ts`
    *
    * .what this case buys = the defect is falsifiable. whoever applies the repair gets a red
    *        test that names the family and the text it must now emit, rather than a silent pass
@@ -680,7 +680,7 @@ describe('genLambdaEndpoint.forSqs.perRecord', () => {
    * .what = what a handler's OWN throw does — the contract that decides whether a message
    *        survives its own processing failure
    *
-   * .why = `genSqsEndpointMiddlewares` registers `genInternalServiceErrorMiddleware` with
+   * .why = `genRecordEndpointMiddlewares` registers `genInternalServiceErrorMiddleware` with
    *        `asOutputAfter: false`, and its doc states the consequence: the error RETHROWS, the
    *        invocation FAILS, and sqs redrives. a flag is not a run, so this case is what makes
    *        that a measurement (`rule.require.measure-the-value-you-emit`)
@@ -980,7 +980,7 @@ describe('genLambdaEndpoint.forSqs.perRecord', () => {
   /**
    * .what = whether `handler.input` actually logs, measured through the REAL composed chain
    *
-   * .why it exists = `genSqsEndpointMiddlewares` claims this family gets the `before` axis RIGHT
+   * .why it exists = `genRecordEndpointMiddlewares` claims this family gets the `before` axis RIGHT
    *        where its api-gateway peer does not — trail at index 1 produces `context.log` before
    *        the io logger at index 2 reads it. array order is an argument, never a measurement,
    *        so each arm of that claim owes its own run: the peer's `[case16][t1]` pins the
@@ -1226,7 +1226,7 @@ describe('genLambdaEndpoint.forSqs.perRecord', () => {
    * .why `perBatch` gets no twin of this case = its behavior here is the composition of two
    *        facts each already clamped on that variant:
    *
-   *          the mismatch refuses every record -> shared: one decode, one `setSqsRecordValidated`
+   *          the mismatch refuses every record -> shared: one decode, one `setRecordValidated`
    *          every refusal is acknowledged     -> `perBatch`'s `[case5]`, all-refused -> no ids
    *
    *        so no single edit can break that arm while this one stays green, which is the test a

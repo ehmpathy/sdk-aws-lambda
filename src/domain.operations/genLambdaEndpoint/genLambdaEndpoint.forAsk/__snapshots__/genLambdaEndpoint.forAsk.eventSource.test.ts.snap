@@ -1,6 +1,146 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
-exports[`forAsk, with an asLambdaEventSchema input given: [case4] the published input contract when: [t0] an sns and a kinesis schema with payload are rendered then: each payload slot shows the wire string, never the decoded shape 1`] = `
+exports[`forAsk, with an asLambdaEventSchema input given: [case4] the published input contract when: [t0] an sqs, an sns, and a kinesis schema with payload are rendered then: each payload slot shows the wire string, never the decoded shape 1`] = `
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": {},
+  "properties": {
+    "Records": {
+      "items": {
+        "additionalProperties": {},
+        "properties": {
+          "attributes": {
+            "additionalProperties": {},
+            "properties": {
+              "AWSTraceHeader": {
+                "type": "string",
+              },
+              "ApproximateFirstReceiveTimestamp": {
+                "type": "string",
+              },
+              "ApproximateReceiveCount": {
+                "type": "string",
+              },
+              "DeadLetterQueueSourceArn": {
+                "type": "string",
+              },
+              "MessageDeduplicationId": {
+                "type": "string",
+              },
+              "MessageGroupId": {
+                "type": "string",
+              },
+              "SenderId": {
+                "type": "string",
+              },
+              "SentTimestamp": {
+                "type": "string",
+              },
+              "SequenceNumber": {
+                "type": "string",
+              },
+            },
+            "required": [
+              "ApproximateReceiveCount",
+              "SentTimestamp",
+              "SenderId",
+              "ApproximateFirstReceiveTimestamp",
+            ],
+            "type": "object",
+          },
+          "awsRegion": {
+            "type": "string",
+          },
+          "body": {
+            "type": "string",
+          },
+          "eventSource": {
+            "const": "aws:sqs",
+            "type": "string",
+          },
+          "eventSourceARN": {
+            "type": "string",
+          },
+          "md5OfBody": {
+            "type": "string",
+          },
+          "md5OfMessageAttributes": {
+            "anyOf": [
+              {
+                "type": "string",
+              },
+              {
+                "type": "null",
+              },
+            ],
+          },
+          "messageAttributes": {
+            "additionalProperties": {
+              "additionalProperties": {},
+              "properties": {
+                "binaryListValues": {
+                  "items": {
+                    "type": "string",
+                  },
+                  "type": "array",
+                },
+                "binaryValue": {
+                  "type": "string",
+                },
+                "dataType": {
+                  "type": "string",
+                },
+                "stringListValues": {
+                  "items": {
+                    "type": "string",
+                  },
+                  "type": "array",
+                },
+                "stringValue": {
+                  "type": "string",
+                },
+              },
+              "required": [
+                "dataType",
+              ],
+              "type": "object",
+            },
+            "propertyNames": {
+              "type": "string",
+            },
+            "type": "object",
+          },
+          "messageId": {
+            "type": "string",
+          },
+          "receiptHandle": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "messageId",
+          "receiptHandle",
+          "body",
+          "attributes",
+          "messageAttributes",
+          "md5OfBody",
+          "eventSource",
+          "eventSourceARN",
+          "awsRegion",
+        ],
+        "type": "object",
+      },
+      "type": "array",
+    },
+  },
+  "required": [
+    "Records",
+  ],
+  "type": "object",
+}
+`;
+
+exports[`forAsk, with an asLambdaEventSchema input given: [case4] the published input contract when: [t0] an sqs, an sns, and a kinesis schema with payload are rendered then: each payload slot shows the wire string, never the decoded shape 2`] = `
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": {},
@@ -114,7 +254,7 @@ exports[`forAsk, with an asLambdaEventSchema input given: [case4] the published 
 }
 `;
 
-exports[`forAsk, with an asLambdaEventSchema input given: [case4] the published input contract when: [t0] an sns and a kinesis schema with payload are rendered then: each payload slot shows the wire string, never the decoded shape 2`] = `
+exports[`forAsk, with an asLambdaEventSchema input given: [case4] the published input contract when: [t0] an sqs, an sns, and a kinesis schema with payload are rendered then: each payload slot shows the wire string, never the decoded shape 3`] = `
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": {},

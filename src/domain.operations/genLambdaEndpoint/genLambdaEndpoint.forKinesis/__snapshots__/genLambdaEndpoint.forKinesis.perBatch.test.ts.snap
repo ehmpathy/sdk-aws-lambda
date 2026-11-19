@@ -1,0 +1,71 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`genLambdaEndpoint.forKinesis.perBatch given: [case1] a batch of four: one malformed, one the handler fails, two served when: [t0] aws delivers it then: only the failed record is answered, by sequence number, so kinesis checkpoints before it 1`] = `
+{
+  "batchItemFailures": [
+    {
+      "itemIdentifier": "49590000000000000000000000000000000000000000000000000002",
+    },
+  ],
+}
+`;
+
+exports[`genLambdaEndpoint.forKinesis.perBatch given: [case2] a handler whose answer the sdk cannot read when: [t0] it answers with bare id strings then: it fails loud and names the fix, so the batch retries 1`] = `
+"💥 MalfunctionError: forKinesis.perBatch handler answered with a success that carries no \`id\`
+
+{
+  "indexes": [
+    0
+  ],
+  "got": [
+    "string"
+  ],
+  "fix": "return the records themselves — \`return { successes: recordsThatSucceeded }\` — rather than bare id strings"
+}"
+`;
+
+exports[`genLambdaEndpoint.forKinesis.perBatch given: [case2] a handler whose answer the sdk cannot read when: [t1] it answers with no successes array then: it fails loud 1`] = `
+"💥 MalfunctionError: forKinesis.perBatch handler answered without a \`successes\` array
+
+{
+  "got": "object",
+  "keys": [],
+  "fix": "return \`{ successes: recordsThatSucceeded }\` — the records themselves. none succeeded? \`{ successes: [] }\`"
+}"
+`;
+
+exports[`genLambdaEndpoint.forKinesis.perBatch given: [case12] a valid batch, then a handler that throws when: [t0] every record is served then: an empty failure list: kinesis advances past the batch 1`] = `
+{
+  "batchItemFailures": [],
+}
+`;
+
+exports[`genLambdaEndpoint.forKinesis.perBatch given: [case15] an event that is not from kinesis when: [t0] an sns event is misrouted to it then: it fails loud: the wire is not a kinesis shape 1`] = `
+"💥 MalfunctionError: wire is not a kinesis event shape
+
+{
+  "fix": "check that this lambda is triggered by a kinesis stream, and not invoked by another source. a queue is served by genLambdaEndpoint.forSqs, a topic by genLambdaEndpoint.forSns",
+  "wire": {
+    "Records": [
+      {
+        "EventVersion": "1.0",
+        "EventSubscriptionArn": "arn:aws:sns:us-east-1:000000000000:example-topic:<uuid>",
+        "EventSource": "aws:sns",
+        "Sns": {
+          "SignatureVersion": "1",
+          "Timestamp": "<timestamp>",
+          "Signature": "EXAMPLE",
+          "SigningCertUrl": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-example.pem",
+          "MessageId": "<uuid>",
+          "Message": "{}",
+          "MessageAttributes": {},
+          "Type": "Notification",
+          "UnsubscribeUrl": "https://sns.us-east-1.amazonaws.com/?Action=Unsubscribe",
+          "TopicArn": "arn:aws:sns:us-east-1:000000000000:example-topic",
+          "Subject": ""
+        }
+      }
+    ]
+  }
+}"
+`;

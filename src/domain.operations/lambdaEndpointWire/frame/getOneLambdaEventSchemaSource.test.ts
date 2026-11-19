@@ -46,6 +46,12 @@ describe('getOneLambdaEventSchemaSource', () => {
             LambdaEventSchemaSourceName,
             { bare: unknown; withPayload: unknown }
           > = {
+            sqs: {
+              bare: asLambdaEventSchema.fromSqs(),
+              withPayload: asLambdaEventSchema.fromSqs({
+                payload: z.object({}),
+              }),
+            },
             sns: {
               bare: asLambdaEventSchema.fromSns(),
               withPayload: asLambdaEventSchema.fromSns({
@@ -166,7 +172,8 @@ describe('getOneLambdaEventSchemaSource', () => {
       });
     });
     when('[t1] the mark names a source this copy does not know', () => {
-      const schema = genSchemaWithMark({ mark: { name: 'sqs' } });
+      // .why s3 = a source no copy of this package serves; any served name would be read
+      const schema = genSchemaWithMark({ mark: { name: 's3' } });
       then('it reads as null, never trusted', () => {
         expect(getOneLambdaEventSchemaSource({ schema })).toBeNull();
       });

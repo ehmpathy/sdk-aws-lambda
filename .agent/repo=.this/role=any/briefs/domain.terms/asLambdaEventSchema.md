@@ -35,8 +35,10 @@ leaves.
   two directions (`define.lambda-event-source`)
 - the consumers: svc-notifications' sns and kinesis handlers hand-derived the envelope or
   rubber-stamped it with `z.object({ Records: z.array(z.any()) })` (wish, #13)
-- the subset: sns and kinesis only. sqs is served by `forSqs`, api gateway by `forApiGateway`, s3
-  carries no payload (`define.lambda-event-source`)
+- the set: sqs, sns, and kinesis — every record source, each paired with its `genLambdaEndpoint.forX`
+  (`rule.require.event-source-symmetry`). api gateway validates its own reconciled input under
+  `forApiGateway`, a direct invoke has no envelope, and s3 carries no payload
+  (`define.lambda-event-source`)
 
 ## .refused
 
@@ -50,7 +52,10 @@ rejection is a server-side throw here, the opposite fate.
 - each leaf returns a schema whose input face is the aws-lambda type, so `forAsk` needs no cast
 - each leaf stamps its source on the schema, data only (`{ name }`); `forAsk` reads it to decide
   the warn
-- no `fromSqs`; a key-set clamp in `index.test.ts` holds it
+- every leaf has an endpoint peer, and the reverse, save the declared one-sided list;
+  `eventSourceSymmetry.test.ts` holds it, and `index.test.ts` clamps the key set
+- `fromSqs` under `forAsk` refuses a whole batch for one bad message, and sqs deletes every message
+  in it; `forSqs` refuses the one message alone. the leaf ships for symmetry, with the caution on it
 
 ## .see also
 

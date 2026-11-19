@@ -1,4 +1,9 @@
-import type { Context, KinesisStreamEvent, SNSEvent } from 'aws-lambda';
+import type {
+  Context,
+  KinesisStreamEvent,
+  SNSEvent,
+  SQSEvent,
+} from 'aws-lambda';
 import {
   BadRequestError,
   ConstraintError,
@@ -154,6 +159,69 @@ describe('forAsk, with an asLambdaEventSchema input', () => {
           expect(line).toContain('Records.1.kinesis.data.url');
           expect(line).toContain(event.Records[0]!.eventID);
           expect(line).toContain(event.Records[1]!.eventID);
+        },
+      );
+    });
+  });
+
+  /**
+   * .what = the sqs schema under `forAsk` — legal, and loud about its cost
+   * .why = one refused record refuses the batch, and sqs deletes a batch whose invoke succeeds.
+   *        so the warn line must name every messageId and say the batch was deleted, and point at
+   *        `forSqs`, the family that acknowledges a refused message alone
+   */
+  given('[case2a] an sqs handler wired with fromSqs({ payload })', () => {
+    const handler = forAsk({
+      schema: {
+        input: asLambdaEventSchema.fromSqs({
+          payload: z.object({ orderId: z.string() }),
+        }),
+        output: z.object({ orderIds: z.array(z.string()) }),
+      },
+      invoke: async ({ payload }) => ({
+        orderIds: payload.Records.map((record) => record.body.orderId),
+      }),
+    });
+
+    when('[t0] both records are valid', () => {
+      const event: SQSEvent = asLambdaEvent.fromSqs({
+        messages: [
+          JSON.stringify({ orderId: 'ord-1' }),
+          JSON.stringify({ orderId: 'ord-2' }),
+        ],
+      });
+      const outcome = useThen('the invoke succeeds', async () =>
+        getOutcome({ handler, event }),
+      );
+      then('invoke reads each decoded body', () => {
+        expect(outcome.result).toEqual({ orderIds: ['ord-1', 'ord-2'] });
+      });
+    });
+
+    when('[t1] one record in a batch of two is refused', () => {
+      const event: SQSEvent = asLambdaEvent.fromSqs({
+        messages: [
+          JSON.stringify({ orderId: 'ord-1' }),
+          JSON.stringify({ order: 2 }),
+        ],
+      });
+      const outcome = useThen('the invoke succeeds', async () =>
+        getOutcome({ handler, event }),
+      );
+      then('the whole batch is answered as a caller fault', () => {
+        expect(outcome.result).toMatchObject({ errorType: 'BadRequestError' });
+      });
+      then(
+        'the warn line names the bad record, every messageId, and the deletion',
+        () => {
+          const line = outcome.warnLines.find((each) =>
+            each.includes('lambda.event.refused'),
+          );
+          expect(line).toContain('Records.1.body.orderId');
+          expect(line).toContain(event.Records[0]!.messageId);
+          expect(line).toContain(event.Records[1]!.messageId);
+          expect(line).toContain('sqs deletes every message in it');
+          expect(line).toContain('genLambdaEndpoint.forSqs');
         },
       );
     });
@@ -489,26 +557,42 @@ describe('forAsk, with an asLambdaEventSchema input', () => {
   });
 
   given('[case4] the published input contract', () => {
-    when('[t0] an sns and a kinesis schema with payload are rendered', () => {
-      const sns = getJsonSchemaFromZod(
-        asLambdaEventSchema.fromSns({ payload: schemaOfNotice }),
-      );
-      // json default, so the decoded shape is an object and a leak of it would show
-      const kinesis = getJsonSchemaFromZod(
-        asLambdaEventSchema.fromKinesis({
-          payload: z.object({ url: z.string() }),
-        }),
-      );
-      then(
-        'each payload slot shows the wire string, never the decoded shape',
-        () => {
-          expect(JSON.stringify(sns)).toContain('"Message":{"type":"string"}');
-          expect(JSON.stringify(kinesis)).toContain('"data":{"type":"string"}');
-          expect(JSON.stringify(kinesis)).not.toContain('"url"');
-          expect(sns).toMatchSnapshot();
-          expect(kinesis).toMatchSnapshot();
-        },
-      );
-    });
+    when(
+      '[t0] an sqs, an sns, and a kinesis schema with payload are rendered',
+      () => {
+        // json default, so the decoded shape is an object and a leak of it would show
+        const sqs = getJsonSchemaFromZod(
+          asLambdaEventSchema.fromSqs({
+            payload: z.object({ orderId: z.string() }),
+          }),
+        );
+        const sns = getJsonSchemaFromZod(
+          asLambdaEventSchema.fromSns({ payload: schemaOfNotice }),
+        );
+        // json default, so the decoded shape is an object and a leak of it would show
+        const kinesis = getJsonSchemaFromZod(
+          asLambdaEventSchema.fromKinesis({
+            payload: z.object({ url: z.string() }),
+          }),
+        );
+        then(
+          'each payload slot shows the wire string, never the decoded shape',
+          () => {
+            expect(JSON.stringify(sqs)).toContain('"body":{"type":"string"}');
+            expect(JSON.stringify(sqs)).not.toContain('"orderId"');
+            expect(JSON.stringify(sns)).toContain(
+              '"Message":{"type":"string"}',
+            );
+            expect(JSON.stringify(kinesis)).toContain(
+              '"data":{"type":"string"}',
+            );
+            expect(JSON.stringify(kinesis)).not.toContain('"url"');
+            expect(sqs).toMatchSnapshot();
+            expect(sns).toMatchSnapshot();
+            expect(kinesis).toMatchSnapshot();
+          },
+        );
+      },
+    );
   });
 });

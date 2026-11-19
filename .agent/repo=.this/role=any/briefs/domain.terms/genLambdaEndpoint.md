@@ -10,11 +10,15 @@ genLambdaEndpoint.forAsk({ … })               // a direct invoke
 genLambdaEndpoint.forApiGateway({ … })        // http
 genLambdaEndpoint.forSqs.perRecord({ … })     // one queue message per invoke
 genLambdaEndpoint.forSqs.perBatch({ … })      // the whole batch per invoke
+genLambdaEndpoint.forSns({ … })               // one topic message per invoke
+genLambdaEndpoint.forKinesis.perRecord({ … }) // one stream record per invoke
+genLambdaEndpoint.forKinesis.perBatch({ … })  // the whole batch per invoke
 ```
 
-never one of its variants. ⛔ no variant is exported beside it. `forSqs` is a sub-family: the sqs
-trigger forces a cardinality choice no other trigger does, so the trigger names an object and the
-cardinality names its leaves.
+never one of its variants. ⛔ no variant is exported beside it. `forSqs` and `forKinesis` are
+sub-families: their triggers deliver N records per invoke, which forces a cardinality choice, so the
+trigger names an object and the cardinality names its leaves. sns delivers one, so `forSns` is a
+plain variant — a sub-family of one leaf is a variant with an extra hop.
 
 ## .the etymology
 
@@ -23,7 +27,7 @@ cardinality names its leaves.
 | `gen` | the findsert verb (`rule.require.get-set-gen-verbs`) — it builds a handler from a config |
 | `LambdaEndpoint` | the core entity of `define.lambda-endpoint-ubiqlang`; one concept, not a mash |
 | `for*` | the variant qualifier, one per **trigger**. the names mirror the sources of `asLambdaEvent.from{Source}` (`ask · apiGateway · sqs · …`) |
-| `per*` | the cardinality qualifier, under a trigger that forces the choice (`forSqs` only) |
+| `per*` | the cardinality qualifier, under a trigger that forces the choice (`forSqs`, `forKinesis`) |
 
 `for…` is a preposition that qualifies a noun it does not carry, which is why a variant may never be
 exported bare (`rule.forbid.unqualified-variant-exports`).
@@ -36,6 +40,8 @@ export const genLambdaEndpoint = {
   forAsk,
   forApiGateway,
   forSqs,           // { perRecord, perBatch }
+  forSns,
+  forKinesis,       // { perRecord, perBatch }
 };
 ```
 
@@ -60,6 +66,9 @@ export const genLambdaEndpoint = {
 | `forApiGateway` | http | `{ headers, payload, event }` |
 | `forSqs.perRecord` | one sqs message | `{ headers, payload, event }` |
 | `forSqs.perBatch` | an sqs batch | `{ records, event }` |
+| `forSns` | one sns message | `{ headers, payload, event }` |
+| `forKinesis.perRecord` | one kinesis record | `{ payload, event }` |
+| `forKinesis.perBatch` | a kinesis batch | `{ records, event }` |
 
 a new trigger earns a new `for*` leaf on the object and no edit to `src/index.ts`. every member's
 input is a subset of `InvokeInputSuperset`, and every value in it is deep-frozen.

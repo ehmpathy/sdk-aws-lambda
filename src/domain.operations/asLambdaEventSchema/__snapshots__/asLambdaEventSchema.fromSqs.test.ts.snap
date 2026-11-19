@@ -1,0 +1,116 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`asLambdaEventSchema.fromSqs given: [case1] fromSqs(), envelope only when: [t0] the aws docs sample is parsed then: the envelope is kept whole, the attributes included 1`] = `
+{
+  "Records": [
+    {
+      "attributes": {
+        "ApproximateFirstReceiveTimestamp": "1545082649185",
+        "ApproximateReceiveCount": "1",
+        "SenderId": "AIDAIENQZJOLO23YVJ4VO",
+        "SentTimestamp": "1545082649183",
+      },
+      "awsRegion": "us-east-2",
+      "body": "Test message.",
+      "eventSource": "aws:sqs",
+      "eventSourceARN": "arn:aws:sqs:us-east-2:123456789012:my-queue",
+      "md5OfBody": "e4e68fb7bd0e697a0ae8f1bb342846b3",
+      "messageAttributes": {
+        "myAttribute": {
+          "binaryListValues": [],
+          "dataType": "String",
+          "stringListValues": [],
+          "stringValue": "myValue",
+        },
+      },
+      "messageId": "059f36b4-87a3-44ab-83d2-661975830a7d",
+      "receiptHandle": "AQEBwJnKyrHigUMZj6rYigCgxlaS3SLy0a...",
+    },
+    {
+      "attributes": {
+        "ApproximateFirstReceiveTimestamp": "1545082650649",
+        "ApproximateReceiveCount": "1",
+        "SenderId": "AIDAIENQZJOLO23YVJ4VO",
+        "SentTimestamp": "1545082650636",
+      },
+      "awsRegion": "us-east-2",
+      "body": "Test message.",
+      "eventSource": "aws:sqs",
+      "eventSourceARN": "arn:aws:sqs:us-east-2:123456789012:my-queue",
+      "md5OfBody": "e4e68fb7bd0e697a0ae8f1bb342846b3",
+      "messageAttributes": {},
+      "messageId": "2e1424d4-f796-459a-8184-9c92662be6da",
+      "receiptHandle": "AQEBzWwaftRI0KuVm4tP+/7q1rGgNqicHq...",
+    },
+  ],
+}
+`;
+
+exports[`asLambdaEventSchema.fromSqs given: [case2] fromSqs({ payload }), a json body when: [t0] a factory event with a json order is parsed then: body is the decoded, validated order 1`] = `
+{
+  "orderId": "ord-7",
+  "qty": 2,
+}
+`;
+
+exports[`asLambdaEventSchema.fromSqs given: [case2] fromSqs({ payload }), a json body when: [t1] the second order fails the payload schema then: it is refused at the field inside that body 1`] = `
+[
+  {
+    "code": "invalid_type",
+    "expected": "number",
+    "message": "Invalid input: expected number, received string",
+    "path": [
+      "Records",
+      1,
+      "body",
+      "qty",
+    ],
+  },
+]
+`;
+
+exports[`asLambdaEventSchema.fromSqs given: [case3] fromSqs({ payload, deserialize: { payload: false } }) when: [t0] the aws docs sample, a text queue, is parsed then: body meets the payload schema as the raw string 1`] = `
+{
+  "Records": [
+    {
+      "attributes": {
+        "ApproximateFirstReceiveTimestamp": "1545082649185",
+        "ApproximateReceiveCount": "1",
+        "SenderId": "AIDAIENQZJOLO23YVJ4VO",
+        "SentTimestamp": "1545082649183",
+      },
+      "awsRegion": "us-east-2",
+      "body": "Test message.",
+      "eventSource": "aws:sqs",
+      "eventSourceARN": "arn:aws:sqs:us-east-2:123456789012:my-queue",
+      "md5OfBody": "e4e68fb7bd0e697a0ae8f1bb342846b3",
+      "messageAttributes": {
+        "myAttribute": {
+          "binaryListValues": [],
+          "dataType": "String",
+          "stringListValues": [],
+          "stringValue": "myValue",
+        },
+      },
+      "messageId": "059f36b4-87a3-44ab-83d2-661975830a7d",
+      "receiptHandle": "AQEBwJnKyrHigUMZj6rYigCgxlaS3SLy0a...",
+    },
+    {
+      "attributes": {
+        "ApproximateFirstReceiveTimestamp": "1545082650649",
+        "ApproximateReceiveCount": "1",
+        "SenderId": "AIDAIENQZJOLO23YVJ4VO",
+        "SentTimestamp": "1545082650636",
+      },
+      "awsRegion": "us-east-2",
+      "body": "Test message.",
+      "eventSource": "aws:sqs",
+      "eventSourceARN": "arn:aws:sqs:us-east-2:123456789012:my-queue",
+      "md5OfBody": "e4e68fb7bd0e697a0ae8f1bb342846b3",
+      "messageAttributes": {},
+      "messageId": "2e1424d4-f796-459a-8184-9c92662be6da",
+      "receiptHandle": "AQEBzWwaftRI0KuVm4tP+/7q1rGgNqicHq...",
+    },
+  ],
+}
+`;

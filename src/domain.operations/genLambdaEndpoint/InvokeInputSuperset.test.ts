@@ -9,6 +9,17 @@ import type {
   AskEventUnified,
   GenLambdaEndpointInput,
 } from './genLambdaEndpoint.forAsk/genLambdaEndpoint.forAsk';
+import type { ForKinesisPerBatchInput } from './genLambdaEndpoint.forKinesis/genLambdaEndpoint.forKinesis.perBatch';
+import type { ForKinesisPerRecordInput } from './genLambdaEndpoint.forKinesis/genLambdaEndpoint.forKinesis.perRecord';
+import type {
+  KinesisEventRecords,
+  KinesisRecord,
+} from './genLambdaEndpoint.forKinesis/KinesisEventRecords';
+import type { ForSnsInput } from './genLambdaEndpoint.forSns/genLambdaEndpoint.forSns';
+import type {
+  SnsEventRecords,
+  SnsHeadersMerged,
+} from './genLambdaEndpoint.forSns/SnsEventRecords';
 import type { ForSqsPerBatchInput } from './genLambdaEndpoint.forSqs/genLambdaEndpoint.forSqs.perBatch';
 import type { ForSqsPerRecordInput } from './genLambdaEndpoint.forSqs/genLambdaEndpoint.forSqs.perRecord';
 import type {
@@ -42,7 +53,7 @@ import type {
  *        divergence is a relation between two of them (`rule.require.sweep-the-defect-class`)
  */
 
-/** the shapes each variant binds, written once so a reader can line the four up */
+/** the shapes each variant binds, written once so a reader can line the variants up */
 type Headers = { authorization: string };
 type Payload = { to: string };
 type Body = { sent: boolean };
@@ -70,6 +81,18 @@ type InputOfSqsPerRecord = Parameters<
 type InputOfSqsPerBatch = Parameters<
   ForSqsPerBatchInput<Headers, Payload>['invoke']
 >[0];
+type InputOfSns = Parameters<ForSnsInput<Headers, Payload>['invoke']>[0];
+type InputOfKinesisPerRecord = Parameters<
+  ForKinesisPerRecordInput<Payload>['invoke']
+>[0];
+type InputOfKinesisPerBatch = Parameters<
+  ForKinesisPerBatchInput<Payload>['invoke']
+>[0];
+
+type SnsShape = {
+  headers: SnsHeadersMerged<Headers>;
+  payload: Payload;
+};
 
 /**
  * .what = THE TYPE GATE. each verdict resolves to `true` where that variant conforms, and to
@@ -131,6 +154,36 @@ const VERDICT_SQS_PER_BATCH: SatisfiesInvokeInputSuperset<
   }
 > = true;
 
+const VERDICT_SNS: SatisfiesInvokeInputSuperset<
+  InputOfSns,
+  {
+    headers: SnsHeadersMerged<Headers>;
+    payload: Payload;
+    event: SnsEventRecords<SnsShape>;
+    record: never;
+  }
+> = true;
+
+const VERDICT_KINESIS_PER_RECORD: SatisfiesInvokeInputSuperset<
+  InputOfKinesisPerRecord,
+  {
+    headers: never;
+    payload: Payload;
+    event: KinesisEventRecords<{ payload: Payload }>;
+    record: never;
+  }
+> = true;
+
+const VERDICT_KINESIS_PER_BATCH: SatisfiesInvokeInputSuperset<
+  InputOfKinesisPerBatch,
+  {
+    headers: never;
+    payload: never;
+    event: KinesisEventRecords<{ payload: Payload }>;
+    record: KinesisRecord<{ payload: Payload }>;
+  }
+> = true;
+
 /**
  * .what = THE RUNTIME HALF. one exhaustive key literal per variant, each forced by
  *         `Record<keyof …, true>` — so a slot added to a variant's contract makes tsc refuse its
@@ -139,7 +192,7 @@ const VERDICT_SQS_PER_BATCH: SatisfiesInvokeInputSuperset<
  *
  * .why exhaustive literals rather than a read of a live handler's bag = a live read needs an
  *         invoke per variant, and each family's own `[case1]` already does exactly that. this
- *         file's claim is the RELATION between the four, so it reads the four CONTRACTS
+ *         file's claim is the RELATION between the variants, so it reads their CONTRACTS
  */
 const SLOTS_OF_SUPERSET: Record<
   keyof InvokeInputSuperset<{
@@ -173,6 +226,22 @@ const SLOTS_PER_VARIANT: Record<string, Record<string, true>> = {
     records: true,
     event: true,
   } satisfies Record<keyof InputOfSqsPerBatch, true>,
+
+  forSns: {
+    payload: true,
+    headers: true,
+    event: true,
+  } satisfies Record<keyof InputOfSns, true>,
+
+  'forKinesis.perRecord': {
+    payload: true,
+    event: true,
+  } satisfies Record<keyof InputOfKinesisPerRecord, true>,
+
+  'forKinesis.perBatch': {
+    records: true,
+    event: true,
+  } satisfies Record<keyof InputOfKinesisPerBatch, true>,
 };
 
 /**
@@ -226,10 +295,31 @@ const CONFIG_PER_VARIANT: Record<string, Record<string, true>> = {
     logTranslate: true,
     deserialize: true,
   } satisfies Record<keyof ForSqsPerBatchInput<Headers, Payload>, true>,
+
+  forSns: {
+    schema: true,
+    invoke: true,
+    logTranslate: true,
+    deserialize: true,
+  } satisfies Record<keyof ForSnsInput<Headers, Payload>, true>,
+
+  'forKinesis.perRecord': {
+    schema: true,
+    invoke: true,
+    logTranslate: true,
+    deserialize: true,
+  } satisfies Record<keyof ForKinesisPerRecordInput<Payload>, true>,
+
+  'forKinesis.perBatch': {
+    schema: true,
+    invoke: true,
+    logTranslate: true,
+    deserialize: true,
+  } satisfies Record<keyof ForKinesisPerBatchInput<Payload>, true>,
 };
 
 describe('the invoke-input superset, across every genLambdaEndpoint variant', () => {
-  given('[case1] the four variants the family exposes today', () => {
+  given('[case1] every variant the family exposes', () => {
     when('[t0] each variant is measured against the superset', () => {
       /**
        * .what = the terminology half — divergences forbidden. a variant that names a slot the
@@ -268,24 +358,30 @@ describe('the invoke-input superset, across every genLambdaEndpoint variant', ()
           'forSqs.perRecord': ['records'],
           // N messages per invoke, so a singular pair would assert a cardinality it lacks
           'forSqs.perBatch': ['headers', 'payload'],
+          // one message per invoke, as at `forSqs.perRecord`
+          forSns: ['records'],
+          // one record per invoke, and a kinesis record carries no metadata bag
+          'forKinesis.perRecord': ['headers', 'records'],
+          // N records per invoke, as at `forSqs.perBatch`
+          'forKinesis.perBatch': ['headers', 'payload'],
         });
       });
 
       /**
        * .what = the bite check on the instrument itself. the two `then`s above compare derived
        *         lists, and two empty maps satisfy both — so a contract type that resolved to
-       *         `never` would read as a clean pass. this proves the four inputs were read
+       *         `never` would read as a clean pass. this proves every input was read
        *         (`rule.require.positive-control-before-absence-claims`)
        */
       then(
-        'the four variants were really read, so neither check is vacuous',
+        'the seven variants were really read, so neither check is vacuous',
         () => {
-          expect(Object.keys(SLOTS_PER_VARIANT).length).toEqual(4);
+          expect(Object.keys(SLOTS_PER_VARIANT).length).toEqual(7);
           expect(
             Object.values(SLOTS_PER_VARIANT).map(
               (slots) => Object.keys(slots).length,
             ),
-          ).toEqual([2, 3, 3, 2]);
+          ).toEqual([2, 3, 3, 2, 3, 2, 2]);
         },
       );
 
@@ -302,7 +398,10 @@ describe('the invoke-input superset, across every genLambdaEndpoint variant', ()
           VERDICT_API_GATEWAY,
           VERDICT_SQS_PER_RECORD,
           VERDICT_SQS_PER_BATCH,
-        ]).toEqual([true, true, true, true]);
+          VERDICT_SNS,
+          VERDICT_KINESIS_PER_RECORD,
+          VERDICT_KINESIS_PER_BATCH,
+        ]).toEqual([true, true, true, true, true, true, true]);
       });
     });
 
@@ -345,20 +444,23 @@ describe('the invoke-input superset, across every genLambdaEndpoint variant', ()
             // cors is http's
             'forSqs.perRecord': ['cors'],
             'forSqs.perBatch': ['cors'],
+            forSns: ['cors'],
+            'forKinesis.perRecord': ['cors'],
+            'forKinesis.perBatch': ['cors'],
           });
         },
       );
 
       /**
-       * .what = the bite check — `schema` and `invoke` are required on all four, so a read that
+       * .what = the bite check — `schema` and `invoke` are required on every variant, so a read that
        *         saw naught would satisfy both `then`s above with two empty maps
        */
-      then('the four config bags were really read', () => {
+      then('the seven config bags were really read', () => {
         expect(
           Object.values(CONFIG_PER_VARIANT).map(
             (members) => Object.keys(members).length,
           ),
-        ).toEqual([3, 5, 4, 4]);
+        ).toEqual([3, 5, 4, 4, 4, 4, 4]);
       });
     });
 

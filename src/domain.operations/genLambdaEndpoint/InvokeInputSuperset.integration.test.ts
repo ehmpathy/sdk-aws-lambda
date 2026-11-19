@@ -1,10 +1,13 @@
 import { readFileSync } from 'fs';
 import { ConstraintError } from 'helpful-errors';
 import { join } from 'path';
-import { given, then, when } from 'test-fns';
+import { given, then, useThen, when } from 'test-fns';
 
 import type { ForApiGatewayInput } from './genLambdaEndpoint.forApiGateway/genLambdaEndpoint.forApiGateway';
 import type { GenLambdaEndpointInput } from './genLambdaEndpoint.forAsk/genLambdaEndpoint.forAsk';
+import type { ForKinesisPerBatchInput } from './genLambdaEndpoint.forKinesis/genLambdaEndpoint.forKinesis.perBatch';
+import type { ForKinesisPerRecordInput } from './genLambdaEndpoint.forKinesis/genLambdaEndpoint.forKinesis.perRecord';
+import type { ForSnsInput } from './genLambdaEndpoint.forSns/genLambdaEndpoint.forSns';
 import type { ForSqsPerBatchInput } from './genLambdaEndpoint.forSqs/genLambdaEndpoint.forSqs.perBatch';
 import type { ForSqsPerRecordInput } from './genLambdaEndpoint.forSqs/genLambdaEndpoint.forSqs.perRecord';
 import type { InvokeInputSuperset } from './InvokeInputSuperset';
@@ -41,6 +44,13 @@ type InputOfSqsPerRecord = Parameters<
 type InputOfSqsPerBatch = Parameters<
   ForSqsPerBatchInput<Headers, Payload>['invoke']
 >[0];
+type InputOfSns = Parameters<ForSnsInput<Headers, Payload>['invoke']>[0];
+type InputOfKinesisPerRecord = Parameters<
+  ForKinesisPerRecordInput<Payload>['invoke']
+>[0];
+type InputOfKinesisPerBatch = Parameters<
+  ForKinesisPerBatchInput<Payload>['invoke']
+>[0];
 
 /**
  * .what = the superset's own key set, and each variant's subset of it
@@ -75,6 +85,19 @@ const SLOTS_PER_VARIANT: Record<string, Record<string, true>> = {
   } satisfies Record<keyof InputOfSqsPerRecord, true>,
   'forSqs.perBatch': { records: true, event: true } satisfies Record<
     keyof InputOfSqsPerBatch,
+    true
+  >,
+  forSns: {
+    payload: true,
+    headers: true,
+    event: true,
+  } satisfies Record<keyof InputOfSns, true>,
+  'forKinesis.perRecord': { payload: true, event: true } satisfies Record<
+    keyof InputOfKinesisPerRecord,
+    true
+  >,
+  'forKinesis.perBatch': { records: true, event: true } satisfies Record<
+    keyof InputOfKinesisPerBatch,
     true
   >,
 };
@@ -200,8 +223,13 @@ describe('the audit table, as the rule brief publishes it', () => {
     );
 
     when('[t0] the advertised slots are read back', () => {
+      // read once; both thens below judge the same parse
+      const advertised = useThen('the brief is parsed', () =>
+        getAllSlotsAdvertised({ brief }),
+      );
+
       then('they are exactly the slots each contract carries', () => {
-        expect(getAllSlotsAdvertised({ brief })).toEqual(
+        expect(advertised).toEqual(
           Object.fromEntries(
             Object.entries(SLOTS_PER_VARIANT).map(([variant, slots]) => [
               variant,
@@ -220,10 +248,12 @@ describe('the audit table, as the rule brief publishes it', () => {
       then(
         'the parse found a real table, so the compare is not vacuous',
         () => {
-          const advertised = getAllSlotsAdvertised({ brief });
           expect(Object.keys(advertised).sort()).toEqual([
             'forApiGateway',
             'forAsk',
+            'forKinesis.perBatch',
+            'forKinesis.perRecord',
+            'forSns',
             'forSqs.perBatch',
             'forSqs.perRecord',
           ]);
@@ -232,7 +262,7 @@ describe('the audit table, as the rule brief publishes it', () => {
               (count, slots) => count + slots.length,
               0,
             ),
-          ).toEqual(10);
+          ).toEqual(17);
         },
       );
     });
