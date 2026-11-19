@@ -7,16 +7,25 @@ exports[`codegen.journey (local) given: [case1] a mechanic adopts svc-jobs, then
  * re-run the codegen to update.
  */
 
-import { askLambdaEndpoint, type ContextAwsLambdaCaller } from 'sdk-aws-lambda';
+import {
+  askLambdaEndpoint,
+  type ContextAwsLambdaCaller,
+  type LambdaEndpointRefusal,
+} from 'sdk-aws-lambda';
 import type { SvcJobsJob } from './svcJobs.resources';
 
 export const svcJobs = {
   getJob: (
     event: { uuid: string },
     context: ContextAwsLambdaCaller,
+    options?: { refusal?: LambdaEndpointRefusal },
   ): Promise<{ job: SvcJobsJob }> =>
     askLambdaEndpoint<{ uuid: string }, { job: SvcJobsJob }>(
-      { which: { service: 'svc-jobs', function: 'getJob' }, event },
+      {
+        which: { service: 'svc-jobs', function: 'getJob' },
+        event,
+        refusal: options?.refusal,
+      },
       context,
     ),
 };

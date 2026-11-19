@@ -43,6 +43,13 @@ export { LambdaDomainObjectRefUnbindableError } from './domain.objects/LambdaDom
 export { LambdaEndpoint } from './domain.objects/LambdaEndpoint';
 export type { LambdaEndpointDialect } from './domain.objects/LambdaEndpointDialect';
 export { LambdaEndpointError } from './domain.objects/LambdaEndpointError';
+/**
+ * .what = a peer's refusal of a request this caller composed, and the opt that names its class
+ * .why = `askLambdaEndpoint` throws it by default for a peer's caller fault, so a consumer must be
+ *        able to catch it by class and to name the opt it passes
+ */
+export type { LambdaEndpointRefusal } from './domain.objects/LambdaEndpointRefusal';
+export { LambdaEndpointRefusedError } from './domain.objects/LambdaEndpointRefusedError';
 export type { LambdaEndpointSchema } from './domain.objects/LambdaEndpointSchema';
 // contract discovery errors
 export { LambdaFunctionNotFoundError } from './domain.objects/LambdaFunctionNotFoundError';

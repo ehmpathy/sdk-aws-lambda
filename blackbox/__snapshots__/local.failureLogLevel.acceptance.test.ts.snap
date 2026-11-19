@@ -93,6 +93,214 @@ exports[`the failure log level of an endpoint given: [case1] a forAsk endpoint, 
 }
 `;
 
+exports[`the failure log level of an endpoint given: [case1] a forAsk endpoint, through the export when: [t3] a peer refused the request the handler composed then: the lines match snapshot 1`] = `
+{
+  "invokeRejected": true,
+  "lines": [
+    {
+      "console": "warn",
+      "line": {
+        "level": "warn",
+        "message": "handler.output",
+        "metadata": {
+          "errorMessage": "✋ ConstraintError: validation failed: payload.spot: Too small: expected string to have >=3 characters
+
+{
+  "issues": [
+    {
+      "path": "payload.spot",
+      "message": "Too small: expected string to have >=3 characters",
+      "code": "too_small"
+    }
+  ],
+  "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
+}",
+          "stackTrace": "Error: ✋ ConstraintError: validation failed: payload.spot: Too small: expected string to have >=3 characters
+    at [frames]",
+        },
+        "timestamp": "<timestamp>",
+        "trail": {
+          "exid": "exid:[masked]",
+          "stack": [],
+        },
+      },
+    },
+    {
+      "console": "warn",
+      "line": {
+        "level": "error",
+        "message": "handler.output",
+        "metadata": {
+          "errorMessage": "💥 LambdaEndpointRefusedError: http://127.0.0.1:[port]/forecast refused the request: validation failed: payload.spot: Too small: expected string to have >=3 characters
+
+{
+  "issues": [
+    {
+      "path": "payload.spot",
+      "message": "Too small: expected string to have >=3 characters",
+      "code": "too_small"
+    }
+  ],
+  "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
+}
+
+this caller composed the request. if it forwards its own caller's input verbatim, opt in with refusal: { as: 'ConstraintError' }
+
+{
+  "url": "http://127.0.0.1:[port]/forecast",
+  "status": 400,
+  "exid": "exid:[masked]",
+  "correlationId": null,
+  "text": null,
+  "headers": {
+    "connection": "keep-alive",
+    "content-type": "application/json",
+    "date": "[date]",
+    "keep-alive": "timeout=5",
+    "transfer-encoding": "chunked"
+  },
+  "errorType": "ConstraintError"
+}",
+          "stackTrace": "LambdaEndpointRefusedError: 💥 LambdaEndpointRefusedError: http://127.0.0.1:[port]/forecast refused the request: validation failed: payload.spot: Too small: expected string to have >=3 characters
+    at [frames]",
+        },
+        "timestamp": "<timestamp>",
+        "trail": {
+          "exid": "exid:[masked]",
+          "stack": [],
+        },
+      },
+    },
+    {
+      "console": "warn",
+      "line": {
+        "level": "error",
+        "message": "handler.error",
+        "metadata": {
+          "endpoint": "run-lambda-endpoint",
+          "errorMessage": "💥 LambdaEndpointRefusedError: http://127.0.0.1:[port]/forecast refused the request: validation failed: payload.spot: Too small: expected string to have >=3 characters
+
+{
+  "issues": [
+    {
+      "path": "payload.spot",
+      "message": "Too small: expected string to have >=3 characters",
+      "code": "too_small"
+    }
+  ],
+  "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
+}
+
+this caller composed the request. if it forwards its own caller's input verbatim, opt in with refusal: { as: 'ConstraintError' }
+
+{
+  "url": "http://127.0.0.1:[port]/forecast",
+  "status": 400,
+  "exid": "exid:[masked]",
+  "correlationId": null,
+  "text": null,
+  "headers": {
+    "connection": "keep-alive",
+    "content-type": "application/json",
+    "date": "[date]",
+    "keep-alive": "timeout=5",
+    "transfer-encoding": "chunked"
+  },
+  "errorType": "ConstraintError"
+}",
+          "stackTrace": "LambdaEndpointRefusedError: 💥 LambdaEndpointRefusedError: http://127.0.0.1:[port]/forecast refused the request: validation failed: payload.spot: Too small: expected string to have >=3 characters
+    at [frames]",
+        },
+        "timestamp": "<timestamp>",
+        "trail": {
+          "exid": "exid:[masked]",
+          "stack": [],
+        },
+      },
+    },
+  ],
+}
+`;
+
+exports[`the failure log level of an endpoint given: [case1] a forAsk endpoint, through the export when: [t4] a peer refused, and the handler opts into pass-through then: the lines match snapshot 1`] = `
+{
+  "invokeRejected": false,
+  "lines": [
+    {
+      "console": "warn",
+      "line": {
+        "level": "warn",
+        "message": "handler.output",
+        "metadata": {
+          "errorMessage": "✋ ConstraintError: validation failed: payload.spot: Too small: expected string to have >=3 characters
+
+{
+  "issues": [
+    {
+      "path": "payload.spot",
+      "message": "Too small: expected string to have >=3 characters",
+      "code": "too_small"
+    }
+  ],
+  "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
+}",
+          "stackTrace": "Error: ✋ ConstraintError: validation failed: payload.spot: Too small: expected string to have >=3 characters
+    at [frames]",
+        },
+        "timestamp": "<timestamp>",
+        "trail": {
+          "exid": "exid:[masked]",
+          "stack": [],
+        },
+      },
+    },
+    {
+      "console": "warn",
+      "line": {
+        "level": "warn",
+        "message": "handler.output",
+        "metadata": {
+          "errorMessage": "✋ ConstraintError: validation failed: payload.spot: Too small: expected string to have >=3 characters
+
+{
+  "issues": [
+    {
+      "path": "payload.spot",
+      "message": "Too small: expected string to have >=3 characters",
+      "code": "too_small"
+    }
+  ],
+  "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
+}
+
+{
+  "url": "http://127.0.0.1:[port]/forecast",
+  "status": 400,
+  "exid": "exid:[masked]",
+  "correlationId": null,
+  "text": null,
+  "headers": {
+    "connection": "keep-alive",
+    "content-type": "application/json",
+    "date": "[date]",
+    "keep-alive": "timeout=5",
+    "transfer-encoding": "chunked"
+  }
+}",
+          "stackTrace": "Error: ✋ ConstraintError: validation failed: payload.spot: Too small: expected string to have >=3 characters
+    at [frames]",
+        },
+        "timestamp": "<timestamp>",
+        "trail": {
+          "exid": "exid:[masked]",
+          "stack": [],
+        },
+      },
+    },
+  ],
+}
+`;
+
 exports[`the failure log level of an endpoint given: [case2] a forApiGateway endpoint, through the export when: [t0] the handler succeeds then: the lines match snapshot 1`] = `
 {
   "invokeRejected": false,

@@ -14,6 +14,8 @@ import { getTypescriptFromJsonSchema } from './getTypescriptFromJsonSchema';
  *         two differ, and there `event` names the envelope while `payload` names its body
  *
  * .note = the wrapper keeps the caller's `context` ambient (env.access lives there)
+ * .note = `options.refusal` is the same opt `askLambdaEndpoint` takes, so a call through the
+ *         generated sdk can pass a peer refusal through as a `ConstraintError` (sdk-aws-lambda#77)
  */
 export const asMechanismFnSource = (input: {
   service: string;
@@ -31,16 +33,18 @@ export const asMechanismFnSource = (input: {
     dobjRefs: input.dobjRefs,
   });
 
-  // the fn: passes which + event to askLambdaEndpoint, threads context through.
-  // the explicit <event, result> generics make the call self-evident — a reader
-  // sees the contract at the call site, not only via the outer annotation
+  // the fn: passes which + event + the refusal opt to askLambdaEndpoint, threads
+  // context through. the explicit <event, result> generics make the call
+  // self-evident — a reader sees the contract at the call site, not only via the
+  // outer annotation
   return [
     `  ${input.function}: (`,
     `    event: ${eventType},`,
     `    context: ContextAwsLambdaCaller,`,
+    `    options?: { refusal?: LambdaEndpointRefusal },`,
     `  ): Promise<${resultType}> =>`,
     `    askLambdaEndpoint<${eventType}, ${resultType}>(`,
-    `      { which: { service: ${JSON.stringify(input.service)}, function: ${JSON.stringify(input.function)} }, event },`,
+    `      { which: { service: ${JSON.stringify(input.service)}, function: ${JSON.stringify(input.function)} }, event, refusal: options?.refusal },`,
     `      context,`,
     `    ),`,
   ].join('\n');

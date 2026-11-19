@@ -21,7 +21,58 @@ exports[`askLambdaEndpoint.viaApiGateway given: [case1] an api gateway endpoint 
 }
 `;
 
-exports[`askLambdaEndpoint.viaApiGateway given: [case1] an api gateway endpoint behind a local http harness when: [t1] a body the schema refuses is asked then: it throws a ConstraintError that names the field to fix 1`] = `
+exports[`askLambdaEndpoint.viaApiGateway given: [case1] an api gateway endpoint behind a local http harness when: [t1] a body the schema refuses is asked then: it throws a LambdaEndpointRefusedError that names the field and the opt-in 1`] = `
+{
+  "class": "LambdaEndpointRefusedError",
+  "message": "💥 LambdaEndpointRefusedError: http://127.0.0.1:[port]/notifications refused the request: validation failed: payload.to: Invalid email address
+
+{
+  "issues": [
+    {
+      "path": "payload.to",
+      "message": "Invalid email address",
+      "code": "invalid_format"
+    }
+  ],
+  "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
+}
+
+this caller composed the request. if it forwards its own caller's input verbatim, opt in with refusal: { as: 'ConstraintError' }
+
+{
+  "url": "http://127.0.0.1:[port]/notifications",
+  "status": 400,
+  "exid": "exid:ord-7",
+  "correlationId": null,
+  "text": null,
+  "headers": {
+    "connection": "keep-alive",
+    "content-type": "application/json",
+    "date": "[date]",
+    "keep-alive": "timeout=5",
+    "transfer-encoding": "chunked"
+  },
+  "errorType": "ConstraintError"
+}",
+  "metadata": {
+    "correlationId": null,
+    "errorType": "ConstraintError",
+    "exid": "exid:ord-7",
+    "headers": {
+      "connection": "keep-alive",
+      "content-type": "application/json",
+      "date": "[date]",
+      "keep-alive": "timeout=5",
+      "transfer-encoding": "chunked",
+    },
+    "status": 400,
+    "text": null,
+    "url": "http://127.0.0.1:[port]/notifications",
+  },
+}
+`;
+
+exports[`askLambdaEndpoint.viaApiGateway given: [case1] an api gateway endpoint behind a local http harness when: [t1] a body the schema refuses is asked then: under the pass-through opt, it throws a ConstraintError that names the field to fix 1`] = `
 {
   "class": "ConstraintError",
   "message": "✋ ConstraintError: validation failed: payload.to: Invalid email address
@@ -101,5 +152,203 @@ exports[`askLambdaEndpoint.viaApiGateway given: [case1] an api gateway endpoint 
     "text": "{"errorMessage":"internal server error","errorType":"InternalServiceError","correlationId":"exid:ord-7"}",
     "url": "http://127.0.0.1:[port]/notifications",
   },
+}
+`;
+
+exports[`askLambdaEndpoint.viaApiGateway given: [case3] a consumer endpoint whose peer refuses the request it composed when: [t0] the consumer takes the default opt then: the whole answer and every line match snapshot 1`] = `
+{
+  "errors": [
+    {
+      "level": "error",
+      "message": "handler.error",
+      "metadata": {
+        "endpoint": "svc-test-prep-harness",
+        "errorMessage": "💥 LambdaEndpointRefusedError: http://127.0.0.1:[port]/notifications refused the request: validation failed: payload.to: Invalid email address
+
+{
+  "issues": [
+    {
+      "path": "payload.to",
+      "message": "Invalid email address",
+      "code": "invalid_format"
+    }
+  ],
+  "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
+}
+
+this caller composed the request. if it forwards its own caller's input verbatim, opt in with refusal: { as: 'ConstraintError' }
+
+{
+  "url": "http://127.0.0.1:[port]/notifications",
+  "status": 400,
+  "exid": "exid:browser-1",
+  "correlationId": null,
+  "text": null,
+  "headers": {
+    "connection": "keep-alive",
+    "content-type": "application/json",
+    "date": "[date]",
+    "keep-alive": "timeout=5",
+    "transfer-encoding": "chunked"
+  },
+  "errorType": "ConstraintError"
+}",
+        "stackTrace": "LambdaEndpointRefusedError: 💥 LambdaEndpointRefusedError: http://127.0.0.1:[port]/notifications refused the request: validation failed: payload.to: Invalid email address
+    at [frames]",
+      },
+      "timestamp": "<timestamp>",
+      "trail": {
+        "exid": "exid:browser-1",
+        "stack": [],
+      },
+    },
+  ],
+  "outputs": [
+    {
+      "level": "warn",
+      "message": "handler.output",
+      "metadata": {
+        "errorMessage": "✋ ConstraintError: validation failed: payload.to: Invalid email address
+
+{
+  "issues": [
+    {
+      "path": "payload.to",
+      "message": "Invalid email address",
+      "code": "invalid_format"
+    }
+  ],
+  "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
+}",
+        "stackTrace": "Error: ✋ ConstraintError: validation failed: payload.to: Invalid email address
+    at [frames]",
+      },
+      "timestamp": "<timestamp>",
+      "trail": {
+        "exid": "exid:browser-1",
+        "stack": [],
+      },
+    },
+    {
+      "level": "error",
+      "message": "handler.output",
+      "metadata": {
+        "errorMessage": "💥 LambdaEndpointRefusedError: http://127.0.0.1:[port]/notifications refused the request: validation failed: payload.to: Invalid email address
+
+{
+  "issues": [
+    {
+      "path": "payload.to",
+      "message": "Invalid email address",
+      "code": "invalid_format"
+    }
+  ],
+  "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
+}
+
+this caller composed the request. if it forwards its own caller's input verbatim, opt in with refusal: { as: 'ConstraintError' }
+
+{
+  "url": "http://127.0.0.1:[port]/notifications",
+  "status": 400,
+  "exid": "exid:browser-1",
+  "correlationId": null,
+  "text": null,
+  "headers": {
+    "connection": "keep-alive",
+    "content-type": "application/json",
+    "date": "[date]",
+    "keep-alive": "timeout=5",
+    "transfer-encoding": "chunked"
+  },
+  "errorType": "ConstraintError"
+}",
+        "stackTrace": "LambdaEndpointRefusedError: 💥 LambdaEndpointRefusedError: http://127.0.0.1:[port]/notifications refused the request: validation failed: payload.to: Invalid email address
+    at [frames]",
+      },
+      "timestamp": "<timestamp>",
+      "trail": {
+        "exid": "exid:browser-1",
+        "stack": [],
+      },
+    },
+  ],
+  "status": 500,
+  "text": "{"errorMessage":"internal server error","errorType":"InternalServiceError","correlationId":"exid:browser-1"}",
+}
+`;
+
+exports[`askLambdaEndpoint.viaApiGateway given: [case3] a consumer endpoint whose peer refuses the request it composed when: [t1] the consumer opts into pass-through then: the whole answer and every line match snapshot 1`] = `
+{
+  "errors": [],
+  "outputs": [
+    {
+      "level": "warn",
+      "message": "handler.output",
+      "metadata": {
+        "errorMessage": "✋ ConstraintError: validation failed: payload.to: Invalid email address
+
+{
+  "issues": [
+    {
+      "path": "payload.to",
+      "message": "Invalid email address",
+      "code": "invalid_format"
+    }
+  ],
+  "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
+}",
+        "stackTrace": "Error: ✋ ConstraintError: validation failed: payload.to: Invalid email address
+    at [frames]",
+      },
+      "timestamp": "<timestamp>",
+      "trail": {
+        "exid": "exid:browser-1",
+        "stack": [],
+      },
+    },
+    {
+      "level": "warn",
+      "message": "handler.output",
+      "metadata": {
+        "errorMessage": "✋ ConstraintError: validation failed: payload.to: Invalid email address
+
+{
+  "issues": [
+    {
+      "path": "payload.to",
+      "message": "Invalid email address",
+      "code": "invalid_format"
+    }
+  ],
+  "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
+}
+
+{
+  "url": "http://127.0.0.1:[port]/notifications",
+  "status": 400,
+  "exid": "exid:browser-1",
+  "correlationId": null,
+  "text": null,
+  "headers": {
+    "connection": "keep-alive",
+    "content-type": "application/json",
+    "date": "[date]",
+    "keep-alive": "timeout=5",
+    "transfer-encoding": "chunked"
+  }
+}",
+        "stackTrace": "Error: ✋ ConstraintError: validation failed: payload.to: Invalid email address
+    at [frames]",
+      },
+      "timestamp": "<timestamp>",
+      "trail": {
+        "exid": "exid:browser-1",
+        "stack": [],
+      },
+    },
+  ],
+  "status": 400,
+  "text": "{"error":{"_serde":"LambdaEndpointError::contemp@v1","class":"ConstraintError","message":"✋ ConstraintError: validation failed: payload.to: Invalid email address\\n\\n{\\n  \\"issues\\": [\\n    {\\n      \\"path\\": \\"payload.to\\",\\n      \\"message\\": \\"Invalid email address\\",\\n      \\"code\\": \\"invalid_format\\"\\n    }\\n  ],\\n  \\"hint\\": \\"send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`\\"\\n}\\n\\n{\\n  \\"url\\": \\"http://127.0.0.1:[port]/notifications\\",\\n  \\"status\\": 400,\\n  \\"exid\\": \\"exid:browser-1\\",\\n  \\"correlationId\\": null,\\n  \\"text\\": null,\\n  \\"headers\\": {\\n    \\"connection\\": \\"keep-alive\\",\\n    \\"content-type\\": \\"application/json\\",\\n    \\"date\\": \\"[date]\\",\\n    \\"keep-alive\\": \\"timeout=5\\",\\n    \\"transfer-encoding\\": \\"chunked\\"\\n  }\\n}","details":{"url":"http://127.0.0.1:[port]/notifications","status":400,"exid":"exid:browser-1","correlationId":null,"text":null,"headers":{"connection":"keep-alive","content-type":"application/json","date":"[date]","keep-alive":"timeout=5","transfer-encoding":"chunked"}}}}",
 }
 `;

@@ -34,7 +34,7 @@ an unknown `refusal` value fails fast with a `💥 MalfunctionError` (the asker'
 - a peer refusal is now a server fault, so the invoke fails where it used to answer. an async invoke that fails is retried by aws (twice, by default), and a consumer retry wrapper that retries a `MalfunctionError` retries it too. opt in where the refusal is the caller's to fix
 - svc-gateway's stopgap catch at its svc-notifications boundary can be deleted once it upgrades
 
-version: the commit is `fix`, since this branch binds the `fix` level, so please-release cuts **v0.7.4**. the contract break above argues for `feat` → v0.8.0 (prior 0.x breaks shipped as `feat`, e.g. #46), or `break` → v1.0.0. say which, and the merge title carries it.
+version: the title is `fix`, ruled for the log-level half (F7), so please-release cuts **v0.8.1**. the folded refusal half is the contract break above, which argues for `feat` → v0.9.0 (prior 0.x breaks shipped as `feat`, e.g. #46). say which, and the merge title carries it.
 
 follow-ups, not in this pr:
 - the failure line logs the raw message and stack; a `logTranslate` for the error branch would let an endpoint redact it. caught as `.dream/2026_11_06.v2026-11-06-feat-log-translate-for-error-branch.dream.md`

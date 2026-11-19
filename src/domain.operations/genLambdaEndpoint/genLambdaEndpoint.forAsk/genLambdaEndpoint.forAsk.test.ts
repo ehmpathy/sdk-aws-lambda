@@ -4,6 +4,8 @@ import { ConstraintError, getError, MalfunctionError } from 'helpful-errors';
 import { given, then, useThen, when } from 'test-fns';
 import { z } from 'zod';
 
+import { LambdaEndpointRefusedError } from '../../../domain.objects/LambdaEndpointRefusedError';
+import { asErrorFromPeerRefusal } from '../../lambdaEndpointWire/error/asErrorFromPeerRefusal';
 import { getIsConstraintError } from '../middleware/getIsConstraintError';
 // the LEAF, by its own name — a unit test reads the variant, never the family
 // (`rule.forbid.unqualified-variant-exports` — only the public surface composes)
@@ -1430,7 +1432,7 @@ describe('forAsk', () => {
    * .what = the failure line's level, through the composed ask chain
    * .why = a handled failure reads a success to aws, so the level is the only signal on-call gets
    *        (sdk-aws-lambda#77). the level rests on middy's hook order in this chain, so this pins
-   *        it here, per chain
+   *        it here, as `forApiGateway [case29]` does for its own chain
    */
   given('[case17] a handler that throws, through the composed chain', () => {
     const schema = {
@@ -1505,6 +1507,59 @@ describe('forAsk', () => {
         );
         expect(line).toBeDefined();
         expect(line).toMatch(/"level":\s*"error"/);
+      });
+    });
+
+    /**
+     * .what = a peer refuses the request this handler composed, under the default opt
+     * .why = the refusal is this handler's own fault, so its invoke fails (`Errors` +1) and on-call
+     *        reads an error line, never a warn (inventory row 8, sdk-aws-lambda#77)
+     */
+    when('[t2] a peer refuses the request the handler composed', () => {
+      const outcome = useThen('the chain answers', async () => {
+        const handler = forAsk({
+          schema,
+          invoke: async () => {
+            throw asErrorFromPeerRefusal({
+              refusal: { as: 'LambdaEndpointRefusedError' },
+              peer: 'svc-surf-prep-getForecast',
+              message: 'spot absent',
+              errorType: 'ConstraintError',
+              metadata: { exid: 'exid:peer' },
+            });
+          },
+        });
+        const spyWarn = jest
+          .spyOn(console, 'warn')
+          .mockImplementation(() => {});
+        try {
+          const error = await getError(
+            handler({ name: 'Kai' }, createMockContext()),
+          );
+          const line = spyWarn.mock.calls
+            .map((args) => JSON.stringify(args[0]))
+            .find(
+              (each) =>
+                each.includes('handler.output') && each.includes('spot absent'),
+            );
+          return { error, line };
+        } finally {
+          spyWarn.mockRestore();
+        }
+      });
+
+      then(
+        'the invoke fails on the refusal class, so aws counts an error',
+        () => {
+          expect(outcome.error).toBeInstanceOf(LambdaEndpointRefusedError);
+          expect(outcome.error).toBeInstanceOf(MalfunctionError);
+          expect(getIsConstraintError({ error: outcome.error })).toEqual(false);
+        },
+      );
+
+      then('handler.output is written at error', () => {
+        expect(outcome.line).toBeDefined();
+        expect(outcome.line).toMatch(/\\?"level\\?":\s*\\?"error\\?"/);
       });
     });
   });

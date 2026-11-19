@@ -17,7 +17,11 @@ exports[`e2e: deployed codegen refs (real fidelity) given: [case1] the codegen r
  * re-run the codegen to update.
  */
 
-import { askLambdaEndpoint, type ContextAwsLambdaCaller } from 'sdk-aws-lambda';
+import {
+  askLambdaEndpoint,
+  type ContextAwsLambdaCaller,
+  type LambdaEndpointRefusal,
+} from 'sdk-aws-lambda';
 import type {
   SvcTrophySeaturtle,
   SvcTrophySponsor,
@@ -29,33 +33,53 @@ export const svcTrophy = {
   getBoard: (
     event: { brand: string },
     context: ContextAwsLambdaCaller,
+    options?: { refusal?: LambdaEndpointRefusal },
   ): Promise<{ board: SvcTrophySurfboard }> =>
     askLambdaEndpoint<{ brand: string }, { board: SvcTrophySurfboard }>(
-      { which: { service: 'svc-trophy', function: 'getBoard' }, event },
+      {
+        which: { service: 'svc-trophy', function: 'getBoard' },
+        event,
+        refusal: options?.refusal,
+      },
       context,
     ),
   getRider: (
     event: { uuid: string },
     context: ContextAwsLambdaCaller,
+    options?: { refusal?: LambdaEndpointRefusal },
   ): Promise<{ rider: SvcTrophySeaturtle }> =>
     askLambdaEndpoint<{ uuid: string }, { rider: SvcTrophySeaturtle }>(
-      { which: { service: 'svc-trophy', function: 'getRider' }, event },
+      {
+        which: { service: 'svc-trophy', function: 'getRider' },
+        event,
+        refusal: options?.refusal,
+      },
       context,
     ),
   getSponsor: (
     event: { uuid: string },
     context: ContextAwsLambdaCaller,
+    options?: { refusal?: LambdaEndpointRefusal },
   ): Promise<{ sponsor: SvcTrophySponsor }> =>
     askLambdaEndpoint<{ uuid: string }, { sponsor: SvcTrophySponsor }>(
-      { which: { service: 'svc-trophy', function: 'getSponsor' }, event },
+      {
+        which: { service: 'svc-trophy', function: 'getSponsor' },
+        event,
+        refusal: options?.refusal,
+      },
       context,
     ),
   getTrophy: (
     event: { uuid: string },
     context: ContextAwsLambdaCaller,
+    options?: { refusal?: LambdaEndpointRefusal },
   ): Promise<{ trophy: SvcTrophySurfTrophy }> =>
     askLambdaEndpoint<{ uuid: string }, { trophy: SvcTrophySurfTrophy }>(
-      { which: { service: 'svc-trophy', function: 'getTrophy' }, event },
+      {
+        which: { service: 'svc-trophy', function: 'getTrophy' },
+        event,
+        refusal: options?.refusal,
+      },
       context,
     ),
 };

@@ -6,6 +6,7 @@ import {
 import { genContextLogTrail } from 'sdk-logs';
 import { given, then, when } from 'test-fns';
 
+import { LambdaEndpointRefusedError } from '../../../domain.objects/LambdaEndpointRefusedError';
 import { asLogMethodOfFailure } from './asLogMethodOfFailure';
 
 /**
@@ -35,6 +36,13 @@ const TEST_CASES: Array<{
   {
     description: 'a MalfunctionError is ours to fix: error',
     given: { error: new MalfunctionError('db unreachable') },
+    expect: { level: 'error' },
+  },
+  {
+    description: 'a peer refusal is ours to fix: error',
+    given: {
+      error: new LambdaEndpointRefusedError('svc refused the request', {}),
+    },
     expect: { level: 'error' },
   },
   {
