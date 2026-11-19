@@ -18,7 +18,9 @@ describe('executeLambdaInvocation', () => {
         networkError.name = 'TimeoutError';
 
         const mockSdkLambda = {
-          send: jest.fn().mockRejectedValue(networkError),
+          send: async () => {
+            throw networkError;
+          },
         } as unknown as LambdaClient;
 
         // act
@@ -32,6 +34,7 @@ describe('executeLambdaInvocation', () => {
               }),
               payload: { userId: 'user-123' },
               exid: 'test-exid-123',
+              refusal: { as: 'LambdaEndpointRefusedError' },
             },
             { sdkLambda: mockSdkLambda, log: null },
           ),
@@ -60,7 +63,9 @@ describe('executeLambdaInvocation', () => {
         // arrange
         const networkError = new Error('connection refused');
         const mockSdkLambda = {
-          send: jest.fn().mockRejectedValue(networkError),
+          send: async () => {
+            throw networkError;
+          },
         } as unknown as LambdaClient;
 
         // act
@@ -74,6 +79,7 @@ describe('executeLambdaInvocation', () => {
               }),
               payload: { customerId: 'cust-456' },
               exid: 'snapshot-exid',
+              refusal: { as: 'LambdaEndpointRefusedError' },
             },
             { sdkLambda: mockSdkLambda, log: null },
           ),
@@ -101,7 +107,9 @@ describe('executeLambdaInvocation', () => {
       then('non-Error value is rethrown directly', async () => {
         // arrange: sdk throws a string (unexpected but possible)
         const mockSdkLambda = {
-          send: jest.fn().mockRejectedValue('unexpected string error'),
+          send: async () => {
+            throw 'unexpected string error';
+          },
         } as unknown as LambdaClient;
 
         // act
@@ -115,6 +123,7 @@ describe('executeLambdaInvocation', () => {
               }),
               payload: {},
               exid: 'test-exid',
+              refusal: { as: 'LambdaEndpointRefusedError' },
             },
             { sdkLambda: mockSdkLambda, log: null },
           ),
@@ -131,7 +140,7 @@ describe('executeLambdaInvocation', () => {
       then('error includes status code hint', async () => {
         // arrange
         const mockSdkLambda = {
-          send: jest.fn().mockResolvedValue({
+          send: async () => ({
             StatusCode: 429,
             Payload: Buffer.from(''),
           }),
@@ -148,6 +157,7 @@ describe('executeLambdaInvocation', () => {
               }),
               payload: { key: 'value' },
               exid: 'throttle-exid',
+              refusal: { as: 'LambdaEndpointRefusedError' },
             },
             { sdkLambda: mockSdkLambda, log: null },
           ),

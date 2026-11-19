@@ -15,7 +15,7 @@ exports[`e2e: deployed raw handler, its escaped throw labelled on both loci give
         "messageHeadline": "LambdaEndpointError: ✋ ConstraintError: order id malformed",
         "metadata": {
           "errorType": "Error",
-          "exid": "<exid>",
+          "exid": "exid:[masked]",
           "stackTrace": "<stackTrace>",
         },
       },
@@ -30,7 +30,7 @@ exports[`e2e: deployed raw handler, its escaped throw labelled on both loci give
         "messageHeadline": "LambdaEndpointError: 💥 MalfunctionError: upstream down",
         "metadata": {
           "errorType": "Error",
-          "exid": "<exid>",
+          "exid": "exid:[masked]",
           "stackTrace": "<stackTrace>",
         },
       },
@@ -44,7 +44,7 @@ exports[`e2e: deployed raw handler, its escaped throw labelled on both loci give
         "messageHeadline": "LambdaEndpointError: quota spent",
         "metadata": {
           "errorType": "QuotaError",
-          "exid": "<exid>",
+          "exid": "exid:[masked]",
           "stackTrace": "<stackTrace>",
         },
       },
@@ -58,7 +58,7 @@ exports[`e2e: deployed raw handler, its escaped throw labelled on both loci give
         "messageHeadline": "LambdaEndpointError: quota spent",
         "metadata": {
           "errorType": "string",
-          "exid": "<exid>",
+          "exid": "exid:[masked]",
           "stackTrace": "<stackTrace>",
         },
       },
@@ -72,7 +72,7 @@ exports[`e2e: deployed raw handler, its escaped throw labelled on both loci give
         "messageHeadline": "LambdaEndpointError: handled",
         "metadata": {
           "errorType": "string",
-          "exid": "<exid>",
+          "exid": "exid:[masked]",
           "stackTrace": "<stackTrace>",
         },
       },
@@ -86,7 +86,7 @@ exports[`e2e: deployed raw handler, its escaped throw labelled on both loci give
         "messageHeadline": "LambdaEndpointError: quota spent",
         "metadata": {
           "errorType": "quotaFault",
-          "exid": "<exid>",
+          "exid": "exid:[masked]",
           "stackTrace": "<stackTrace>",
         },
       },
@@ -100,7 +100,7 @@ exports[`e2e: deployed raw handler, its escaped throw labelled on both loci give
         "messageHeadline": "LambdaEndpointError: callback called with Error argument, but there was a problem while retrieving one or more of its message, name, and stack",
         "metadata": {
           "errorType": "handled",
-          "exid": "<exid>",
+          "exid": "exid:[masked]",
           "stackTrace": "<stackTrace>",
         },
       },

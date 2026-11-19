@@ -126,7 +126,7 @@ const asErrorMasked = (input: { error: Error }): Record<string, unknown> => {
     }),
     metadata: {
       ...metadata,
-      ...('exid' in metadata ? { exid: '<exid>' } : {}),
+      ...('exid' in metadata ? { exid: 'exid:[masked]' } : {}),
       ...('stackTrace' in metadata ? { stackTrace: '<stackTrace>' } : {}),
     },
   };

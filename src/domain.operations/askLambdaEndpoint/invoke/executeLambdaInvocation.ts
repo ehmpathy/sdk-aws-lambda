@@ -3,6 +3,7 @@ import type { LambdaClient } from '@aws-sdk/client-lambda';
 import { sdkLambdaInvoke } from '../../../access/sdks/lambda/sdkLambdaInvoke';
 import type { LambdaEndpoint } from '../../../domain.objects/LambdaEndpoint';
 import { LambdaEndpointError } from '../../../domain.objects/LambdaEndpointError';
+import type { LambdaEndpointRefusal } from '../../../domain.objects/LambdaEndpointRefusal';
 import { getParsedResponse } from '../../lambdaEndpointWire/getParsedResponse';
 import { getStatusCodeHint } from '../error/getStatusCodeHint';
 
@@ -22,6 +23,7 @@ export type InvocationInput = {
   endpoint: LambdaEndpoint;
   payload: unknown;
   exid: string;
+  refusal: LambdaEndpointRefusal;
 };
 
 /**
@@ -86,6 +88,7 @@ export const executeLambdaInvocation = async <TResponse>(
     functionError: result.functionError,
     endpoint: input.endpoint,
     exid: input.exid,
+    refusal: input.refusal,
   });
 
   // log result

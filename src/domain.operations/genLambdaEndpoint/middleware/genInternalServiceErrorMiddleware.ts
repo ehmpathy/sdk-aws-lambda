@@ -66,8 +66,8 @@ export const genInternalServiceErrorMiddleware = (opts: {
      *         at all is a disclosure call, and it belongs to the wisher — tracked as `F02`.
      *         a log line crosses no trust boundary, so THIS half needed no such call
      */
-    const logError = log?.error ?? console.error;
-    logError('handler.error', {
+    // call the method on its own sink, so it runs with its receiver whatever the log reads from `this`
+    (log ?? console).error('handler.error', {
       endpoint:
         (request.context as { functionName?: string } | undefined)
           ?.functionName ?? null,

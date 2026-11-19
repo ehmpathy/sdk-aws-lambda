@@ -2,10 +2,26 @@ import type middy from '@middy/core';
 
 import type { TranslateLog } from '../TranslateLog';
 import { asContextTrailed } from './asContextTrailed';
+import { asLogMethodOfFailure } from './asLogMethodOfFailure';
 
 /**
  * .what = middleware that logs handler input and output
  * .why = enables debug observability with optional redaction via translate.log
+ *
+ * | outcome | `handler.output` level |
+ * |---|---|
+ * | success | debug |
+ * | caller fault (`getIsConstraintError`) | warn |
+ * | any other fault | error |
+ *
+ * .note = a handled failure still reads a success to aws, so the level is on-call's only signal
+ *         (sdk-aws-lambda#77). where trail has not yet put a `log` on the context, the failure
+ *         line falls back to `console` (`asLogMethodOfFailure`)
+ * .note = the error branch logs `errorMessage` + `stackTrace` raw; `logTranslate.output` reads
+ *         only the response branch
+ * .note = a server fault writes two error lines: this `handler.output`, then
+ *         `genInternalServiceErrorMiddleware`'s `handler.error`. an alarm that counts error lines
+ *         reads two per fault; count by `message` to read one (F5, accepted)
  *
  * .defect = LIVE, NOT FIXED — on an error, the `request.response` branch of `onError` below
  *         never runs. both shipped chains log the `errorMessage` / `stackTrace` branch instead
@@ -57,19 +73,27 @@ export const genIoLoggerMiddleware = (input?: {
   };
 
   const onError: middy.MiddlewareFn<any, any> = async (request) => {
-    const log = asContextTrailed({ context: request.context }).log;
-    if (log) {
-      if (request.response) {
-        log.debug('handler.output', {
-          response: translateOutput(request.response),
-        });
-      } else if (request.error) {
-        log.debug('handler.output', {
-          errorMessage: request.error.message,
-          stackTrace: request.error.stack,
-        });
-      }
+    // a failure logs at warn (caller fault) or error (all else), never at debug
+    const logFailure = asLogMethodOfFailure({
+      error: request.error,
+      log: asContextTrailed({ context: request.context }).log ?? null,
+    });
+
+    // log what the caller received, where an error builder already set it
+    if (request.response) {
+      logFailure('handler.output', {
+        response: translateOutput(request.response),
+      });
+      return;
     }
+
+    // log the failure itself; onError runs only on a throw, so a thrown non-Error (a string, a
+    // falsy value, `undefined`) still logs, and names what was thrown
+    const thrown: unknown = request.error;
+    logFailure('handler.output', {
+      errorMessage: thrown instanceof Error ? thrown.message : String(thrown),
+      stackTrace: thrown instanceof Error ? thrown.stack : null,
+    });
   };
 
   return { before, after, onError };

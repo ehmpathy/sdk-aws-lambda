@@ -436,3 +436,33 @@ exports[`genLambdaEndpoint.forApiGateway given: [case28] a \`.pipe()\` type-shif
   "statusCode": 500,
 }
 `;
+
+exports[`genLambdaEndpoint.forApiGateway given: [case29] a handler whose peer refused the request it composed when: [t0] the consumer takes the default opt then: the whole 500 wire matches snapshot 1`] = `
+{
+  "body": "{"errorMessage":"internal server error","errorType":"InternalServiceError","correlationId":"exid:[masked]"}",
+  "headers": {
+    "Content-Type": "application/json",
+  },
+  "statusCode": 500,
+}
+`;
+
+exports[`genLambdaEndpoint.forApiGateway given: [case29] a handler whose peer refused the request it composed when: [t1] the consumer opts into pass-through then: the whole 400 wire matches snapshot 1`] = `
+{
+  "body": "{"errorMessage":"✋ ConstraintError: template id absent\\n\\n{\\n  \\"exid\\": \\"exid:peer\\"\\n}","errorType":"BadRequestError","details":{"exid":"exid:peer"}}",
+  "headers": {
+    "Content-Type": "application/json",
+  },
+  "statusCode": 400,
+}
+`;
+
+exports[`genLambdaEndpoint.forApiGateway given: [case30] an event the normalizer refuses, before the handler runs when: [t0] a { event, trail } wrapper reaches the endpoint then: the whole 400 wire matches snapshot 1`] = `
+{
+  "body": "{"errorMessage":"✋ ConstraintError: a { event, trail } wrapper reached an api gateway endpoint; aws never sends one\\n\\n{\\n  \\"fix\\": [\\n    \\"run the endpoint through runLambdaEndpoint with an event built by asLambdaEvent.fromApiGateway: it sends the opt-in as an x-trail-exid header\\",\\n    \\"a copy of that event (spread, structuredClone, json round trip) loses its declaration at the cloud locus: pass the changes to asLambdaEvent.fromApiGateway (headers, requestContext, path, ...) instead of a copy\\",\\n    \\"for a raw event captured from aws, pass struct: { payload: 'ancient' }: it arrives as is, with any x-trail-exid header it holds\\",\\n    \\"to ask a deployed http endpoint over the network, use askLambdaEndpoint.viaApiGateway\\"\\n  ]\\n}","errorType":"BadRequestError","details":{"fix":["run the endpoint through runLambdaEndpoint with an event built by asLambdaEvent.fromApiGateway: it sends the opt-in as an x-trail-exid header","a copy of that event (spread, structuredClone, json round trip) loses its declaration at the cloud locus: pass the changes to asLambdaEvent.fromApiGateway (headers, requestContext, path, ...) instead of a copy","for a raw event captured from aws, pass struct: { payload: 'ancient' }: it arrives as is, with any x-trail-exid header it holds","to ask a deployed http endpoint over the network, use askLambdaEndpoint.viaApiGateway"]}}",
+  "headers": {
+    "Content-Type": "application/json",
+  },
+  "statusCode": 400,
+}
+`;

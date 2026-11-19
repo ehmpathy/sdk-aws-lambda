@@ -1,5 +1,6 @@
 import type { ContextLogTrail } from 'sdk-logs';
 
+import type { LambdaEndpointRefusal } from '../../domain.objects/LambdaEndpointRefusal';
 import { getOneTrailExid } from '../lambdaEndpointWire/context/getOneTrailExid';
 import { executeHttpRequest } from './invoke/executeHttpRequest';
 import { asErrorFromHttpResponse } from './serde/asErrorFromHttpResponse';
@@ -7,19 +8,21 @@ import { asHeadersRecord } from './serde/asHeadersRecord';
 import { asHttpMethod } from './serde/asHttpMethod';
 import { asHttpRequestBody } from './serde/asHttpRequestBody';
 import { asHttpRequestHeaders } from './serde/asHttpRequestHeaders';
+import { asLambdaEndpointRefusal } from './serde/asLambdaEndpointRefusal';
 import { getOneBodyFromHttpText } from './serde/getOneBodyFromHttpText';
 
 /**
  * .what = asks an api gateway endpoint over http, opted into the contemp dialect with the caller's trail
  * .why = an aws-delivered event cannot hold a `{ event, trail }` wrapper, so the opt-in and the
  *        trail ride the request's own `x-trail-exid` header. this sends it, and casts a fault back
- *        into the throw `askLambdaEndpoint` gives, so one catch block serves both roads
+ *        into the throw `askLambdaEndpoint` gives, so one catch block for a refusal serves both roads
  *        (`invariant.ancient-vs-contemp-callers.md`, `domain.terms/x-trail-exid.md`)
  *
  * | answer | the caller gets |
  * |--------|-----------------|
  * | < 400 | `{ status, headers, text, body }` — `body` is the json, or null where the answer has none |
- * | 4xx | a thrown `ConstraintError`, with the endpoint's message |
+ * | 4xx, save 429 | a thrown `LambdaEndpointRefusedError` (or `ConstraintError`, with `refusal: { as: 'ConstraintError' }`), with the endpoint's message |
+ * | 429 | a thrown `MalfunctionError` under either opt: a throttle, not a refusal; `retry-after` rides `metadata.headers` |
  * | 5xx | a thrown `MalfunctionError`, with the `correlationId` that finds the log line |
  *
  * .note = takes the standard http request — `{ url, method, headers, body }` — as fetch does, and
@@ -38,6 +41,13 @@ export const viaApiGateway = async <TResponse = unknown>(
     method?: string;
     headers?: Record<string, string>;
     body?: unknown;
+    /**
+     * .what = the class a 4xx answer is thrown as (a 429 excepted: it is a throttle, a `MalfunctionError`)
+     * .why = this caller composed the request, so by default a refusal is this caller's own
+     *        malfunction, as on the invoke road
+     * .default = { as: 'LambdaEndpointRefusedError' }
+     */
+    refusal?: LambdaEndpointRefusal;
   },
   context: ContextLogTrail,
 ): Promise<{
@@ -46,6 +56,9 @@ export const viaApiGateway = async <TResponse = unknown>(
   text: string;
   body: TResponse | null;
 }> => {
+  // refuse an unknown refusal opt before any request is sent
+  const refusal = asLambdaEndpointRefusal({ declared: input.refusal });
+
   // the caller's exid, or a generated one — the same call `askLambdaEndpoint` makes
   const exid = getOneTrailExid({ log: context.log });
 
@@ -76,6 +89,7 @@ export const viaApiGateway = async <TResponse = unknown>(
     headers,
     url: input.url,
     exid,
+    refusal,
   });
   if (error) throw error;
 

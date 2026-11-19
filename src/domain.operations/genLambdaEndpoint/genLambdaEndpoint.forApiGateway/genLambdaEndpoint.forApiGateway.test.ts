@@ -8,6 +8,9 @@ import type { ApiGatewayOnwireVersion } from '../../../__test_assets__/asApiGate
 import { asApiGatewayRequestEventOnwire } from '../../../__test_assets__/asApiGatewayRequestEventOnwire';
 import { asParsedResponseBody } from '../../../__test_assets__/asParsedResponseBody';
 import { asResponseOnwireSnapshot } from '../../../__test_assets__/asResponseOnwireSnapshot';
+import type { ApiGatewayRequestEventOnwire } from '../../../domain.objects/ApiGatewayRequestEventOnwire';
+import type { LambdaEndpointRefusal } from '../../../domain.objects/LambdaEndpointRefusal';
+import { asErrorFromPeerRefusal } from '../../lambdaEndpointWire/error/asErrorFromPeerRefusal';
 import { forAsk } from '../genLambdaEndpoint.forAsk/genLambdaEndpoint.forAsk';
 import type {
   ApiGatewayHeadersMerged,
@@ -2852,6 +2855,223 @@ describe('genLambdaEndpoint.forApiGateway', () => {
           });
         },
       );
+    },
+  );
+
+  /**
+   * .what = an api-gateway consumer whose peer refuses a request the consumer composed
+   * .why = the outage shape of sdk-aws-lambda#77: svc-gateway asked svc-notifications, which
+   *        refused, and svc-gateway answered its browser 400 with no error line. the refusal is
+   *        built by the same cast the ask roads use, so this case composes the cast with the
+   *        consumer's whole chain
+   */
+  given('[case29] a handler whose peer refused the request it composed', () => {
+    const schema = {
+      input: z.object({ payload: z.object({ to: z.string() }) }),
+      output: asApiGatewayResponseSchema({
+        payload: z.object({ sent: z.boolean() }),
+      }),
+    };
+    const PEER_MESSAGE = 'template id absent';
+
+    /**
+     * .what = the error an ask road throws when svc-notifications refuses
+     * .why = built by the ask roads' own cast, so the chain meets exactly what a real refusal throws
+     */
+    const asRefusal = (input: { refusal: LambdaEndpointRefusal }): Error =>
+      asErrorFromPeerRefusal({
+        refusal: input.refusal,
+        peer: 'svc-notifications-prep-sendNotification',
+        message: PEER_MESSAGE,
+        errorType: 'ConstraintError',
+        metadata: { exid: 'exid:peer' },
+      });
+
+    /**
+     * .what = invokes the consumer chain once, and records every line written at warn or error
+     * .why = sdk-logs writes warn and error through `console`, so a spy reads what on-call reads
+     */
+    const genOutcome = async (input: { refusal: LambdaEndpointRefusal }) => {
+      const spyWarn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      const spyError = jest
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
+      try {
+        const handler = forApiGateway({
+          schema,
+          invoke: async () => {
+            throw asRefusal({ refusal: input.refusal });
+          },
+        });
+        const result = await handler(
+          createV1Event({ to: 'kai@example.com' }),
+          createMockContext(),
+        );
+        // .note = sdk-logs writes warn AND error through `console.warn`, and names the level in the
+        //         line itself, so the level is read from the line, never from the console method
+        const linesLoud = [...spyWarn.mock.calls, ...spyError.mock.calls].map(
+          (args) =>
+            args
+              .map((arg) =>
+                typeof arg === 'string' ? arg : JSON.stringify(arg),
+              )
+              .join(' '),
+        );
+        const lineOutput = linesLoud.find(
+          (line) =>
+            line.includes('handler.output') && line.includes(PEER_MESSAGE),
+        );
+        return { result, linesLoud, lineOutput };
+      } finally {
+        spyWarn.mockRestore();
+        spyError.mockRestore();
+      }
+    };
+
+    when('[t0] the consumer takes the default opt', () => {
+      const outcome = useThen('the sdk answers the wire', async () =>
+        genOutcome({ refusal: { as: 'LambdaEndpointRefusedError' } }),
+      );
+
+      then(
+        'the http caller gets a 500 with a correlationId, never a 400',
+        () => {
+          expect(outcome.result.statusCode).toBe(500);
+          const body = asParsedResponseBody({ response: outcome.result });
+          expect(body.errorType).toBe('InternalServiceError');
+          expect(body.correlationId).toMatch(/^exid:/);
+        },
+      );
+
+      then('the body holds no peer message', () => {
+        expect(outcome.result.body).not.toContain(PEER_MESSAGE);
+        expect(outcome.result.body).not.toContain('svc-notifications');
+      });
+
+      then('the whole 500 wire matches snapshot', () => {
+        expect(
+          asResponseOnwireSnapshot({ wire: outcome.result }),
+        ).toMatchSnapshot();
+      });
+
+      then(
+        'on-call sees a line that names the peer, its reason, and the opt-in',
+        () => {
+          const lineNamed = outcome.linesLoud.find(
+            (line) =>
+              line.includes('svc-notifications-prep-sendNotification') &&
+              line.includes(PEER_MESSAGE) &&
+              line.includes("refusal: { as: 'ConstraintError' }"),
+          );
+          expect(lineNamed).toBeDefined();
+        },
+      );
+
+      then('the handler.output line is written at error, never warn', () => {
+        expect(outcome.lineOutput).toBeDefined();
+        expect(outcome.lineOutput).toMatch(/"level":\s*"error"/);
+        expect(outcome.lineOutput).not.toMatch(/"level":\s*"warn"/);
+      });
+    });
+
+    when('[t1] the consumer opts into pass-through', () => {
+      const outcome = useThen('the sdk answers the wire', async () =>
+        genOutcome({ refusal: { as: 'ConstraintError' } }),
+      );
+
+      then('the http caller gets a 400, as before', () => {
+        expect(outcome.result.statusCode).toBe(400);
+        expect(outcome.result.body).toContain(PEER_MESSAGE);
+      });
+
+      then('the handler.output line is written at warn: a caller fault', () => {
+        expect(outcome.lineOutput).toBeDefined();
+        expect(outcome.lineOutput).toMatch(/"level":\s*"warn"/);
+        expect(outcome.lineOutput).not.toMatch(/"level":\s*"error"/);
+      });
+
+      then('the whole 400 wire matches snapshot', () => {
+        expect(
+          asResponseOnwireSnapshot({ wire: outcome.result }),
+        ).toMatchSnapshot();
+      });
+    });
+  });
+
+  /**
+   * .what = a failure thrown by the event normalizer, through the composed chain
+   * .why = the normalizer can throw before trail puts a `log` on the context, so the failure line
+   *        must still reach on-call via the console fallback (sdk-aws-lambda#77). the unit case
+   *        (`genIoLoggerMiddleware [case10]`) proves the fallback; this proves the chain reaches it
+   */
+  given(
+    '[case30] an event the normalizer refuses, before the handler runs',
+    () => {
+      when('[t0] a { event, trail } wrapper reaches the endpoint', () => {
+        const outcome = useThen('the sdk answers the wire', async () => {
+          const spyWarn = jest
+            .spyOn(console, 'warn')
+            .mockImplementation(() => {});
+          const spyError = jest
+            .spyOn(console, 'error')
+            .mockImplementation(() => {});
+          try {
+            const handler = forApiGateway({
+              schema: {
+                input: z.object({ payload: z.object({ name: z.string() }) }),
+                output: asApiGatewayResponseSchema({
+                  payload: z.object({ ok: z.boolean() }),
+                }),
+              },
+              invoke: async () => ({ payload: { ok: true } }),
+            });
+
+            // .as = a wrapper is not an api gateway event, and that is the point: aws never sends
+            //       one, so its type cannot hold one (precedent: asApiGatewayRequestEventUnified.test.ts)
+            const wrapped = {
+              event: createV1Event({ name: 'Kai' }),
+              trail: { exid: 'exid:wrapped', stack: [] },
+            } as unknown as ApiGatewayRequestEventOnwire;
+            const result = await handler(wrapped, createMockContext());
+            const asLine = (args: unknown[]): string =>
+              args
+                .map((arg) =>
+                  typeof arg === 'string' ? arg : JSON.stringify(arg),
+                )
+                .join(' ');
+            const linesWarn = spyWarn.mock.calls.map(asLine);
+            const linesError = spyError.mock.calls.map(asLine);
+            return { result, linesWarn, linesError };
+          } finally {
+            spyWarn.mockRestore();
+            spyError.mockRestore();
+          }
+        });
+
+        then('the http caller gets a 400 that names the cause', () => {
+          expect(outcome.result.statusCode).toBe(400);
+          expect(outcome.result.body).toContain('a { event, trail } wrapper');
+        });
+
+        then('the whole 400 wire matches snapshot', () => {
+          expect(
+            asResponseOnwireSnapshot({ wire: outcome.result }),
+          ).toMatchSnapshot();
+        });
+
+        then(
+          'a handler.output line names the refusal, at warn: a caller fault',
+          () => {
+            const isOutputLine = (line: string): boolean =>
+              line.includes('handler.output') &&
+              line.includes('a { event, trail } wrapper');
+            const lineOutput = outcome.linesWarn.find(isOutputLine);
+            expect(lineOutput).toBeDefined();
+            expect(lineOutput).not.toMatch(/"level":\s*"error"/);
+            expect(outcome.linesError.find(isOutputLine)).toBeUndefined();
+          },
+        );
+      });
     },
   );
 });

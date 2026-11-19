@@ -1,0 +1,212 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`asErrorFromHttpResponse given: [case1] a contemp 400 envelope when: [t0] the answer is cast then: the refusal names the url, its reason, and the opt-in 1`] = `
+[LambdaEndpointRefusedError: 💥 LambdaEndpointRefusedError: https://api.example.com/notifications refused the request: payload.to is not an email
+
+this caller composed the request. if it forwards its own caller's input verbatim, opt in with refusal: { as: 'ConstraintError' }
+
+{
+  "url": "https://api.example.com/notifications",
+  "status": 400,
+  "exid": "exid:ord-7",
+  "correlationId": null,
+  "text": null,
+  "headers": {},
+  "errorType": "ConstraintError"
+}]
+`;
+
+exports[`asErrorFromHttpResponse given: [case2] a 429 with no envelope when: [t0] the answer is cast under each opt then: it is a throttle, never a refusal: a MalfunctionError under either opt, its retry-after kept 1`] = `
+[Error: 💥 MalfunctionError: the endpoint answered http 429
+
+{
+  "url": "https://api.example.com/notifications",
+  "status": 429,
+  "exid": "exid:ord-7",
+  "correlationId": null,
+  "text": "",
+  "headers": {
+    "retry-after": "30"
+  }
+}]
+`;
+
+exports[`asErrorFromHttpResponse given: [case3] a 429 with a contemp envelope when: [t0] the answer is cast then: it keeps the envelope message, still a throttle 1`] = `
+[Error: 💥 MalfunctionError: rate limit hit for this caller
+
+{
+  "url": "https://api.example.com/notifications",
+  "status": 429,
+  "exid": "exid:ord-7",
+  "correlationId": null,
+  "text": null,
+  "headers": {
+    "retry-after": "5"
+  }
+}]
+`;
+
+exports[`asErrorFromHttpResponse given: [case8] a contemp 400 is a refusal with the unprefixed message when: [t0] the answer is cast under the default opt then: it is thrown as the default class 1`] = `
+[LambdaEndpointRefusedError: 💥 LambdaEndpointRefusedError: https://api.example.com/notifications refused the request: payload.to is not an email
+
+this caller composed the request. if it forwards its own caller's input verbatim, opt in with refusal: { as: 'ConstraintError' }
+
+{
+  "url": "https://api.example.com/notifications",
+  "status": 400,
+  "exid": "exid:ord-7",
+  "correlationId": null,
+  "text": null,
+  "headers": {},
+  "errorType": "ConstraintError"
+}]
+`;
+
+exports[`asErrorFromHttpResponse given: [case8] a contemp 400 is a refusal with the unprefixed message when: [t1] the answer is cast under the pass-through opt then: it is thrown as the pass-through class 1`] = `
+[Error: ✋ ConstraintError: payload.to is not an email
+
+{
+  "url": "https://api.example.com/notifications",
+  "status": 400,
+  "exid": "exid:ord-7",
+  "correlationId": null,
+  "text": null,
+  "headers": {}
+}]
+`;
+
+exports[`asErrorFromHttpResponse given: [case9] a flat ancient 400 reads from the status alone: no compat arm when: [t0] the answer is cast under the default opt then: it is thrown as the default class 1`] = `
+[LambdaEndpointRefusedError: 💥 LambdaEndpointRefusedError: https://api.example.com/notifications refused the request: the endpoint answered http 400
+
+this caller composed the request. if it forwards its own caller's input verbatim, opt in with refusal: { as: 'ConstraintError' }
+
+{
+  "url": "https://api.example.com/notifications",
+  "status": 400,
+  "exid": "exid:ord-7",
+  "correlationId": null,
+  "text": "{\\"errorMessage\\":\\"bad\\",\\"errorType\\":\\"BadRequestError\\"}",
+  "headers": {},
+  "errorType": "http 400"
+}]
+`;
+
+exports[`asErrorFromHttpResponse given: [case9] a flat ancient 400 reads from the status alone: no compat arm when: [t1] the answer is cast under the pass-through opt then: it is thrown as the pass-through class 1`] = `
+[Error: ✋ ConstraintError: the endpoint answered http 400
+
+{
+  "url": "https://api.example.com/notifications",
+  "status": 400,
+  "exid": "exid:ord-7",
+  "correlationId": null,
+  "text": "{\\"errorMessage\\":\\"bad\\",\\"errorType\\":\\"BadRequestError\\"}",
+  "headers": {}
+}]
+`;
+
+exports[`asErrorFromHttpResponse given: [case10] a 404 with no body is a refusal from the status when: [t0] the answer is cast under the default opt then: it is thrown as the default class 1`] = `
+[LambdaEndpointRefusedError: 💥 LambdaEndpointRefusedError: https://api.example.com/notifications refused the request: the endpoint answered http 404
+
+this caller composed the request. if it forwards its own caller's input verbatim, opt in with refusal: { as: 'ConstraintError' }
+
+{
+  "url": "https://api.example.com/notifications",
+  "status": 404,
+  "exid": "exid:ord-7",
+  "correlationId": null,
+  "text": "",
+  "headers": {},
+  "errorType": "http 404"
+}]
+`;
+
+exports[`asErrorFromHttpResponse given: [case10] a 404 with no body is a refusal from the status when: [t1] the answer is cast under the pass-through opt then: it is thrown as the pass-through class 1`] = `
+[Error: ✋ ConstraintError: the endpoint answered http 404
+
+{
+  "url": "https://api.example.com/notifications",
+  "status": 404,
+  "exid": "exid:ord-7",
+  "correlationId": null,
+  "text": "",
+  "headers": {}
+}]
+`;
+
+exports[`asErrorFromHttpResponse given: [case11] a redacted 500 is a MalfunctionError that holds the correlationId when: [t0] the answer is cast under the default opt then: it is thrown as the default class 1`] = `
+[Error: 💥 MalfunctionError: the endpoint answered http 500
+
+{
+  "url": "https://api.example.com/notifications",
+  "status": 500,
+  "exid": "exid:ord-7",
+  "correlationId": "exid:ord-7",
+  "text": "{\\"errorMessage\\":\\"internal server error\\",\\"errorType\\":\\"InternalServiceError\\",\\"correlationId\\":\\"exid:ord-7\\"}",
+  "headers": {}
+}]
+`;
+
+exports[`asErrorFromHttpResponse given: [case11] a redacted 500 is a MalfunctionError that holds the correlationId when: [t1] the answer is cast under the pass-through opt then: it is thrown as the pass-through class 1`] = `
+[Error: 💥 MalfunctionError: the endpoint answered http 500
+
+{
+  "url": "https://api.example.com/notifications",
+  "status": 500,
+  "exid": "exid:ord-7",
+  "correlationId": "exid:ord-7",
+  "text": "{\\"errorMessage\\":\\"internal server error\\",\\"errorType\\":\\"InternalServiceError\\",\\"correlationId\\":\\"exid:ord-7\\"}",
+  "headers": {}
+}]
+`;
+
+exports[`asErrorFromHttpResponse given: [case12] a contemp 500 is a MalfunctionError with the unprefixed envelope message when: [t0] the answer is cast under the default opt then: it is thrown as the default class 1`] = `
+[Error: 💥 MalfunctionError: the template store is down
+
+{
+  "url": "https://api.example.com/notifications",
+  "status": 500,
+  "exid": "exid:ord-7",
+  "correlationId": null,
+  "text": null,
+  "headers": {}
+}]
+`;
+
+exports[`asErrorFromHttpResponse given: [case12] a contemp 500 is a MalfunctionError with the unprefixed envelope message when: [t1] the answer is cast under the pass-through opt then: it is thrown as the pass-through class 1`] = `
+[Error: 💥 MalfunctionError: the template store is down
+
+{
+  "url": "https://api.example.com/notifications",
+  "status": 500,
+  "exid": "exid:ord-7",
+  "correlationId": null,
+  "text": null,
+  "headers": {}
+}]
+`;
+
+exports[`asErrorFromHttpResponse given: [case13] a 502 with a non-json body is a MalfunctionError from the status when: [t0] the answer is cast under the default opt then: it is thrown as the default class 1`] = `
+[Error: 💥 MalfunctionError: the endpoint answered http 502
+
+{
+  "url": "https://api.example.com/notifications",
+  "status": 502,
+  "exid": "exid:ord-7",
+  "correlationId": null,
+  "text": "",
+  "headers": {}
+}]
+`;
+
+exports[`asErrorFromHttpResponse given: [case13] a 502 with a non-json body is a MalfunctionError from the status when: [t1] the answer is cast under the pass-through opt then: it is thrown as the pass-through class 1`] = `
+[Error: 💥 MalfunctionError: the endpoint answered http 502
+
+{
+  "url": "https://api.example.com/notifications",
+  "status": 502,
+  "exid": "exid:ord-7",
+  "correlationId": null,
+  "text": "",
+  "headers": {}
+}]
+`;

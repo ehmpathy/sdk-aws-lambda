@@ -8,8 +8,79 @@ exports[`e2e: deployed goSurf lambda with trail propagation given: [case1] deplo
 }
 `;
 
-exports[`e2e: deployed goSurf lambda with trail propagation given: [case1] deployed goSurf lambda via declastruct when: [t2] invoked with invalid input then: handler returns validation error 1`] = `
+exports[`e2e: deployed goSurf lambda with trail propagation given: [case1] deployed goSurf lambda via declastruct when: [t2] invoked with invalid input then: it throws a LambdaEndpointRefusedError that names the validation and the opt-in 1`] = `
 {
+  "class": "LambdaEndpointRefusedError",
+  "message": "💥 LambdaEndpointRefusedError: svc-seaturtle-prod-goSurf refused the request: validation failed: style: Invalid option: expected one of "longboard"|"shortboard"|"bodyboard"
+
+{
+  "issues": [
+    {
+      "path": "style",
+      "message": "Invalid option: expected one of \\"longboard\\"|\\"shortboard\\"|\\"bodyboard\\"",
+      "code": "invalid_value"
+    }
+  ],
+  "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
+}
+
+this caller composed the request. if it forwards its own caller's input verbatim, opt in with refusal: { as: 'ConstraintError' }
+
+{
+  "endpoint": {
+    "service": "svc-seaturtle",
+    "access": "prod",
+    "function": "goSurf",
+    "slug": "svc-seaturtle-prod-goSurf"
+  },
+  "exid": "exid:fixed-t2-validation",
+  "details": {
+    "issues": [
+      {
+        "path": "style",
+        "message": "Invalid option: expected one of \\"longboard\\"|\\"shortboard\\"|\\"bodyboard\\"",
+        "code": "invalid_value"
+      }
+    ],
+    "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`"
+  },
+  "errorType": "ConstraintError"
+}",
+  "messageContainsValidation": true,
+  "metadata": {
+    "details": {
+      "hint": "send a value that satisfies the endpoint's declared input schema — correct each path named in \`issues\`",
+      "issues": [
+        {
+          "code": "invalid_value",
+          "message": "Invalid option: expected one of "longboard"|"shortboard"|"bodyboard"",
+          "path": "style",
+        },
+      ],
+    },
+    "endpoint": LambdaEndpoint {
+      "access": "prod",
+      "function": "goSurf",
+      "service": "svc-seaturtle",
+      "slug": "svc-seaturtle-prod-goSurf",
+    },
+    "errorType": "ConstraintError",
+    "exid": "exid:fixed-t2-validation",
+  },
+  "name": "LambdaEndpointRefusedError",
+}
+`;
+
+exports[`e2e: deployed goSurf lambda with trail propagation given: [case1] deployed goSurf lambda via declastruct when: [t3] invoked with a slug that was never deployed then: handler returns function not found error 1`] = `
+{
+  "messageContainsNotFound": true,
+  "name": "LambdaEndpointError",
+}
+`;
+
+exports[`e2e: deployed goSurf lambda with trail propagation given: [case1] deployed goSurf lambda via declastruct when: [t4] invoked with invalid input, on the pass-through opt then: the refusal surfaces as a ConstraintError 1`] = `
+{
+  "class": "ConstraintError",
   "message": "✋ ConstraintError: validation failed: style: Invalid option: expected one of "longboard"|"shortboard"|"bodyboard"
 
 {
@@ -30,7 +101,7 @@ exports[`e2e: deployed goSurf lambda with trail propagation given: [case1] deplo
     "function": "goSurf",
     "slug": "svc-seaturtle-prod-goSurf"
   },
-  "exid": "exid:fixed-t2-validation",
+  "exid": "exid:fixed-t4-passthrough",
   "details": {
     "issues": [
       {
@@ -60,16 +131,9 @@ exports[`e2e: deployed goSurf lambda with trail propagation given: [case1] deplo
       "service": "svc-seaturtle",
       "slug": "svc-seaturtle-prod-goSurf",
     },
-    "exid": "exid:fixed-t2-validation",
+    "exid": "exid:fixed-t4-passthrough",
   },
   "name": "Error",
-}
-`;
-
-exports[`e2e: deployed goSurf lambda with trail propagation given: [case1] deployed goSurf lambda via declastruct when: [t3] invoked with a slug that was never deployed then: handler returns function not found error 1`] = `
-{
-  "messageContainsNotFound": true,
-  "name": "LambdaEndpointError",
 }
 `;
 
